@@ -40,4 +40,3 @@ Contains prompting, instructions, and progress tracking for the development of n
 ---
 
 > **Note:** This documentation structure is designed to be consumed by both human developers and AI coding assistants for better context and consistency.
-
