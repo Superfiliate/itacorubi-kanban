@@ -121,6 +121,28 @@
   }
 }
 
+/* Typography Utilities - see docs/adrs/005-typography-utilities.md */
+@layer components {
+  .text-body {
+    @apply text-sm;
+  }
+  .text-body-lg {
+    @apply text-base;
+  }
+  .text-label {
+    @apply text-sm font-medium;
+  }
+  .text-muted {
+    @apply text-sm text-muted-foreground;
+  }
+  .text-heading {
+    @apply text-lg font-semibold tracking-tight;
+  }
+  .text-heading-sm {
+    @apply text-sm font-medium;
+  }
+}
+
 /* Tiptap Rich Text Editor Styles */
 .ProseMirror {
   outline: none;

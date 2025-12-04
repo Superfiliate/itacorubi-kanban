@@ -33,7 +33,7 @@ export function StatusSelect({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">Status</label>
+      <label className="text-label">Status</label>
       <Select value={currentColumnId} onValueChange={handleValueChange}>
         <SelectTrigger className="w-full">
           <SelectValue />

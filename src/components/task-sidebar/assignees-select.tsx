@@ -79,7 +79,7 @@ export function AssigneesSelect({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">Assignees</label>
+      <label className="text-label">Assignees</label>
 
       {/* Selected assignees */}
       {assignees.length > 0 && (
@@ -99,6 +99,7 @@ export function AssigneesSelect({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
+            asInput
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
@@ -121,7 +122,7 @@ export function AssigneesSelect({
                 {inputValue.trim() ? (
                   <button
                     onClick={handleCreateNew}
-                    className="w-full px-2 py-1.5 text-left text-sm hover:bg-accent"
+                    className="w-full px-2 py-1.5 text-left text-body hover:bg-accent"
                   >
                     Create &quot;{inputValue.trim()}&quot;
                   </button>

@@ -66,15 +66,15 @@ export function TaskDetails({
   return (
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-5 p-6">
-        <h3 className="text-sm font-medium text-foreground">Task Details</h3>
+        <h3 className="text-heading-sm">Task Details</h3>
 
         {/* Title */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Title</label>
+          <label className="text-label">Title</label>
           <EditableText
             value={task.title}
             onSave={handleTitleSave}
-            className="block w-full rounded-md border border-input bg-background px-3 py-2 text-base"
+            className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             inputClassName="w-full"
             placeholder="Task title"
           />
@@ -98,7 +98,7 @@ export function TaskDetails({
 
         {/* Created At */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Created at</label>
+          <label className="text-label">Created at</label>
           <DatePicker
             date={task.createdAt ?? undefined}
             onDateChange={handleCreatedAtChange}

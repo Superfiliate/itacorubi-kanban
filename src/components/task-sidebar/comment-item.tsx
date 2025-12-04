@@ -162,7 +162,7 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="mt-2 text-sm">
+        <div className="mt-2 text-body">
           <RichTextEditor content={comment.content} editable={false} />
         </div>
       </div>
