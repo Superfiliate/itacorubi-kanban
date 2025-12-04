@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import Link from "next/link"
-import { MessageSquare } from "lucide-react"
+import { MessageSquare, User } from "lucide-react"
 import { ContributorBadge } from "@/components/contributor-badge"
 import { cn } from "@/lib/utils"
 import type { ContributorColor } from "@/db/schema"
@@ -26,35 +26,44 @@ interface TaskCardProps {
 }
 
 function getCommentAgeColor(daysSinceLastComment: number): string {
-  // 0-10 days: transition from green to yellow
-  // 10-20 days: transition from yellow to red
-  // >20 days: red
+  // Smooth transition: green → yellow (0-10 days) → red (10-20 days)
+  // Using more granular steps for smoother visual transition
 
   if (daysSinceLastComment <= 0) {
     return "text-emerald-600"
   }
-
-  if (daysSinceLastComment <= 10) {
-    // Interpolate from green (emerald) to yellow
-    const ratio = daysSinceLastComment / 10
-    if (ratio < 0.5) {
-      return "text-emerald-500"
-    }
+  if (daysSinceLastComment <= 2) {
+    return "text-emerald-500"
+  }
+  if (daysSinceLastComment <= 4) {
+    return "text-green-500"
+  }
+  if (daysSinceLastComment <= 6) {
+    return "text-lime-500"
+  }
+  if (daysSinceLastComment <= 8) {
     return "text-yellow-500"
   }
-
-  if (daysSinceLastComment <= 15) {
-    // Interpolate from yellow to orange
+  if (daysSinceLastComment <= 10) {
+    return "text-yellow-600"
+  }
+  if (daysSinceLastComment <= 12) {
     return "text-amber-500"
   }
-
-  if (daysSinceLastComment <= 20) {
-    // Interpolate from orange to red
+  if (daysSinceLastComment <= 14) {
+    return "text-amber-600"
+  }
+  if (daysSinceLastComment <= 16) {
     return "text-orange-500"
   }
-
-  // >20 days: red
-  return "text-red-500"
+  if (daysSinceLastComment <= 18) {
+    return "text-orange-600"
+  }
+  if (daysSinceLastComment <= 20) {
+    return "text-red-500"
+  }
+  // >20 days: deep red
+  return "text-red-600"
 }
 
 function getDaysSinceLastComment(comments: Array<{ createdAt: Date | null }>): number | null {
@@ -133,7 +142,7 @@ export function TaskCard({ id, boardId, title, assignees, comments }: TaskCardPr
             <MessageSquare className="h-3.5 w-3.5" />
             <span>{comments.length}</span>
             {commentAgeText && (
-              <span className="text-muted-foreground">· {commentAgeText}</span>
+              <span className="opacity-80">· {commentAgeText}</span>
             )}
           </div>
         ) : (
@@ -144,7 +153,7 @@ export function TaskCard({ id, boardId, title, assignees, comments }: TaskCardPr
         )}
 
         {/* Assignees */}
-        {assignees.length > 0 && (
+        {assignees.length > 0 ? (
           <div className="flex flex-wrap gap-1 justify-end">
             {assignees.map(({ contributor }) => (
               <ContributorBadge
@@ -154,6 +163,10 @@ export function TaskCard({ id, boardId, title, assignees, comments }: TaskCardPr
               />
             ))}
           </div>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-muted-foreground/40 px-2 py-0.5 text-xs text-muted-foreground/60">
+            <User className="h-3 w-3" />
+          </span>
         )}
       </div>
     </div>

@@ -126,7 +126,7 @@ export function AssigneesSelect({
                     Create &quot;{inputValue.trim()}&quot;
                   </button>
                 ) : (
-                  "No contributors found."
+                  "Type a name to add someone"
                 )}
               </CommandEmpty>
               <CommandGroup>
@@ -155,6 +155,11 @@ export function AssigneesSelect({
                     <span className="text-muted-foreground">Create</span>
                     &nbsp;&quot;{inputValue.trim()}&quot;
                   </CommandItem>
+                )}
+                {filteredContributors.length > 0 && !inputValue.trim() && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground/70">
+                    Type to add someone new
+                  </div>
                 )}
               </CommandGroup>
             </CommandList>
