@@ -3,6 +3,7 @@
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useDroppable } from "@dnd-kit/core"
+import { Minimize2, Maximize2, Plus, Trash2 } from "lucide-react"
 import { updateColumnName, toggleColumnCollapsed, deleteColumn } from "@/actions/columns"
 import { createTask } from "@/actions/tasks"
 import { EditableText } from "@/components/editable-text"
@@ -10,6 +11,8 @@ import { TaskCard } from "./task-card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+
+import type { ContributorColor } from "@/db/schema"
 
 interface ColumnProps {
   id: string
@@ -23,6 +26,7 @@ interface ColumnProps {
       contributor: {
         id: string
         name: string
+        color: ContributorColor
       }
     }>
   }>
@@ -79,7 +83,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         ref={setSortableRef}
         style={style}
         className={cn(
-          "flex h-full w-12 shrink-0 flex-col items-center rounded-lg border border-border bg-muted/50 py-4 transition-all",
+          "relative flex h-full w-10 shrink-0 flex-col items-end rounded-lg border border-border bg-muted/50 py-3 transition-all",
           isDragging && "opacity-50"
         )}
         {...attributes}
@@ -89,38 +93,23 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           variant="ghost"
           size="icon"
           onClick={handleToggleCollapse}
-          className="mb-2 h-6 w-6 shrink-0"
+          className="h-6 w-6 shrink-0 self-center"
           title="Expand column"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
+          <Maximize2 className="h-4 w-4" />
         </Button>
-        <span
-          className="whitespace-nowrap text-sm font-medium text-muted-foreground"
+        <div
+          className="mt-2 flex items-center gap-3 whitespace-nowrap text-sm"
           style={{
-            writingMode: "vertical-rl",
-            textOrientation: "mixed",
-            transform: "rotate(180deg)",
+            transform: "rotate(-90deg) translateX(0) translateY(-1.2rem)",
+            transformOrigin: "right center",
+            // textAlign: "right",
+
           }}
         >
-          {name}
-        </span>
-        {tasks.length > 0 && (
-          <span className="mt-2 text-xs text-muted-foreground">
-            {tasks.length}
-          </span>
-        )}
+          <span className="text-xs text-muted-foreground/60">{tasks.length}</span>
+          <span className="font-medium text-muted-foreground">{name}</span>
+        </div>
       </div>
     )
   }
@@ -140,34 +129,12 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         {...attributes}
         {...listeners}
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleToggleCollapse}
-          className="h-6 w-6 shrink-0"
-          title="Collapse column"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </Button>
         <EditableText
           value={name}
           onSave={handleNameSave}
           className="flex-1 text-sm font-medium"
           inputClassName="text-sm font-medium"
         />
-        <span className="text-xs text-muted-foreground">{tasks.length}</span>
         {tasks.length === 0 && (
           <Button
             variant="ghost"
@@ -176,23 +143,19 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
             className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
             title="Delete column"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 6h18" />
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-            </svg>
+            <Trash2 className="h-4 w-4" />
           </Button>
         )}
+        <span className="text-xs text-muted-foreground">{tasks.length}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleToggleCollapse}
+          className="h-6 w-6 shrink-0 text-muted-foreground"
+          title="Collapse column"
+        >
+          <Minimize2 className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Add Task Button */}
@@ -203,20 +166,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           onClick={handleAddTask}
           className="h-7 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-          </svg>
+          <Plus className="h-4 w-4" />
           Add task
         </Button>
       </div>

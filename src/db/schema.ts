@@ -53,11 +53,35 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   assignees: many(taskAssignees),
 }))
 
+// Predefined color palette for contributors
+export const CONTRIBUTOR_COLORS = [
+  "rose",
+  "pink",
+  "fuchsia",
+  "purple",
+  "violet",
+  "indigo",
+  "blue",
+  "sky",
+  "cyan",
+  "teal",
+  "emerald",
+  "green",
+  "lime",
+  "yellow",
+  "amber",
+  "orange",
+  "red",
+] as const
+
+export type ContributorColor = typeof CONTRIBUTOR_COLORS[number]
+
 // Contributors - belong to a board
 export const contributors = sqliteTable("contributors", {
   id: text("id").primaryKey(), // UUID
   boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  color: text("color").notNull().$type<ContributorColor>(),
 })
 
 export const contributorsRelations = relations(contributors, ({ one, many }) => ({

@@ -3,8 +3,9 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
+import { ContributorBadge } from "@/components/contributor-badge"
 import { cn } from "@/lib/utils"
+import type { ContributorColor } from "@/db/schema"
 
 interface TaskCardProps {
   id: string
@@ -14,6 +15,7 @@ interface TaskCardProps {
     contributor: {
       id: string
       name: string
+      color: ContributorColor
     }
   }>
 }
@@ -60,13 +62,11 @@ export function TaskCard({ id, boardId, title, assignees }: TaskCardProps) {
       {assignees.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {assignees.map(({ contributor }) => (
-            <Badge
+            <ContributorBadge
               key={contributor.id}
-              variant="secondary"
-              className="text-xs"
-            >
-              {contributor.name}
-            </Badge>
+              name={contributor.name}
+              color={contributor.color}
+            />
           ))}
         </div>
       )}

@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { columns, tasks } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { getRandomEmoji } from "@/lib/emojis"
 
 export async function createColumn(boardId: string) {
   // Get the max position for this board
@@ -15,10 +16,11 @@ export async function createColumn(boardId: string) {
   const maxPosition = maxPositionResult[0]?.maxPosition ?? -1
 
   const id = crypto.randomUUID()
+  const emoji = getRandomEmoji()
   await db.insert(columns).values({
     id,
     boardId,
-    name: "New column",
+    name: `${emoji} New column`,
     position: maxPosition + 1,
   })
 

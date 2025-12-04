@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Check, X, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Command,
   CommandEmpty,
@@ -19,6 +18,8 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { addAssignee, removeAssignee, createAndAssignContributor } from "@/actions/contributors"
+import { ContributorBadge } from "@/components/contributor-badge"
+import type { ContributorColor } from "@/db/schema"
 
 interface AssigneesSelectProps {
   taskId: string
@@ -27,11 +28,13 @@ interface AssigneesSelectProps {
     contributor: {
       id: string
       name: string
+      color: ContributorColor
     }
   }>
   contributors: Array<{
     id: string
     name: string
+    color: ContributorColor
   }>
 }
 
@@ -82,19 +85,12 @@ export function AssigneesSelect({
       {assignees.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {assignees.map(({ contributor }) => (
-            <Badge
+            <ContributorBadge
               key={contributor.id}
-              variant="secondary"
-              className="gap-1 pr-1"
-            >
-              {contributor.name}
-              <button
-                onClick={() => handleSelect(contributor.id)}
-                className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
+              name={contributor.name}
+              color={contributor.color}
+              onRemove={() => handleSelect(contributor.id)}
+            />
           ))}
         </div>
       )}
@@ -148,7 +144,10 @@ export function AssigneesSelect({
                           : "opacity-0"
                       )}
                     />
-                    {contributor.name}
+                    <ContributorBadge
+                      name={contributor.name}
+                      color={contributor.color}
+                    />
                   </CommandItem>
                 ))}
                 {showCreateOption && (

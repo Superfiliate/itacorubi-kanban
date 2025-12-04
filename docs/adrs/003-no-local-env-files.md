@@ -9,6 +9,6 @@ We don't use `.env` files. Code falls back to hardcoded defaults for local devel
 ## Examples
 
 ```typescript
-// Falls back to local SQLite when DATABASE_URL is not set
-url: process.env.DATABASE_URL ?? "file:local.db"
+// Falls back to local SQLite when TURSO_DATABASE_URL is not set
+url: process.env.TURSO_DATABASE_URL ?? "file:local.db"
 ```

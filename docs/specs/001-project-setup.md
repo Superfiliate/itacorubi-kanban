@@ -75,17 +75,20 @@ Created `drizzle.config.ts` for migration management and schema synchronization.
 
 ### Step 5: Environment Setup
 
-Created `.env.local` with `DATABASE_URL=file:local.db` for local development.
+No `.env` files needed for local development - code falls back to `file:local.db` when `TURSO_DATABASE_URL` is not set (see ADR 003).
 
 Updated `.gitignore` to exclude `*.db` and `*.db-journal` files.
 
 ### Step 6: Add Package Scripts
 
 Added to `package.json`:
+- `pnpm dev` - Start dev server on port 5800
+- `pnpm kill` - Kill process on port 5800
 - `pnpm db:generate` - Generate migrations
 - `pnpm db:migrate` - Run migrations
 - `pnpm db:push` - Push schema to database (for development)
 - `pnpm db:studio` - Open Drizzle Studio GUI
+- `pnpm db:reset` - Delete local.db and recreate from schema
 
 ### Step 7: Document Decisions
 
@@ -97,33 +100,34 @@ Created Architecture Decision Records:
 
 ```
 itacorubi-kanban/
-├── .env.local                    # Environment variables
 ├── .gitignore                    # Updated with *.db patterns
 ├── drizzle.config.ts             # Drizzle Kit configuration
-├── package.json                  # Updated with db:* scripts
+├── package.json                  # Updated with db:* and utility scripts
 ├── src/
 │   └── db/
-│       ├── index.ts              # Database client
+│       ├── index.ts              # Database client (uses TURSO_DATABASE_URL)
 │       └── schema.ts             # Database schema
 └── docs/
     └── adrs/
         ├── 001-package-manager.md
-        └── 002-database-choice.md
+        ├── 002-database-choice.md
+        └── 003-no-local-env-files.md
 ```
 
 ## Local Development Workflow
 
-1. Run `pnpm db:push` to sync schema to local SQLite file
-2. Run `pnpm dev` to start Next.js development server
+1. Run `pnpm db:push` to sync schema to local SQLite file (or `pnpm db:reset` to start fresh)
+2. Run `pnpm dev` to start Next.js development server on port 5800
 3. Run `pnpm db:studio` to browse data visually
 
 ## Production Deployment (Vercel + Turso)
 
 1. Create a Turso database via CLI (`turso db create`) or dashboard
-2. Add Turso integration in Vercel Marketplace (auto-sets `DATABASE_URL` and `DATABASE_AUTH_TOKEN`)
+2. Add Turso integration in Vercel Marketplace (auto-sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`)
 3. Deploy to Vercel - the application will connect to Turso automatically
 
 ## Notes
 
-- The `.env.local` and `.gitignore` files were created manually by the user due to tool restrictions on editing environment files
+- No `.env` files needed - code uses fallback defaults for local development (see ADR 003)
+- The `.gitignore` was updated manually by the user
 - All other files were created programmatically by the AI assistant

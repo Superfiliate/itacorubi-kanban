@@ -5,17 +5,19 @@ import { boards, columns } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { getRandomEmoji } from "@/lib/emojis"
 
 export async function createBoard() {
   const id = crypto.randomUUID()
+  const emoji = getRandomEmoji()
 
   await db.insert(boards).values({
     id,
-    title: "New board",
+    title: `${emoji} New board`,
   })
 
   // Create default columns
-  const defaultColumns = ["To do", "Doing", "Done"]
+  const defaultColumns = ["📥 To do", "🔄 Doing", "✅ Done"]
   for (let i = 0; i < defaultColumns.length; i++) {
     await db.insert(columns).values({
       id: crypto.randomUUID(),

@@ -1,16 +1,24 @@
 "use server"
 
 import { db } from "@/db"
-import { contributors, taskAssignees } from "@/db/schema"
+import { contributors, taskAssignees, CONTRIBUTOR_COLORS } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
+function getRandomColor() {
+  const index = Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)
+  return CONTRIBUTOR_COLORS[index]
+}
+
 export async function createContributor(boardId: string, name: string) {
   const id = crypto.randomUUID()
+  const color = getRandomColor()
+
   await db.insert(contributors).values({
     id,
     boardId,
     name,
+    color,
   })
 
   revalidatePath(`/boards/${boardId}`)
