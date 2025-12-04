@@ -39,12 +39,23 @@ export async function getTask(id: string) {
           contributor: true,
         },
       },
+      comments: {
+        orderBy: (comments, { asc }) => [asc(comments.createdAt)],
+        with: {
+          author: true,
+        },
+      },
     },
   })
 }
 
 export async function updateTaskTitle(id: string, title: string, boardId: string) {
   await db.update(tasks).set({ title }).where(eq(tasks.id, id))
+  revalidatePath(`/boards/${boardId}`)
+}
+
+export async function updateTaskCreatedAt(id: string, createdAt: Date, boardId: string) {
+  await db.update(tasks).set({ createdAt }).where(eq(tasks.id, id))
   revalidatePath(`/boards/${boardId}`)
 }
 

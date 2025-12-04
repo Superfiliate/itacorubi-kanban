@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tasks are the individual work items that live within columns. Each task can have a title and multiple assignees.
+Tasks are the individual work items that live within columns. Each task can have a title, multiple assignees, a creation date, and comments.
 
 ## User Flows
 
@@ -12,20 +12,23 @@ Tasks are the individual work items that live within columns. Each task can have
 - Task created with "{emoji} New task" title
 - Sidebar automatically opens for editing
 - URL updates to `/boards/{boardId}?task={taskId}`
+- Created at date is set automatically
 
 ### View Task
 
 - Click on task card in the board
-- Sidebar opens with task details
+- Sidebar opens with task details (70/30 split layout)
+- Left panel shows comments, right panel shows task details
 - URL updates to `/boards/{boardId}?task={taskId}`
 
 ### Edit Task
 
 - Open task sidebar (click on task card)
-- Editable fields:
+- Editable fields (right panel):
   - **Title**: Click to edit, auto-saves after 1 second or on Enter/blur
   - **Status**: Dropdown to move between columns
   - **Assignees**: Multi-select with ability to create new contributors
+  - **Created at**: Date picker to view/change creation date
 
 ### Move Task (Drag & Drop)
 
@@ -50,3 +53,7 @@ Tasks are the individual work items that live within columns. Each task can have
 
 - Tasks can be dropped into collapsed columns
 - Task position within a column is determined by drop location
+- Task cards show comment count and days since last comment
+- Comment age indicator uses color coding (green → yellow → red)
+- Adding a comment moves the task to the top of its column
+- See `006-comments.md` for full comment documentation

@@ -30,6 +30,10 @@ interface ColumnProps {
         color: ContributorColor
       }
     }>
+    comments: Array<{
+      id: string
+      createdAt: Date | null
+    }>
   }>
 }
 
@@ -187,6 +191,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
                   boardId={boardId}
                   title={task.title}
                   assignees={task.assignees}
+                  comments={task.comments}
                 />
               ))}
             </SortableContext>

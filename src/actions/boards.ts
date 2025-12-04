@@ -51,6 +51,13 @@ export async function getBoard(id: string) {
                   contributor: true,
                 },
               },
+              comments: {
+                orderBy: (comments, { desc }) => [desc(comments.createdAt)],
+                columns: {
+                  id: true,
+                  createdAt: true,
+                },
+              },
             },
           },
         },

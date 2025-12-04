@@ -34,6 +34,10 @@ interface Task {
       color: ContributorColor
     }
   }>
+  comments: Array<{
+    id: string
+    createdAt: Date | null
+  }>
 }
 
 interface ColumnData {

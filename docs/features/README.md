@@ -14,6 +14,7 @@ Each feature file focuses on a single model and its interactions:
 | `003-columns.md` | Column | Add, rename, reorder, collapse/expand, delete |
 | `004-tasks.md` | Task | Create, view/edit, move, delete |
 | `005-contributors.md` | Contributor | Assign, create, remove, colors |
+| `006-comments.md` | Comment | Add, edit, delete, author memory, age indicators |
 
 ## File Structure
 

@@ -3,11 +3,9 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { EditableText } from "@/components/editable-text"
-import { StatusSelect } from "./status-select"
-import { AssigneesSelect } from "./assignees-select"
-import { updateTaskTitle, deleteTask } from "@/actions/tasks"
-import { Button } from "@/components/ui/button"
+import { CommentsSection } from "./comments-section"
+import { TaskDetails } from "./task-details"
+import type { ContributorColor } from "@/db/schema"
 
 interface TaskSidebarProps {
   task: {
@@ -15,10 +13,22 @@ interface TaskSidebarProps {
     title: string
     columnId: string
     boardId: string
+    createdAt: Date | null
     assignees: Array<{
       contributor: {
         id: string
         name: string
+        color: ContributorColor
+      }
+    }>
+    comments: Array<{
+      id: string
+      content: string
+      createdAt: Date | null
+      author: {
+        id: string
+        name: string
+        color: ContributorColor
       }
     }>
   }
@@ -29,6 +39,7 @@ interface TaskSidebarProps {
   contributors: Array<{
     id: string
     name: string
+    color: ContributorColor
   }>
 }
 
@@ -44,81 +55,35 @@ export function TaskSidebar({ task, columns, contributors }: TaskSidebarProps) {
     }, 150)
   }
 
-  const handleTitleSave = async (title: string) => {
-    await updateTaskTitle(task.id, title, task.boardId)
-  }
-
-  const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      setIsOpen(false)
-      await deleteTask(task.id, task.boardId)
-      router.replace(`/boards/${task.boardId}`)
-    }
-  }
-
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <SheetContent className="flex w-[400px] flex-col p-6 sm:max-w-[400px]">
-        <SheetHeader>
-          <SheetTitle className="sr-only">Edit Task</SheetTitle>
+      <SheetContent className="flex w-[1040px] flex-col p-0 sm:max-w-[1040px]">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Edit Task</SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 pt-4">
-          {/* Title */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Title</label>
-            <EditableText
-              value={task.title}
-              onSave={handleTitleSave}
-              className="block w-full rounded-md border border-input bg-background px-3 py-2 text-base"
-              inputClassName="w-full"
-              placeholder="Task title"
+        <div className="flex flex-1 min-h-0">
+          {/* Left column - Comments (70%) */}
+          <div className="flex-[7] min-h-0 overflow-hidden">
+            <CommentsSection
+              taskId={task.id}
+              boardId={task.boardId}
+              comments={task.comments}
+              contributors={contributors}
             />
           </div>
 
-          {/* Status */}
-          <StatusSelect
-            taskId={task.id}
-            boardId={task.boardId}
-            currentColumnId={task.columnId}
-            columns={columns}
-          />
+          {/* Divider */}
+          <div className="w-px bg-border" />
 
-          {/* Assignees */}
-          <AssigneesSelect
-            taskId={task.id}
-            boardId={task.boardId}
-            assignees={task.assignees}
-            contributors={contributors}
-          />
-
-          {/* Delete button */}
-          <div className="mt-auto flex justify-end">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              title="Delete task"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 6h18" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                <line x1="10" x2="10" y1="11" y2="17" />
-                <line x1="14" x2="14" y1="11" y2="17" />
-              </svg>
-            </Button>
+          {/* Right column - Task Details (30%) */}
+          <div className="flex-[3] min-h-0 overflow-hidden">
+            <TaskDetails
+              task={task}
+              columns={columns}
+              contributors={contributors}
+              onClose={handleClose}
+            />
           </div>
         </div>
       </SheetContent>

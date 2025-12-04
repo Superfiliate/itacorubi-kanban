@@ -1,18 +1,16 @@
 import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core"
 import { relations } from "drizzle-orm"
 
+// ============================================================
+// TABLE DEFINITIONS
+// ============================================================
+
 // Boards - identified by UUID
 export const boards = sqliteTable("boards", {
   id: text("id").primaryKey(), // UUID
   title: text("title").notNull().default("New board"),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
-
-export const boardsRelations = relations(boards, ({ many }) => ({
-  columns: many(columns),
-  tasks: many(tasks),
-  contributors: many(contributors),
-}))
 
 // Columns - belong to a board, orderable
 export const columns = sqliteTable("columns", {
@@ -23,14 +21,6 @@ export const columns = sqliteTable("columns", {
   isCollapsed: integer("is_collapsed", { mode: "boolean" }).default(false),
 })
 
-export const columnsRelations = relations(columns, ({ one, many }) => ({
-  board: one(boards, {
-    fields: [columns.boardId],
-    references: [boards.id],
-  }),
-  tasks: many(tasks),
-}))
-
 // Tasks - belong to a board and column
 export const tasks = sqliteTable("tasks", {
   id: text("id").primaryKey(), // UUID
@@ -40,18 +30,6 @@ export const tasks = sqliteTable("tasks", {
   position: integer("position").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
-
-export const tasksRelations = relations(tasks, ({ one, many }) => ({
-  board: one(boards, {
-    fields: [tasks.boardId],
-    references: [boards.id],
-  }),
-  column: one(columns, {
-    fields: [tasks.columnId],
-    references: [columns.id],
-  }),
-  assignees: many(taskAssignees),
-}))
 
 // Predefined color palette for contributors
 export const CONTRIBUTOR_COLORS = [
@@ -84,19 +62,62 @@ export const contributors = sqliteTable("contributors", {
   color: text("color").notNull().$type<ContributorColor>(),
 })
 
+// Task assignees - many-to-many
+export const taskAssignees = sqliteTable("task_assignees", {
+  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  contributorId: text("contributor_id").notNull().references(() => contributors.id, { onDelete: "cascade" }),
+}, (t) => [primaryKey({ columns: [t.taskId, t.contributorId] })])
+
+// Comments - belong to a task and have an author (contributor)
+export const comments = sqliteTable("comments", {
+  id: text("id").primaryKey(), // UUID
+  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "cascade" }),
+  authorId: text("author_id").notNull().references(() => contributors.id, { onDelete: "restrict" }),
+  content: text("content").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
+// ============================================================
+// RELATIONS
+// ============================================================
+
+export const boardsRelations = relations(boards, ({ many }) => ({
+  columns: many(columns),
+  tasks: many(tasks),
+  contributors: many(contributors),
+  comments: many(comments),
+}))
+
+export const columnsRelations = relations(columns, ({ one, many }) => ({
+  board: one(boards, {
+    fields: [columns.boardId],
+    references: [boards.id],
+  }),
+  tasks: many(tasks),
+}))
+
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  board: one(boards, {
+    fields: [tasks.boardId],
+    references: [boards.id],
+  }),
+  column: one(columns, {
+    fields: [tasks.columnId],
+    references: [columns.id],
+  }),
+  assignees: many(taskAssignees),
+  comments: many(comments),
+}))
+
 export const contributorsRelations = relations(contributors, ({ one, many }) => ({
   board: one(boards, {
     fields: [contributors.boardId],
     references: [boards.id],
   }),
   taskAssignees: many(taskAssignees),
+  comments: many(comments),
 }))
-
-// Task assignees - many-to-many
-export const taskAssignees = sqliteTable("task_assignees", {
-  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
-  contributorId: text("contributor_id").notNull().references(() => contributors.id, { onDelete: "cascade" }),
-}, (t) => [primaryKey({ columns: [t.taskId, t.contributorId] })])
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
   task: one(tasks, {
@@ -109,7 +130,25 @@ export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
   }),
 }))
 
-// Type exports
+export const commentsRelations = relations(comments, ({ one }) => ({
+  task: one(tasks, {
+    fields: [comments.taskId],
+    references: [tasks.id],
+  }),
+  board: one(boards, {
+    fields: [comments.boardId],
+    references: [boards.id],
+  }),
+  author: one(contributors, {
+    fields: [comments.authorId],
+    references: [contributors.id],
+  }),
+}))
+
+// ============================================================
+// TYPE EXPORTS
+// ============================================================
+
 export type Board = typeof boards.$inferSelect
 export type NewBoard = typeof boards.$inferInsert
 export type Column = typeof columns.$inferSelect
@@ -119,3 +158,5 @@ export type NewTask = typeof tasks.$inferInsert
 export type Contributor = typeof contributors.$inferSelect
 export type NewContributor = typeof contributors.$inferInsert
 export type TaskAssignee = typeof taskAssignees.$inferSelect
+export type Comment = typeof comments.$inferSelect
+export type NewComment = typeof comments.$inferInsert

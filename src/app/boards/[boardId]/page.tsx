@@ -43,7 +43,9 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
             title: task.title,
             columnId: task.columnId,
             boardId: task.boardId,
+            createdAt: task.createdAt,
             assignees: task.assignees,
+            comments: task.comments,
           }}
           columns={board.columns.map((c) => ({ id: c.id, name: c.name }))}
           contributors={board.contributors}
