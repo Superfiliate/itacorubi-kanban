@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AuthorSelect, getRememberedAuthor } from "./author-select"
 import { CommentItem } from "./comment-item"
@@ -49,15 +49,15 @@ export function CommentsSection({
   }, [boardId, contributors])
 
   const handleSubmit = async () => {
-    if (!newCommentContent.trim() || !selectedAuthorId) return
+    if (isRichTextEmpty(newCommentContent) || !selectedAuthorId) return
 
     setIsSubmitting(true)
-    await createComment(taskId, boardId, selectedAuthorId, newCommentContent.trim())
+    await createComment(taskId, boardId, selectedAuthorId, newCommentContent)
     setNewCommentContent("")
     setIsSubmitting(false)
   }
 
-  const canSubmit = newCommentContent.trim() && selectedAuthorId && !isSubmitting
+  const canSubmit = !isRichTextEmpty(newCommentContent) && selectedAuthorId && !isSubmitting
 
   return (
     <ScrollArea className="h-full">
@@ -98,11 +98,10 @@ export function CommentsSection({
             />
           </div>
           <div className="space-y-2">
-            <Textarea
-              value={newCommentContent}
-              onChange={(e) => setNewCommentContent(e.target.value)}
+            <RichTextEditor
+              content={newCommentContent}
+              onChange={setNewCommentContent}
               placeholder="Write your comment..."
-              className="min-h-[100px] resize-none"
             />
           </div>
           <div className="flex justify-end">

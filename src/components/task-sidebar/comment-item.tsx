@@ -4,7 +4,7 @@ import { useState } from "react"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,10 +51,10 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSave = async () => {
-    if (!editContent.trim()) return
+    if (isRichTextEmpty(editContent)) return
 
     setIsSubmitting(true)
-    await updateComment(comment.id, editAuthorId, editContent.trim(), boardId)
+    await updateComment(comment.id, editAuthorId, editContent, boardId)
     setIsSubmitting(false)
     setIsEditing(false)
   }
@@ -94,11 +94,10 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
         </div>
         <div className="space-y-2">
           <label className="text-xs font-medium text-muted-foreground">Content</label>
-          <Textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
+          <RichTextEditor
+            content={editContent}
+            onChange={setEditContent}
             placeholder="Write your comment..."
-            className="min-h-[100px] resize-none"
           />
         </div>
         <div className="flex justify-end gap-2">
@@ -113,7 +112,7 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={isSubmitting || !editContent.trim()}
+            disabled={isSubmitting || isRichTextEmpty(editContent)}
           >
             Save
           </Button>
@@ -163,7 +162,9 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <p className="mt-2 text-sm whitespace-pre-wrap">{comment.content}</p>
+        <div className="mt-2 text-sm">
+          <RichTextEditor content={comment.content} editable={false} />
+        </div>
       </div>
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

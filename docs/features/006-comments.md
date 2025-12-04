@@ -2,7 +2,35 @@
 
 ## Overview
 
-Comments allow team members to discuss tasks and track progress. Each comment has an author (a contributor) and content. Comments are displayed chronologically in the task sidebar.
+Comments allow team members to discuss tasks and track progress. Each comment has an author (a contributor) and rich-text content. Comments are displayed chronologically in the task sidebar.
+
+## Rich-Text Formatting
+
+Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. The toolbar provides the following formatting options:
+
+### Text Formatting
+- **Bold** (Ctrl+B)
+- *Italic* (Ctrl+I)
+- ~~Strikethrough~~
+- `Inline code`
+
+### Structure
+- Heading 1 (H1)
+- Heading 2 (H2)
+- Heading 3 (H3)
+- Bullet lists
+- Numbered lists
+- Blockquotes
+- Code blocks (multi-line)
+- Horizontal rule
+
+### Other
+- Undo/Redo (Ctrl+Z / Ctrl+Shift+Z)
+
+### Technical Details
+- Content is stored as JSON (Tiptap's native format) in the database
+- The same editor component is used for creating, editing, and displaying comments
+- Display mode renders content as read-only without the toolbar
 
 ## User Flows
 
@@ -18,7 +46,7 @@ Comments allow team members to discuss tasks and track progress. Each comment ha
 - Open task sidebar
 - Scroll to bottom of comments section
 - Select yourself from the author dropdown (or create a new contributor)
-- Write your comment in the textarea
+- Write your comment in the rich-text editor (use toolbar for formatting)
 - Click "Add Comment" button
 - Your author selection is remembered per board (via localStorage)
 - Task automatically moves to top of its column
