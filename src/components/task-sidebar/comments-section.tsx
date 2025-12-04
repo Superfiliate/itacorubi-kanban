@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { AuthorSelect, getRememberedAuthor } from "./author-select"
 import { CommentItem } from "./comment-item"
 import { createComment } from "@/actions/comments"
@@ -60,61 +59,59 @@ export function CommentsSection({
   const canSubmit = !isRichTextEmpty(newCommentContent) && selectedAuthorId && !isSubmitting
 
   return (
-    <ScrollArea className="h-full">
-      <div className="space-y-3 p-6">
-        <h3 className="text-sm font-medium text-foreground">Comments</h3>
+    <div className="space-y-3 p-6">
+      <h3 className="text-sm font-medium text-foreground">Comments</h3>
 
-        {comments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-sm text-muted-foreground">
-              No comments yet
-            </p>
-            <p className="text-xs text-muted-foreground/70">
-              Be the first to add a comment
-            </p>
-          </div>
-        ) : (
-          comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              boardId={boardId}
-              contributors={contributors}
-            />
-          ))
-        )}
+      {comments.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 text-sm text-muted-foreground">
+            No comments yet
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            Be the first to add a comment
+          </p>
+        </div>
+      ) : (
+        comments.map((comment) => (
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            boardId={boardId}
+            contributors={contributors}
+          />
+        ))
+      )}
 
-        {/* New comment form at the bottom */}
-        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3 mt-6">
-          <h4 className="text-xs font-medium text-muted-foreground">Add a comment</h4>
-          <div className="space-y-2">
-            <AuthorSelect
-              boardId={boardId}
-              selectedAuthorId={selectedAuthorId}
-              onAuthorChange={setSelectedAuthorId}
-              contributors={contributors}
-              placeholder="Who are you?"
-            />
-          </div>
-          <div className="space-y-2">
-            <RichTextEditor
-              content={newCommentContent}
-              onChange={setNewCommentContent}
-              placeholder="Write your comment..."
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              size="sm"
-            >
-              Add Comment
-            </Button>
-          </div>
+      {/* New comment form at the bottom */}
+      <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3 mt-6">
+        <h4 className="text-xs font-medium text-muted-foreground">Add a comment</h4>
+        <div className="space-y-2">
+          <AuthorSelect
+            boardId={boardId}
+            selectedAuthorId={selectedAuthorId}
+            onAuthorChange={setSelectedAuthorId}
+            contributors={contributors}
+            placeholder="Who are you?"
+          />
+        </div>
+        <div className="space-y-2">
+          <RichTextEditor
+            content={newCommentContent}
+            onChange={setNewCommentContent}
+            placeholder="Write your comment..."
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            size="sm"
+          >
+            Add Comment
+          </Button>
         </div>
       </div>
-    </ScrollArea>
+    </div>
   )
 }

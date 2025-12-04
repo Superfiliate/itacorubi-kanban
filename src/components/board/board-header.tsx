@@ -2,6 +2,7 @@
 
 import { updateBoardTitle } from "@/actions/boards"
 import { EditableText } from "@/components/editable-text"
+import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 
 interface BoardHeaderProps {
@@ -43,6 +44,9 @@ export function BoardHeader({ boardId, title }: BoardHeaderProps) {
         className="text-xl font-semibold"
         inputClassName="text-xl font-semibold"
       />
+      <div className="ml-auto">
+        <ThemeToggle />
+      </div>
     </header>
   )
 }

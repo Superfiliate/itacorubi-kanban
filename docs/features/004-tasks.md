@@ -17,9 +17,10 @@ Tasks are the individual work items that live within columns. Each task can have
 ### View Task
 
 - Click on task card in the board
-- Sidebar opens with task details (70/30 split layout)
-- Left panel shows comments, right panel shows task details
+- Sidebar opens with task details
 - URL updates to `/boards/{boardId}?task={taskId}`
+- **Desktop**: 70/30 split layout (comments left, details right), each panel scrolls independently
+- **Mobile**: Full-width sidebar, stacked vertically (details first, then comments), scrolls as one unit
 
 ### Edit Task
 

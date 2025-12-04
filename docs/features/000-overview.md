@@ -30,6 +30,17 @@ Using Lucide React icons throughout:
 - `Plus` for add actions
 - `Trash2` for delete actions
 
+### Theme Support
+
+Light, dark, and system-based themes. Toggle via dropdown in the board header.
+
+### Mobile Responsiveness
+
+The app is fully responsive and usable on mobile devices:
+- Board view works on narrow screens
+- Task sidebar stacks vertically on mobile (details first, then comments)
+- See `docs/adrs/006-mobile-responsiveness.md` for patterns
+
 ## Technical Notes
 
 - All data persists to SQLite (local) / Turso (production)
@@ -39,3 +50,4 @@ Using Lucide React icons throughout:
 - Optimistic updates with local state for drag-and-drop
 - Drag-and-drop powered by `@dnd-kit` with `rectIntersection` collision detection
 - UI components from shadcn/ui
+- Theme switching via `next-themes`
