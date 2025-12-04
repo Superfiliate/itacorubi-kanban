@@ -103,8 +103,6 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           style={{
             transform: "rotate(-90deg) translateX(0) translateY(-1.2rem)",
             transformOrigin: "right center",
-            // textAlign: "right",
-
           }}
         >
           <span className="text-xs text-muted-foreground/60">{tasks.length}</span>
