@@ -47,7 +47,7 @@ export function TaskCard({ id, boardId, title, assignees }: TaskCardProps) {
       {...listeners}
     >
       <Link
-        href={`/boards/${boardId}/tasks/${id}`}
+        href={`/boards/${boardId}?task=${id}`}
         className="absolute inset-0 z-10"
         onClick={(e) => {
           // Prevent navigation when dragging

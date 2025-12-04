@@ -11,13 +11,13 @@ Tasks are the individual work items that live within columns. Each task can have
 - Click "Add task" button at top of column
 - Task created with "{emoji} New task" title
 - Sidebar automatically opens for editing
-- URL updates to `/boards/{boardId}/tasks/{taskId}`
+- URL updates to `/boards/{boardId}?task={taskId}`
 
 ### View Task
 
 - Click on task card in the board
 - Sidebar opens with task details
-- URL updates to `/boards/{boardId}/tasks/{taskId}`
+- URL updates to `/boards/{boardId}?task={taskId}`
 
 ### Edit Task
 

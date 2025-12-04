@@ -72,7 +72,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
 
   const handleAddTask = async () => {
     const taskId = await createTask(boardId, id)
-    router.push(`/boards/${boardId}/tasks/${taskId}`)
+    router.push(`/boards/${boardId}?task=${taskId}`)
   }
 
   const taskIds = tasks.map((t) => t.id)

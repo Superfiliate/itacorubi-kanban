@@ -40,7 +40,7 @@ export function TaskSidebar({ task, columns, contributors }: TaskSidebarProps) {
     setIsOpen(false)
     // Small delay to allow animation to complete
     setTimeout(() => {
-      router.push(`/boards/${task.boardId}`)
+      router.replace(`/boards/${task.boardId}`)
     }, 150)
   }
 
@@ -52,7 +52,7 @@ export function TaskSidebar({ task, columns, contributors }: TaskSidebarProps) {
     if (confirm("Are you sure you want to delete this task?")) {
       setIsOpen(false)
       await deleteTask(task.id, task.boardId)
-      router.push(`/boards/${task.boardId}`)
+      router.replace(`/boards/${task.boardId}`)
     }
   }
 
