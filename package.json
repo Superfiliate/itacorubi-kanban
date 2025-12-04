@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 5800",
     "kill": "kill -9 $(lsof -ti :5800) || true",
-    "build": "next build",
+    "build": "drizzle-kit push && next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",

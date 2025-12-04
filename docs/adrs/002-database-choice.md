@@ -8,6 +8,16 @@ We use **Turso** (SQLite/libSQL) with **Drizzle ORM**.
 - Vercel Marketplace integration makes production deployment straightforward
 - Trade-off: SQLite has fewer features than Postgres, but acceptable for our simple internal tool needs
 
+## Automated Schema Updates
+
+Database schema is automatically kept in sync with the codebase on every deploy:
+
+- The `build` script runs `drizzle-kit push` before `next build`
+- Drizzle push is idempotent - only applies necessary changes, safe for multiple runs
+- Works because Vercel provides `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` via the marketplace integration
+
+This eliminates manual migration steps and ensures production always matches the schema in code.
+
 ## Examples
 
 ```bash
