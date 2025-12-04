@@ -33,7 +33,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <BoardHeader boardId={board.id} title={board.title} />
-      <main className="flex-1 overflow-hidden">
+      <main className="relative flex-1 overflow-hidden">
         <BoardClient boardId={board.id} columns={board.columns} />
       </main>
       {task && (

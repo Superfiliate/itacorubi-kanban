@@ -9,6 +9,7 @@ import { createTask } from "@/actions/tasks"
 import { EditableText } from "@/components/editable-text"
 import { TaskCard } from "./task-card"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 
@@ -82,7 +83,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
       ref={setSortableRef}
       style={style}
       className={cn(
-        "relative flex shrink-0 flex-col rounded-lg border border-border bg-muted/50 transition-[width] duration-200 ease-in-out",
+        "relative flex h-full shrink-0 flex-col rounded-lg border border-border bg-muted/50 transition-[width] duration-200 ease-in-out",
         collapsed ? "w-10" : "w-72",
         isDragging && "opacity-50"
       )}
@@ -120,7 +121,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
       {/* Expanded View */}
       <div
         className={cn(
-          "flex flex-1 flex-col overflow-hidden transition-opacity duration-200",
+          "flex min-h-0 flex-1 flex-col transition-opacity duration-200",
           collapsed ? "pointer-events-none opacity-0" : "opacity-100"
         )}
       >
@@ -173,22 +174,24 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         </div>
 
         {/* Tasks */}
-        <div
-          ref={setDroppableRef}
-          className="flex min-h-[100px] flex-1 flex-col gap-2 overflow-y-auto p-3"
-        >
-          <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-            {tasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                id={task.id}
-                boardId={boardId}
-                title={task.title}
-                assignees={task.assignees}
-              />
-            ))}
-          </SortableContext>
-        </div>
+        <ScrollArea className="min-h-0 flex-1">
+          <div
+            ref={setDroppableRef}
+            className="flex min-h-[100px] flex-col gap-2 p-3"
+          >
+            <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  id={task.id}
+                  boardId={boardId}
+                  title={task.title}
+                  assignees={task.assignees}
+                />
+              ))}
+            </SortableContext>
+          </div>
+        </ScrollArea>
       </div>
     </div>
   )

@@ -210,7 +210,7 @@ export function BoardClient({ boardId, columns: initialColumns }: BoardClientPro
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-full gap-4 overflow-x-auto p-6">
+      <div className="absolute inset-0 flex gap-4 overflow-x-auto overflow-y-hidden p-6">
         <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
           {columns.map((column) => (
             <Column
