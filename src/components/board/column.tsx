@@ -77,14 +77,21 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
 
   const taskIds = tasks.map((t) => t.id)
 
-  if (collapsed) {
-    return (
+  return (
+    <div
+      ref={setSortableRef}
+      style={style}
+      className={cn(
+        "relative flex shrink-0 flex-col rounded-lg border border-border bg-muted/50 transition-[width] duration-200 ease-in-out",
+        collapsed ? "w-10" : "w-72",
+        isDragging && "opacity-50"
+      )}
+    >
+      {/* Collapsed View */}
       <div
-        ref={setSortableRef}
-        style={style}
         className={cn(
-          "relative flex h-full w-10 shrink-0 flex-col items-end rounded-lg border border-border bg-muted/50 py-3 transition-all",
-          isDragging && "opacity-50"
+          "absolute inset-0 flex flex-col items-end py-3 transition-opacity duration-200",
+          collapsed ? "opacity-100" : "pointer-events-none opacity-0"
         )}
         {...attributes}
         {...listeners}
@@ -109,82 +116,79 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           <span className="font-medium text-muted-foreground">{name}</span>
         </div>
       </div>
-    )
-  }
 
-  return (
-    <div
-      ref={setSortableRef}
-      style={style}
-      className={cn(
-        "flex w-72 shrink-0 flex-col rounded-lg border border-border bg-muted/50",
-        isDragging && "opacity-50"
-      )}
-    >
-      {/* Column Header */}
+      {/* Expanded View */}
       <div
-        className="flex items-center gap-2 border-b border-border px-3 py-2"
-        {...attributes}
-        {...listeners}
+        className={cn(
+          "flex flex-1 flex-col overflow-hidden transition-opacity duration-200",
+          collapsed ? "pointer-events-none opacity-0" : "opacity-100"
+        )}
       >
-        <EditableText
-          value={name}
-          onSave={handleNameSave}
-          className="flex-1 text-sm font-medium"
-          inputClassName="text-sm font-medium"
-        />
-        {tasks.length === 0 && (
+        {/* Column Header */}
+        <div
+          className="flex items-center gap-2 border-b border-border px-3 py-2"
+          {...attributes}
+          {...listeners}
+        >
+          <EditableText
+            value={name}
+            onSave={handleNameSave}
+            className="flex-1 text-sm font-medium"
+            inputClassName="text-sm font-medium"
+          />
+          {tasks.length === 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDelete}
+              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+              title="Delete column"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+          <span className="text-xs text-muted-foreground">{tasks.length}</span>
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleDelete}
-            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-            title="Delete column"
+            onClick={handleToggleCollapse}
+            className="h-6 w-6 shrink-0 text-muted-foreground"
+            title="Collapse column"
           >
-            <Trash2 className="h-4 w-4" />
+            <Minimize2 className="h-4 w-4" />
           </Button>
-        )}
-        <span className="text-xs text-muted-foreground">{tasks.length}</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleToggleCollapse}
-          className="h-6 w-6 shrink-0 text-muted-foreground"
-          title="Collapse column"
-        >
-          <Minimize2 className="h-4 w-4" />
-        </Button>
-      </div>
+        </div>
 
-      {/* Add Task Button */}
-      <div className="border-b border-border px-3 py-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleAddTask}
-          className="h-7 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
-        >
-          <Plus className="h-4 w-4" />
-          Add task
-        </Button>
-      </div>
+        {/* Add Task Button */}
+        <div className="border-b border-border px-3 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAddTask}
+            className="h-7 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <Plus className="h-4 w-4" />
+            Add task
+          </Button>
+        </div>
 
-      {/* Tasks */}
-      <div
-        ref={setDroppableRef}
-        className="flex min-h-[100px] flex-1 flex-col gap-2 overflow-y-auto p-3"
-      >
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              id={task.id}
-              boardId={boardId}
-              title={task.title}
-              assignees={task.assignees}
-            />
-          ))}
-        </SortableContext>
+        {/* Tasks */}
+        <div
+          ref={setDroppableRef}
+          className="flex min-h-[100px] flex-1 flex-col gap-2 overflow-y-auto p-3"
+        >
+          <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+            {tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                id={task.id}
+                boardId={boardId}
+                title={task.title}
+                assignees={task.assignees}
+              />
+            ))}
+          </SortableContext>
+        </div>
       </div>
     </div>
   )
