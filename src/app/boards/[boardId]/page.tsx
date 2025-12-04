@@ -1,3 +1,4 @@
+import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getBoard } from "@/actions/boards"
 import { getTask } from "@/actions/tasks"
@@ -8,6 +9,23 @@ import { TaskSidebar } from "@/components/task-sidebar/task-sidebar"
 interface BoardPageProps {
   params: Promise<{ boardId: string }>
   searchParams: Promise<{ task?: string }>
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ boardId: string }>
+}): Promise<Metadata> {
+  const { boardId } = await params
+  const board = await getBoard(boardId)
+
+  if (!board) {
+    return { title: "Board Not Found" }
+  }
+
+  return {
+    title: `${board.title} | Itacorubi Kanban`,
+  }
 }
 
 export default async function BoardPage({ params, searchParams }: BoardPageProps) {
