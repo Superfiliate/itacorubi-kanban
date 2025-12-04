@@ -31,6 +31,11 @@ export async function createBoard() {
 }
 
 export async function getBoards() {
+  // Protect against leaking board UUIDs in production
+  if (process.env.NODE_ENV !== "development") {
+    return []
+  }
+
   return db.query.boards.findMany({
     orderBy: (boards, { desc }) => [desc(boards.createdAt)],
   })

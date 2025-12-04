@@ -2,8 +2,10 @@ import Link from "next/link"
 import { getBoards, createBoard } from "@/actions/boards"
 import { Button } from "@/components/ui/button"
 
+const isDevelopment = process.env.NODE_ENV === "development"
+
 export default async function Home() {
-  const boards = await getBoards()
+  const boards = isDevelopment ? await getBoards() : []
 
   return (
     <div className="min-h-screen bg-background">
@@ -23,11 +25,11 @@ export default async function Home() {
           </Button>
         </form>
 
-        {/* Temporary board list for testing - will be hidden/removed later */}
-        {boards.length > 0 && (
+        {/* Debug board list - only visible in development */}
+        {isDevelopment && boards.length > 0 && (
           <section className="rounded-lg border border-border bg-card p-6">
             <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              Existing Boards (Debug)
+              Existing Boards (Dev Only)
             </h2>
             <ul className="space-y-2">
               {boards.map((board) => (
