@@ -17,6 +17,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable"
 import { useState, useEffect } from "react"
+import { Columns3 } from "lucide-react"
 import { Column } from "./column"
 import { AddColumnButton } from "./add-column-button"
 import { reorderColumns } from "@/actions/columns"
@@ -205,6 +206,23 @@ export function BoardClient({ boardId, columns: initialColumns }: BoardClientPro
   const activeTask = activeType === "task"
     ? columns.flatMap((c) => c.tasks).find((t) => t.id === activeId)
     : null
+
+  if (columns.length === 0) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Columns3 className="h-16 w-16 text-muted-foreground/50" />
+          <div>
+            <h3 className="text-lg font-medium text-foreground">No columns yet</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Add your first column to start organizing tasks
+            </p>
+          </div>
+        </div>
+        <AddColumnButton boardId={boardId} />
+      </div>
+    )
+  }
 
   return (
     <DndContext

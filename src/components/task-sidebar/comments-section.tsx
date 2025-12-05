@@ -7,6 +7,7 @@ import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-edito
 import { AuthorSelect, getRememberedAuthor } from "./author-select"
 import { CommentItem } from "./comment-item"
 import { createComment } from "@/actions/comments"
+import { toast } from "sonner"
 import type { ContributorColor } from "@/db/schema"
 
 interface CommentsSectionProps {
@@ -54,6 +55,7 @@ export function CommentsSection({
     await createComment(taskId, boardId, selectedAuthorId, newCommentContent)
     setNewCommentContent("")
     setIsSubmitting(false)
+    toast.success("Comment added")
   }
 
   const canSubmit = !isRichTextEmpty(newCommentContent) && selectedAuthorId && !isSubmitting

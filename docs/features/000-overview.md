@@ -41,6 +41,13 @@ The app is fully responsive and usable on mobile devices:
 - Task sidebar stacks vertically on mobile (details first, then comments)
 - See `docs/adrs/006-mobile-responsiveness.md` for patterns
 
+### User Feedback
+
+- **Toast notifications** (via Sonner) for action confirmations (create, delete)
+- **Confirmation dialogs** for destructive actions (delete task, column, comment)
+- **Empty states** with helpful prompts when boards have no columns
+- See `docs/adrs/007-user-feedback-patterns.md` for patterns
+
 ## Technical Notes
 
 - All data persists to SQLite (local) / Turso (production)
@@ -51,3 +58,4 @@ The app is fully responsive and usable on mobile devices:
 - Drag-and-drop powered by `@dnd-kit` with `rectIntersection` collision detection
 - UI components from shadcn/ui
 - Theme switching via `next-themes`
+- Security headers configured in `next.config.ts` (see `docs/adrs/008-security-headers.md`)

@@ -22,6 +22,7 @@ import {
 import { ContributorBadge } from "@/components/contributor-badge"
 import { AuthorSelect } from "./author-select"
 import { updateComment, deleteComment } from "@/actions/comments"
+import { toast } from "sonner"
 import type { ContributorColor } from "@/db/schema"
 
 interface CommentItemProps {
@@ -68,6 +69,7 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
   const handleDelete = async () => {
     setIsSubmitting(true)
     await deleteComment(comment.id, boardId)
+    toast.success("Comment deleted")
     setIsSubmitting(false)
     setIsDeleteDialogOpen(false)
   }

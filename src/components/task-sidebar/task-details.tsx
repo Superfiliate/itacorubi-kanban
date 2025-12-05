@@ -1,12 +1,22 @@
 "use client"
 
+import { useState } from "react"
 import { EditableText } from "@/components/editable-text"
 import { StatusSelect } from "./status-select"
 import { AssigneesSelect } from "./assignees-select"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { updateTaskTitle, updateTaskCreatedAt, deleteTask } from "@/actions/tasks"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import type { ContributorColor } from "@/db/schema"
 
 interface TaskDetailsProps {
@@ -43,6 +53,8 @@ export function TaskDetails({
   onClose,
 }: TaskDetailsProps) {
   const router = useRouter()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleTitleSave = async (title: string) => {
     await updateTaskTitle(task.id, title, task.boardId)
@@ -55,11 +67,13 @@ export function TaskDetails({
   }
 
   const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      onClose()
-      await deleteTask(task.id, task.boardId)
-      router.replace(`/boards/${task.boardId}`)
-    }
+    setIsDeleting(true)
+    onClose()
+    await deleteTask(task.id, task.boardId)
+    router.replace(`/boards/${task.boardId}`)
+    toast.success("Task deleted")
+    setIsDeleting(false)
+    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -109,7 +123,7 @@ export function TaskDetails({
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleDelete}
+          onClick={() => setIsDeleteDialogOpen(true)}
           className="h-8 w-8 text-muted-foreground hover:text-destructive"
           title="Delete task"
         >
@@ -132,6 +146,33 @@ export function TaskDetails({
           </svg>
         </Button>
       </div>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

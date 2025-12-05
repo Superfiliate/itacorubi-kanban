@@ -2,6 +2,7 @@
 
 import { createColumn } from "@/actions/columns"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 interface AddColumnButtonProps {
   boardId: string
@@ -10,6 +11,7 @@ interface AddColumnButtonProps {
 export function AddColumnButton({ boardId }: AddColumnButtonProps) {
   const handleClick = async () => {
     await createColumn(boardId)
+    toast.success("Column created")
   }
 
   return (

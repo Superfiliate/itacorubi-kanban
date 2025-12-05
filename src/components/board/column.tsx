@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useDroppable } from "@dnd-kit/core"
@@ -10,8 +11,17 @@ import { EditableText } from "@/components/editable-text"
 import { TaskCard } from "./task-card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import type { ContributorColor } from "@/db/schema"
 
@@ -40,6 +50,8 @@ interface ColumnProps {
 export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   const router = useRouter()
   const collapsed = isCollapsed ?? false
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const {
     attributes,
@@ -69,14 +81,20 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   }
 
   const handleDelete = async () => {
+    setIsDeleting(true)
     const result = await deleteColumn(id, boardId)
     if (result?.error) {
-      alert(result.error)
+      toast.error(result.error)
+    } else {
+      toast.success("Column deleted")
     }
+    setIsDeleting(false)
+    setIsDeleteDialogOpen(false)
   }
 
   const handleAddTask = async () => {
     const taskId = await createTask(boardId, id)
+    toast.success("Task created")
     router.push(`/boards/${boardId}?task=${taskId}`)
   }
 
@@ -145,7 +163,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleDelete}
+              onClick={() => setIsDeleteDialogOpen(true)}
               className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
               title="Delete column"
             >
@@ -198,6 +216,33 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           </div>
         </ScrollArea>
       </div>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Column</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this column? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
