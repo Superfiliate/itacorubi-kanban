@@ -63,9 +63,10 @@ export const contributors = sqliteTable("contributors", {
 })
 
 // Task assignees - many-to-many
+// Note: Using "restrict" to force intentional deletion of assignments before removing tasks/contributors
 export const taskAssignees = sqliteTable("task_assignees", {
-  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
-  contributorId: text("contributor_id").notNull().references(() => contributors.id, { onDelete: "cascade" }),
+  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  contributorId: text("contributor_id").notNull().references(() => contributors.id, { onDelete: "restrict" }),
 }, (t) => [primaryKey({ columns: [t.taskId, t.contributorId] })])
 
 // Comments - belong to a task and have an author (contributor)

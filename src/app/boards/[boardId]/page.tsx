@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getBoard } from "@/actions/boards"
 import { getTask } from "@/actions/tasks"
+import { getContributorsWithStats } from "@/actions/contributors"
 import { BoardHeader } from "@/components/board/board-header"
 import { BoardClient } from "@/components/board/board-client"
 import { TaskSidebar } from "@/components/task-sidebar/task-sidebar"
@@ -32,7 +33,10 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   const { boardId } = await params
   const { task: taskId } = await searchParams
 
-  const board = await getBoard(boardId)
+  const [board, contributorsWithStats] = await Promise.all([
+    getBoard(boardId),
+    getContributorsWithStats(boardId),
+  ])
 
   if (!board) {
     notFound()
@@ -50,7 +54,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      <BoardHeader boardId={board.id} title={board.title} />
+      <BoardHeader boardId={board.id} title={board.title} contributors={contributorsWithStats} />
       <main className="relative flex-1 overflow-hidden">
         <BoardClient boardId={board.id} columns={board.columns} />
       </main>

@@ -252,13 +252,15 @@ export function RichTextEditor({
       )}
     >
       <Toolbar editor={editor} />
-      <EditorContent editor={editor} />
-      {/* Placeholder */}
-      {editor.isEmpty && (
-        <div className="absolute top-[calc(2.5rem+8px)] left-3 text-muted-foreground pointer-events-none text-sm">
-          {placeholder}
-        </div>
-      )}
+      <div className="relative">
+        <EditorContent editor={editor} />
+        {/* Placeholder */}
+        {editor.isEmpty && (
+          <div className="absolute top-2 left-3 text-muted-foreground pointer-events-none text-sm">
+            {placeholder}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
