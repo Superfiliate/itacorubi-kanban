@@ -3,13 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 5800",
+    "dev": "pnpm db:push && next dev -p 5800",
     "kill": "kill -9 $(lsof -ti :5800) || true",
-    "build": "drizzle-kit push && next build",
-    "start": "next start",
+    "build": "pnpm db:push && next build",
     "lint": "eslint",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:reset": "rm -f local.db local.db-journal && drizzle-kit push"

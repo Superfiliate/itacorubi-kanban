@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Itacorubi Kanban
+
+A collaborative Kanban board application built with Next.js.
+Create and manage multiple boards with customizable columns, tasks, and team contributors.
+Work on cross-company smallprojects without the need for authentication.
+
+![Kanban Board Screenshot](docs/screenshot.png)
+
+## Features
+
+- 📋 **Multiple Boards** — Create and manage separate boards for different projects
+- 🗂️ **Customizable Columns** — Add, rename, reorder, and collapse columns
+- ✅ **Task Management** — Create tasks with rich text descriptions, due dates, and assignees
+- 👥 **Contributors** — Add team members with customizable colors and track their assignments
+- 💬 **Comments** — Collaborate on tasks with threaded comments
+- 🎨 **Theme Support** — Light, dark, and system-based themes
+- 📱 **Mobile Responsive** — Full functionality on any device
+- 🚀 **Drag & Drop** — Intuitive task organization powered by dnd-kit
+
+## Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) with App Router
+- **Database**: [Turso](https://turso.tech/) (SQLite/libSQL) with [Drizzle ORM](https://orm.drizzle.team/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Rich Text**: [Tiptap](https://tiptap.dev/)
+- **Drag & Drop**: [@dnd-kit](https://dndkit.com/)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+
+- [pnpm](https://pnpm.io/) (recommended) or npm/yarn
+
+### Run Locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Clone the repository
+git clone https://github.com/Superfiliate/itacorubi-kanban.git
+cd itacorubi-kanban
+
+# Install dependencies
+pnpm install
+
+# Start the development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:5800](http://localhost:5800) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+That's it! No environment variables needed for local development—the app automatically uses a local SQLite file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deployment
 
-## Learn More
+### Deploy to Vercel (Recommended)
 
-To learn more about Next.js, take a look at the following resources:
+1. Push your code to a GitHub repository
+2. Import the project in [Vercel](https://vercel.com/)
+3. Add a Turso database via the [Vercel Marketplace](https://vercel.com/marketplace)
+4. Deploy!
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The build process automatically runs database migrations, so your schema stays in sync with each deployment.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Environment Variables (Production Only)
 
-## Deploy on Vercel
+When deploying with Turso via Vercel Marketplace, these are automatically configured:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable | Description |
+|----------|-------------|
+| `TURSO_DATABASE_URL` | Your Turso database URL |
+| `TURSO_AUTH_TOKEN` | Authentication token for Turso |
