@@ -18,13 +18,20 @@
 
 ## Keep Docs Updated
 
-After completing work, update `/docs` to reflect **meaningful** changes:
+**Documentation updates are part of your work, not an afterthought.**
 
-- **New patterns or conventions?** → Add to `/docs/adrs/`
-- **New features or user flows?** → Add to `/docs/features/`
-- **Progress on specs?** → Update `/docs/specs/`
+When planning any task, include documentation updates as explicit steps in your plan:
 
-Only update when truly relevant. Do NOT make minor tweaks or rephrase things that are already clear.
+- **New patterns or conventions?** → Plan to add to `/docs/adrs/`
+- **New features or user flows?** → Plan to add/update `/docs/features/`
+- **Progress on specs?** → Plan to update `/docs/specs/`
+
+If you use Plan mode, your plan MUST include documentation tasks when the work introduces:
+- New user-facing features
+- New technical patterns or conventions
+- Changes to existing documented behavior
+
+Only document when truly relevant. Do NOT make minor tweaks or rephrase things that are already clear.
 
 ---
 

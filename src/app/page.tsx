@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Github } from "lucide-react"
 import { getBoards, createBoard } from "@/actions/boards"
 import { Button } from "@/components/ui/button"
+import { RecentBoards } from "@/components/recent-boards"
 
 const isDevelopment = process.env.NODE_ENV === "development"
 
@@ -38,6 +39,8 @@ export default async function Home() {
               View on GitHub
             </a>
           </Button>
+
+          <RecentBoards />
 
           {/* Debug board list - only visible in development */}
           {isDevelopment && boards.length > 0 && (

@@ -5,6 +5,7 @@ import { getTask } from "@/actions/tasks"
 import { getContributorsWithStats } from "@/actions/contributors"
 import { BoardHeader } from "@/components/board/board-header"
 import { BoardClient } from "@/components/board/board-client"
+import { TrackBoardVisit } from "@/components/board/track-board-visit"
 import { TaskSidebar } from "@/components/task-sidebar/task-sidebar"
 
 interface BoardPageProps {
@@ -54,6 +55,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
+      <TrackBoardVisit boardId={board.id} title={board.title} />
       <BoardHeader boardId={board.id} title={board.title} contributors={contributorsWithStats} />
       <main className="relative flex-1 overflow-hidden">
         <BoardClient boardId={board.id} columns={board.columns} />
