@@ -13,20 +13,25 @@ Use Tailwind CSS responsive breakpoints with a **mobile-first approach**. The pr
 | Prefix | Min Width | Use For |
 |--------|-----------|---------|
 | (none) | 0px | Mobile styles (default) |
-| `sm:` | 640px | Tablet and desktop |
+| `sm:` | 640px | Simple responsive changes (single-panel layouts) |
 | `md:` | 768px | Larger tablets |
-| `lg:` | 1024px | Desktop |
+| `lg:` | 1024px | Complex multi-panel layouts (sidebars with multiple sections) |
+
+**Choosing the right breakpoint:**
+- Use `sm:` for simple layouts where content flows naturally at smaller sizes
+- Use `lg:` for multi-panel layouts (e.g., side-by-side panels) that need sufficient width per panel
 
 ## Patterns
 
 ### Layout Stacking
 
-Stack elements vertically on mobile, horizontally on desktop:
+Stack elements vertically on mobile, horizontally on desktop. Use `lg:` for multi-panel layouts that need more space:
 
 ```tsx
-<div className="flex flex-col sm:flex-row">
-  <div className="order-1 sm:order-2">First on mobile, second on desktop</div>
-  <div className="order-2 sm:order-1">Second on mobile, first on desktop</div>
+{/* Multi-panel layout: use lg: for side-by-side at 1024px+ */}
+<div className="flex flex-col lg:flex-row">
+  <div className="order-1 lg:order-2">First on mobile/tablet, second on desktop</div>
+  <div className="order-2 lg:order-1">Second on mobile/tablet, first on desktop</div>
 </div>
 ```
 
@@ -42,47 +47,51 @@ Full width on mobile, constrained on desktop:
 
 ### Sidebars and Sheets
 
-Sheets/sidebars should be full-width on mobile:
+Sheets/sidebars should be full-width on mobile/tablet, with max-width on desktop:
 
 ```tsx
-<SheetContent className="w-full sm:w-[1040px] sm:max-w-[1040px]">
+<SheetContent className="w-full lg:max-w-[1040px]">
   ...
 </SheetContent>
 ```
+
+For multi-panel sidebars, use `lg:` to ensure panels have enough width before switching to side-by-side layout.
 
 ### Flex Sizing
 
 Use `flex-none` on mobile when stacking to prevent shrinking, `flex-[n]` on desktop for proportional sizing:
 
 ```tsx
-<div className="flex-none sm:flex-[3]">Details panel</div>
-<div className="flex-1 sm:flex-[7]">Main content</div>
+{/* For multi-panel layouts, use lg: */}
+<div className="flex-none lg:flex-[3]">Details panel</div>
+<div className="flex-1 lg:flex-[7]">Main content</div>
 ```
 
 ### Borders
 
-Adjust borders based on layout direction:
+Adjust borders based on layout direction (use same breakpoint as the layout switch):
 
 ```tsx
-<div className="border-b sm:border-b-0 sm:border-l border-border">
-  Border bottom on mobile (stacked), border left on desktop (side-by-side)
+{/* For multi-panel layouts using lg: */}
+<div className="border-b lg:border-b-0 lg:border-l border-border">
+  Border bottom on mobile/tablet (stacked), border left on desktop (side-by-side)
 </div>
 ```
 
 ### Scroll Containers
 
-On mobile, prefer a single scroll container for the entire view. On desktop, allow independent scroll areas:
+On mobile/tablet, prefer a single scroll container for the entire view. On desktop, allow independent scroll areas:
 
 ```tsx
-{/* Parent: scrolls on mobile, contains overflow on desktop */}
-<div className="overflow-y-auto sm:overflow-hidden">
-  {/* Children: no scroll on mobile, independent scroll on desktop */}
-  <div className="sm:overflow-y-auto">Panel 1</div>
-  <div className="sm:overflow-y-auto">Panel 2</div>
+{/* Parent: scrolls on mobile/tablet, contains overflow on desktop */}
+<div className="overflow-y-auto lg:overflow-hidden">
+  {/* Children: no scroll on mobile/tablet, independent scroll on desktop */}
+  <div className="lg:overflow-y-auto">Panel 1</div>
+  <div className="lg:overflow-y-auto">Panel 2</div>
 </div>
 ```
 
-This avoids tiny scroll areas on mobile that frustrate touch users.
+This avoids tiny scroll areas on mobile/tablet that frustrate touch users.
 
 ## Testing
 

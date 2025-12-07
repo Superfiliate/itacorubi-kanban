@@ -57,15 +57,15 @@ export function TaskSidebar({ task, columns, contributors }: TaskSidebarProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <SheetContent className="flex w-full flex-col p-0 sm:w-[1040px] sm:max-w-[1040px]">
+      <SheetContent className="flex w-full flex-col p-0 lg:max-w-[1040px]">
         <SheetHeader className="sr-only">
           <SheetTitle>Edit Task</SheetTitle>
         </SheetHeader>
 
-        {/* Mobile: single scroll container | Desktop: each panel scrolls independently */}
-        <div className="flex flex-1 min-h-0 flex-col sm:flex-row overflow-y-auto sm:overflow-hidden">
-          {/* Task Details - First on mobile (stacked), right side on desktop */}
-          <div className="order-1 sm:order-2 flex-none sm:flex-[3] min-h-0 sm:overflow-y-auto border-b sm:border-b-0 sm:border-l border-border">
+        {/* Mobile/Tablet: single scroll container | Desktop: each panel scrolls independently */}
+        <div className="flex flex-1 min-h-0 flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+          {/* Task Details - First on mobile/tablet (stacked), right side on desktop */}
+          <div className="order-1 lg:order-2 flex-none lg:flex-[3] min-h-0 lg:overflow-y-auto border-b lg:border-b-0 lg:border-l border-border">
             <TaskDetails
               task={task}
               columns={columns}
@@ -74,8 +74,8 @@ export function TaskSidebar({ task, columns, contributors }: TaskSidebarProps) {
             />
           </div>
 
-          {/* Comments - Second on mobile (stacked), left side on desktop */}
-          <div className="order-2 sm:order-1 flex-1 sm:flex-[7] min-h-0 sm:overflow-y-auto">
+          {/* Comments - Second on mobile/tablet (stacked), left side on desktop */}
+          <div className="order-2 lg:order-1 flex-1 lg:flex-[7] min-h-0 lg:overflow-y-auto">
             <CommentsSection
               taskId={task.id}
               boardId={task.boardId}
