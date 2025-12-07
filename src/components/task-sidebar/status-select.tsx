@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateTaskColumn } from "@/actions/tasks"
+import { useUpdateTaskColumn } from "@/hooks/use-task"
 
 interface StatusSelectProps {
   taskId: string
@@ -25,9 +25,11 @@ export function StatusSelect({
   currentColumnId,
   columns,
 }: StatusSelectProps) {
-  const handleValueChange = async (columnId: string) => {
+  const updateTaskColumnMutation = useUpdateTaskColumn(boardId)
+
+  const handleValueChange = (columnId: string) => {
     if (columnId !== currentColumnId) {
-      await updateTaskColumn(taskId, columnId, boardId)
+      updateTaskColumnMutation.mutate({ taskId, newColumnId: columnId })
     }
   }
 

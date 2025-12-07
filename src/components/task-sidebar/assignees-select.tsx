@@ -17,8 +17,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { addAssignee, removeAssignee, createAndAssignContributor } from "@/actions/contributors"
 import { ContributorBadge } from "@/components/contributor-badge"
+import {
+  useAddAssignee,
+  useRemoveAssignee,
+  useCreateAndAssignContributor,
+} from "@/hooks/use-task"
 import type { ContributorColor } from "@/db/schema"
 
 interface AssigneesSelectProps {
@@ -47,20 +51,25 @@ export function AssigneesSelect({
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState("")
 
+  // Mutations
+  const addAssigneeMutation = useAddAssignee(boardId)
+  const removeAssigneeMutation = useRemoveAssignee(boardId)
+  const createAndAssignMutation = useCreateAndAssignContributor(boardId)
+
   const assigneeIds = new Set(assignees.map((a) => a.contributor.id))
 
-  const handleSelect = async (contributorId: string) => {
+  const handleSelect = (contributorId: string) => {
     if (assigneeIds.has(contributorId)) {
-      await removeAssignee(taskId, contributorId, boardId)
+      removeAssigneeMutation.mutate({ taskId, contributorId })
     } else {
-      await addAssignee(taskId, contributorId, boardId)
+      addAssigneeMutation.mutate({ taskId, contributorId })
     }
   }
 
-  const handleCreateNew = async () => {
+  const handleCreateNew = () => {
     const name = inputValue.trim()
     if (name) {
-      await createAndAssignContributor(taskId, boardId, name)
+      createAndAssignMutation.mutate({ taskId, name })
       setInputValue("")
     }
   }

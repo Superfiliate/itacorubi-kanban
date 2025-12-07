@@ -16,53 +16,35 @@ import {
   horizontalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Columns3 } from "lucide-react"
 import { Column } from "./column"
 import { AddColumnButton } from "./add-column-button"
-import { reorderColumns } from "@/actions/columns"
-import { updateTaskColumn } from "@/actions/tasks"
-import type { ContributorColor } from "@/db/schema"
-
-interface Task {
-  id: string
-  title: string
-  position: number
-  assignees: Array<{
-    contributor: {
-      id: string
-      name: string
-      color: ContributorColor
-    }
-  }>
-  comments: Array<{
-    id: string
-    createdAt: Date | null
-  }>
-}
-
-interface ColumnData {
-  id: string
-  name: string
-  position: number
-  isCollapsed: boolean | null
-  tasks: Task[]
-}
+import {
+  useBoardQuery,
+  useReorderColumns,
+  useOptimisticColumnsUpdate,
+  type BoardColumn,
+} from "@/hooks/use-board"
+import { useUpdateTaskColumn } from "@/hooks/use-task"
 
 interface BoardClientProps {
   boardId: string
-  columns: ColumnData[]
+  initialColumns: BoardColumn[]
 }
 
-export function BoardClient({ boardId, columns: initialColumns }: BoardClientProps) {
-  const [columns, setColumns] = useState<ColumnData[]>(initialColumns)
+export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
+  // Use TanStack Query for columns data
+  const { data: board } = useBoardQuery(boardId)
+  const columns = board?.columns ?? initialColumns
+
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeType, setActiveType] = useState<"column" | "task" | null>(null)
 
-  // Sync with server state when props change
-  useEffect(() => {
-    setColumns(initialColumns)
-  }, [initialColumns])
+  // Mutations
+  const reorderColumnsMutation = useReorderColumns(boardId)
+  const updateTaskColumnMutation = useUpdateTaskColumn(boardId)
+  const { setColumns } = useOptimisticColumnsUpdate(boardId)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -111,7 +93,7 @@ export function BoardClient({ boardId, columns: initialColumns }: BoardClientPro
 
     if (!overColumnId || overColumnId === activeColumn.id) return
 
-    // Move task to the new column optimistically
+    // Move task to the new column optimistically using TanStack Query cache
     setColumns((prev) => {
       const newColumns = prev.map((col) => ({
         ...col,
@@ -133,10 +115,10 @@ export function BoardClient({ boardId, columns: initialColumns }: BoardClientPro
       if (overData?.type === "task") {
         // Insert at the position of the hovered task
         const overTaskIndex = newColumns[targetColIndex].tasks.findIndex((t) => t.id === overId)
-        newColumns[targetColIndex].tasks.splice(overTaskIndex, 0, task)
+        newColumns[targetColIndex].tasks.splice(overTaskIndex, 0, { ...task, columnId: overColumnId! })
       } else {
         // Add to end of column
-        newColumns[targetColIndex].tasks.push(task)
+        newColumns[targetColIndex].tasks.push({ ...task, columnId: overColumnId! })
       }
 
       return newColumns
@@ -162,13 +144,13 @@ export function BoardClient({ boardId, columns: initialColumns }: BoardClientPro
         const newIndex = columns.findIndex((c) => c.id === overId)
 
         if (oldIndex !== -1 && newIndex !== -1) {
-          // Optimistic update
+          // Optimistic update via TanStack Query
           setColumns((prev) => arrayMove(prev, oldIndex, newIndex))
 
           // Server update
           const overColumn = columns.find((c) => c.id === overId)
           if (overColumn) {
-            await reorderColumns(boardId, activeId, overColumn.position)
+            reorderColumnsMutation.mutate({ columnId: activeId, newPosition: overColumn.position })
           }
         }
       }
@@ -183,7 +165,7 @@ export function BoardClient({ boardId, columns: initialColumns }: BoardClientPro
         const overTaskIndex = currentColumn.tasks.findIndex((t) => t.id === overId)
 
         if (taskIndex !== -1 && overTaskIndex !== -1 && taskIndex !== overTaskIndex) {
-          // Optimistic update for within-column reorder
+          // Optimistic update for within-column reorder via TanStack Query
           setColumns((prev) =>
             prev.map((col) => {
               if (col.id !== currentColumn.id) return col
@@ -197,8 +179,12 @@ export function BoardClient({ boardId, columns: initialColumns }: BoardClientPro
       // Get the position to save
       const targetPosition = currentColumn.tasks.findIndex((t) => t.id === activeId)
 
-      // Server update
-      await updateTaskColumn(activeId, currentColumn.id, boardId, targetPosition)
+      // Server update via mutation
+      updateTaskColumnMutation.mutate({
+        taskId: activeId,
+        newColumnId: currentColumn.id,
+        newPosition: targetPosition,
+      })
     }
   }
 

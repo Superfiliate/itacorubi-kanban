@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor"
 import { AuthorSelect, getRememberedAuthor } from "./author-select"
 import { CommentItem } from "./comment-item"
-import { createComment } from "@/actions/comments"
+import { useCreateComment } from "@/hooks/use-task"
 import { toast } from "sonner"
 import type { ContributorColor } from "@/db/schema"
 
@@ -37,28 +37,42 @@ export function CommentsSection({
   contributors,
 }: CommentsSectionProps) {
   const [newCommentContent, setNewCommentContent] = useState("")
-  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Initialize author from localStorage on mount
-  useEffect(() => {
+  // Get initial author from localStorage - memoized to only run once per board
+  const initialAuthorId = useMemo(() => {
     const rememberedAuthor = getRememberedAuthor(boardId)
     if (rememberedAuthor && contributors.some((c) => c.id === rememberedAuthor)) {
-      setSelectedAuthorId(rememberedAuthor)
+      return rememberedAuthor
     }
+    return null
   }, [boardId, contributors])
 
-  const handleSubmit = async () => {
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(initialAuthorId)
+
+  // Mutation
+  const createCommentMutation = useCreateComment(boardId)
+
+  const handleSubmit = () => {
     if (isRichTextEmpty(newCommentContent) || !selectedAuthorId) return
 
-    setIsSubmitting(true)
-    await createComment(taskId, boardId, selectedAuthorId, newCommentContent)
-    setNewCommentContent("")
-    setIsSubmitting(false)
-    toast.success("Comment added")
+    createCommentMutation.mutate(
+      { taskId, authorId: selectedAuthorId, content: newCommentContent },
+      {
+        onSuccess: () => {
+          setNewCommentContent("")
+          toast.success("Comment added")
+        },
+        onError: () => {
+          toast.error("Failed to add comment")
+        },
+      }
+    )
   }
 
-  const canSubmit = !isRichTextEmpty(newCommentContent) && selectedAuthorId && !isSubmitting
+  const canSubmit =
+    !isRichTextEmpty(newCommentContent) &&
+    selectedAuthorId &&
+    !createCommentMutation.isPending
 
   return (
     <div className="space-y-3 p-6">
@@ -79,6 +93,7 @@ export function CommentsSection({
           <CommentItem
             key={comment.id}
             comment={comment}
+            taskId={taskId}
             boardId={boardId}
             contributors={contributors}
           />

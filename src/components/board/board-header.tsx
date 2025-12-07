@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import { Users } from "lucide-react"
-import { updateBoardTitle } from "@/actions/boards"
 import { EditableText } from "@/components/editable-text"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
+import { SyncIndicator } from "@/components/sync-indicator"
 import { ContributorsDialog, type ContributorWithStats } from "@/components/board/contributors-dialog"
+import { useUpdateBoardTitle } from "@/hooks/use-board"
 
 interface BoardHeaderProps {
   boardId: string
@@ -17,8 +18,10 @@ interface BoardHeaderProps {
 export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) {
   const [isContributorsOpen, setIsContributorsOpen] = useState(false)
 
-  const handleSave = async (newTitle: string) => {
-    await updateBoardTitle(boardId, newTitle)
+  const updateTitleMutation = useUpdateBoardTitle(boardId)
+
+  const handleSave = (newTitle: string) => {
+    updateTitleMutation.mutate(newTitle)
   }
 
   return (
@@ -31,6 +34,7 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
         inputClassName="text-xl font-semibold"
       />
       <div className="ml-auto flex items-center gap-2">
+        <SyncIndicator />
         <Button
           variant="ghost"
           size="icon"

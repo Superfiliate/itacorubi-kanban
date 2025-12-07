@@ -14,9 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { updateTaskTitle, updateTaskCreatedAt, deleteTask } from "@/actions/tasks"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import {
+  useUpdateTaskTitle,
+  useUpdateTaskCreatedAt,
+  useDeleteTask,
+} from "@/hooks/use-task"
 import type { ContributorColor } from "@/db/schema"
 
 interface TaskDetailsProps {
@@ -54,26 +58,34 @@ export function TaskDetails({
 }: TaskDetailsProps) {
   const router = useRouter()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleTitleSave = async (title: string) => {
-    await updateTaskTitle(task.id, title, task.boardId)
+  // Mutations
+  const updateTitleMutation = useUpdateTaskTitle(task.boardId)
+  const updateCreatedAtMutation = useUpdateTaskCreatedAt(task.boardId)
+  const deleteTaskMutation = useDeleteTask(task.boardId)
+
+  const handleTitleSave = (title: string) => {
+    updateTitleMutation.mutate({ taskId: task.id, title })
   }
 
-  const handleCreatedAtChange = async (date: Date | undefined) => {
+  const handleCreatedAtChange = (date: Date | undefined) => {
     if (date) {
-      await updateTaskCreatedAt(task.id, date, task.boardId)
+      updateCreatedAtMutation.mutate({ taskId: task.id, createdAt: date })
     }
   }
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
+  const handleDelete = () => {
     onClose()
-    await deleteTask(task.id, task.boardId)
-    router.replace(`/boards/${task.boardId}`)
-    toast.success("Task deleted")
-    setIsDeleting(false)
-    setIsDeleteDialogOpen(false)
+    deleteTaskMutation.mutate(task.id, {
+      onSuccess: () => {
+        router.replace(`/boards/${task.boardId}`)
+        toast.success("Task deleted")
+        setIsDeleteDialogOpen(false)
+      },
+      onError: () => {
+        toast.error("Failed to delete task")
+      },
+    })
   }
 
   return (
@@ -159,14 +171,14 @@ export function TaskDetails({
             <Button
               variant="ghost"
               onClick={() => setIsDeleteDialogOpen(false)}
-              disabled={isDeleting}
+              disabled={deleteTaskMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={deleteTaskMutation.isPending}
             >
               Delete
             </Button>

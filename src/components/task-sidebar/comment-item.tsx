@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { ContributorBadge } from "@/components/contributor-badge"
 import { AuthorSelect } from "./author-select"
-import { updateComment, deleteComment } from "@/actions/comments"
+import { useUpdateComment, useDeleteComment } from "@/hooks/use-task"
 import { toast } from "sonner"
 import type { ContributorColor } from "@/db/schema"
 
@@ -36,6 +36,7 @@ interface CommentItemProps {
       color: ContributorColor
     }
   }
+  taskId: string
   boardId: string
   contributors: Array<{
     id: string
@@ -44,20 +45,30 @@ interface CommentItemProps {
   }>
 }
 
-export function CommentItem({ comment, boardId, contributors }: CommentItemProps) {
+export function CommentItem({ comment, taskId, boardId, contributors }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
   const [editAuthorId, setEditAuthorId] = useState(comment.author.id)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSave = async () => {
+  // Mutations
+  const updateCommentMutation = useUpdateComment(boardId)
+  const deleteCommentMutation = useDeleteComment(boardId)
+
+  const handleSave = () => {
     if (isRichTextEmpty(editContent)) return
 
-    setIsSubmitting(true)
-    await updateComment(comment.id, editAuthorId, editContent, boardId)
-    setIsSubmitting(false)
-    setIsEditing(false)
+    updateCommentMutation.mutate(
+      { commentId: comment.id, taskId, authorId: editAuthorId, content: editContent },
+      {
+        onSuccess: () => {
+          setIsEditing(false)
+        },
+        onError: () => {
+          toast.error("Failed to update comment")
+        },
+      }
+    )
   }
 
   const handleCancel = () => {
@@ -66,12 +77,19 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
     setIsEditing(false)
   }
 
-  const handleDelete = async () => {
-    setIsSubmitting(true)
-    await deleteComment(comment.id, boardId)
-    toast.success("Comment deleted")
-    setIsSubmitting(false)
-    setIsDeleteDialogOpen(false)
+  const handleDelete = () => {
+    deleteCommentMutation.mutate(
+      { commentId: comment.id, taskId },
+      {
+        onSuccess: () => {
+          toast.success("Comment deleted")
+          setIsDeleteDialogOpen(false)
+        },
+        onError: () => {
+          toast.error("Failed to delete comment")
+        },
+      }
+    )
   }
 
   const formattedDate = comment.createdAt
@@ -107,14 +125,14 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
             variant="ghost"
             size="sm"
             onClick={handleCancel}
-            disabled={isSubmitting}
+            disabled={updateCommentMutation.isPending}
           >
             Cancel
           </Button>
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={isSubmitting || isRichTextEmpty(editContent)}
+            disabled={updateCommentMutation.isPending || isRichTextEmpty(editContent)}
           >
             Save
           </Button>
@@ -181,14 +199,14 @@ export function CommentItem({ comment, boardId, contributors }: CommentItemProps
             <Button
               variant="ghost"
               onClick={() => setIsDeleteDialogOpen(false)}
-              disabled={isSubmitting}
+              disabled={deleteCommentMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={isSubmitting}
+              disabled={deleteCommentMutation.isPending}
             >
               Delete
             </Button>

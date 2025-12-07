@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 
 interface EditableTextProps {
   value: string
-  onSave: (value: string) => Promise<void>
+  onSave: (value: string) => void | Promise<void>
   className?: string
   inputClassName?: string
   placeholder?: string
@@ -22,12 +22,15 @@ export function EditableText({
   as: Component = "span",
 }: EditableTextProps) {
   const [isEditing, setIsEditing] = useState(false)
+  // Edit value is only used when editing - always initialized from prop when editing starts
   const [editValue, setEditValue] = useState(value)
   const inputRef = useRef<HTMLInputElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  useEffect(() => {
+  // When starting to edit, sync internal value with current prop value
+  const startEditing = useCallback(() => {
     setEditValue(value)
+    setIsEditing(true)
   }, [value])
 
   useEffect(() => {
@@ -37,32 +40,57 @@ export function EditableText({
     }
   }, [isEditing])
 
-  const handleSave = useCallback(async (newValue: string) => {
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
+  const handleSave = useCallback((newValue: string) => {
     const trimmedValue = newValue.trim()
     if (trimmedValue && trimmedValue !== value) {
-      await onSave(trimmedValue)
-    } else {
+      onSave(trimmedValue)
+    } else if (!trimmedValue) {
+      // Revert to prop value if empty
       setEditValue(value)
     }
-  }, [value, onSave])
+  }, [onSave, value])
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
+    // Clear any pending debounced save
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     setIsEditing(false)
     handleSave(editValue)
-  }
+  }, [editValue, handleSave])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault()
+      // Clear any pending debounced save
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       setIsEditing(false)
       handleSave(editValue)
     } else if (e.key === "Escape") {
+      // Clear any pending debounced save
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       setIsEditing(false)
       setEditValue(value)
     }
-  }
+  }, [editValue, handleSave, value])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     setEditValue(newValue)
 
@@ -71,9 +99,12 @@ export function EditableText({
       clearTimeout(timeoutRef.current)
     }
     timeoutRef.current = setTimeout(() => {
-      handleSave(newValue)
+      const trimmedValue = newValue.trim()
+      if (trimmedValue) {
+        onSave(trimmedValue)
+      }
     }, 1000)
-  }
+  }, [onSave])
 
   if (isEditing) {
     return (
@@ -91,7 +122,7 @@ export function EditableText({
 
   return (
     <Component
-      onClick={() => setIsEditing(true)}
+      onClick={startEditing}
       className={cn(
         "cursor-pointer rounded px-1 transition-colors hover:bg-accent",
         className

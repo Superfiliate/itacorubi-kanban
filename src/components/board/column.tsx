@@ -5,8 +5,6 @@ import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-
 import { CSS } from "@dnd-kit/utilities"
 import { useDroppable } from "@dnd-kit/core"
 import { Minimize2, Maximize2, Plus, Trash2 } from "lucide-react"
-import { updateColumnName, toggleColumnCollapsed, deleteColumn } from "@/actions/columns"
-import { createTask } from "@/actions/tasks"
 import { EditableText } from "@/components/editable-text"
 import { TaskCard } from "./task-card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +20,12 @@ import {
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import {
+  useUpdateColumnName,
+  useToggleColumnCollapsed,
+  useDeleteColumn,
+} from "@/hooks/use-board"
+import { useCreateTask } from "@/hooks/use-task"
 
 import type { ContributorColor } from "@/db/schema"
 
@@ -51,7 +55,12 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   const router = useRouter()
   const collapsed = isCollapsed ?? false
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Mutations
+  const updateColumnNameMutation = useUpdateColumnName(boardId)
+  const toggleCollapsedMutation = useToggleColumnCollapsed(boardId)
+  const deleteColumnMutation = useDeleteColumn(boardId)
+  const createTaskMutation = useCreateTask(boardId)
 
   const {
     attributes,
@@ -73,29 +82,40 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   }
 
   const handleNameSave = async (newName: string) => {
-    await updateColumnName(id, newName, boardId)
+    updateColumnNameMutation.mutate({ columnId: id, name: newName })
   }
 
-  const handleToggleCollapse = async () => {
-    await toggleColumnCollapsed(id, boardId)
+  const handleToggleCollapse = () => {
+    toggleCollapsedMutation.mutate(id)
   }
 
   const handleDelete = async () => {
-    setIsDeleting(true)
-    const result = await deleteColumn(id, boardId)
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Column deleted")
-    }
-    setIsDeleting(false)
-    setIsDeleteDialogOpen(false)
+    deleteColumnMutation.mutate(id, {
+      onSuccess: (result) => {
+        if (result?.error) {
+          toast.error(result.error)
+        } else {
+          toast.success("Column deleted")
+          setIsDeleteDialogOpen(false)
+        }
+      },
+      onError: () => {
+        toast.error("Failed to delete column")
+      },
+    })
   }
 
-  const handleAddTask = async () => {
-    const taskId = await createTask(boardId, id)
-    toast.success("Task created")
-    router.push(`/boards/${boardId}?task=${taskId}`)
+  const handleAddTask = () => {
+    createTaskMutation.mutate(id, {
+      onSuccess: (serverId) => {
+        toast.success("Task created")
+        // Navigate to the task (will use the server ID)
+        router.push(`/boards/${boardId}?task=${serverId}`)
+      },
+      onError: () => {
+        toast.error("Failed to create task")
+      },
+    })
   }
 
   const taskIds = tasks.map((t) => t.id)
@@ -188,6 +208,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
             variant="ghost"
             size="sm"
             onClick={handleAddTask}
+            disabled={createTaskMutation.isPending}
             className="h-7 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
           >
             <Plus className="h-4 w-4" />
@@ -229,14 +250,14 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
             <Button
               variant="ghost"
               onClick={() => setIsDeleteDialogOpen(false)}
-              disabled={isDeleting}
+              disabled={deleteColumnMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={deleteColumnMutation.isPending}
             >
               Delete
             </Button>

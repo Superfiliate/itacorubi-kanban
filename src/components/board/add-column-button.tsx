@@ -1,17 +1,25 @@
 "use client"
 
-import { createColumn } from "@/actions/columns"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { useCreateColumn } from "@/hooks/use-board"
 
 interface AddColumnButtonProps {
   boardId: string
 }
 
 export function AddColumnButton({ boardId }: AddColumnButtonProps) {
-  const handleClick = async () => {
-    await createColumn(boardId)
-    toast.success("Column created")
+  const createColumnMutation = useCreateColumn(boardId)
+
+  const handleClick = () => {
+    createColumnMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success("Column created")
+      },
+      onError: () => {
+        toast.error("Failed to create column")
+      },
+    })
   }
 
   return (
@@ -19,6 +27,7 @@ export function AddColumnButton({ boardId }: AddColumnButtonProps) {
       variant="ghost"
       size="icon"
       onClick={handleClick}
+      disabled={createColumnMutation.isPending}
       className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
       title="Add column"
     >

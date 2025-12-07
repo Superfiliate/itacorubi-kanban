@@ -5,33 +5,16 @@ import { useRouter } from "next/navigation"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { CommentsSection } from "./comments-section"
 import { TaskDetails } from "./task-details"
+import { useTaskQuery } from "@/hooks/use-task"
+import { useBoardQuery } from "@/hooks/use-board"
+import { SyncIndicator } from "@/components/sync-indicator"
+import { Button } from "@/components/ui/button"
 import type { ContributorColor } from "@/db/schema"
+import { ChevronLeft, Loader2 } from "lucide-react"
 
 interface TaskSidebarProps {
-  task: {
-    id: string
-    title: string
-    columnId: string
-    boardId: string
-    createdAt: Date | null
-    assignees: Array<{
-      contributor: {
-        id: string
-        name: string
-        color: ContributorColor
-      }
-    }>
-    comments: Array<{
-      id: string
-      content: string
-      createdAt: Date | null
-      author: {
-        id: string
-        name: string
-        color: ContributorColor
-      }
-    }>
-  }
+  taskId: string
+  boardId: string
   columns: Array<{
     id: string
     name: string
@@ -43,47 +26,80 @@ interface TaskSidebarProps {
   }>
 }
 
-export function TaskSidebar({ task, columns, contributors }: TaskSidebarProps) {
+export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSidebarProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(true)
+
+  // Use TanStack Query for task data
+  const { data: task, isLoading } = useTaskQuery(taskId)
+  const { data: board } = useBoardQuery(boardId)
+
+  // Use fresh contributors from board query if available
+  const currentContributors = board?.contributors ?? contributors
 
   const handleClose = () => {
     setIsOpen(false)
     // Small delay to allow animation to complete
     setTimeout(() => {
-      router.replace(`/boards/${task.boardId}`)
+      router.replace(`/boards/${boardId}`)
     }, 150)
   }
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <SheetContent className="flex w-full flex-col p-0 lg:max-w-[1040px]">
+      <SheetContent className="flex w-full flex-col gap-0 p-0 lg:max-w-[1040px]" hideCloseButton>
         <SheetHeader className="sr-only">
           <SheetTitle>Edit Task</SheetTitle>
         </SheetHeader>
 
-        {/* Mobile/Tablet: single scroll container | Desktop: each panel scrolls independently */}
-        <div className="flex flex-1 min-h-0 flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
-          {/* Task Details - First on mobile/tablet (stacked), right side on desktop */}
-          <div className="order-1 lg:order-2 flex-none lg:flex-[3] min-h-0 lg:overflow-y-auto border-b lg:border-b-0 lg:border-l border-border">
-            <TaskDetails
-              task={task}
-              columns={columns}
-              contributors={contributors}
-              onClose={handleClose}
-            />
+        {isLoading || !task ? (
+          <div className="flex flex-1 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : (
+          /* Mobile/Tablet: single scroll container | Desktop: each panel scrolls independently */
+          <div className="flex flex-1 min-h-0 flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+            {/* Task Details - First on mobile/tablet (stacked), right side on desktop */}
+            <div className="relative order-1 lg:order-2 flex-none lg:flex-[3] min-h-0 lg:overflow-y-auto border-b lg:border-b-0 lg:border-l border-border">
+              {/* Sticky header with glassmorphism effect */}
+              <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 backdrop-blur-md bg-background/70 border-b border-border/40 shadow-sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClose}
+                  className="h-8 gap-1 rounded-full px-2 text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="text-sm">Back</span>
+                </Button>
+                <SyncIndicator />
+              </div>
+              <TaskDetails
+                task={{
+                  id: task.id,
+                  title: task.title,
+                  columnId: task.columnId,
+                  boardId: boardId,
+                  createdAt: task.createdAt,
+                  assignees: task.assignees,
+                }}
+                columns={columns}
+                contributors={currentContributors}
+                onClose={handleClose}
+              />
+            </div>
 
-          {/* Comments - Second on mobile/tablet (stacked), left side on desktop */}
-          <div className="order-2 lg:order-1 flex-1 lg:flex-[7] min-h-0 lg:overflow-y-auto">
-            <CommentsSection
-              taskId={task.id}
-              boardId={task.boardId}
-              comments={task.comments}
-              contributors={contributors}
-            />
+            {/* Comments - Second on mobile/tablet (stacked), left side on desktop */}
+            <div className="order-2 lg:order-1 flex-1 lg:flex-[7] min-h-0 lg:overflow-y-auto">
+              <CommentsSection
+                taskId={task.id}
+                boardId={boardId}
+                comments={task.comments}
+                contributors={currentContributors}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </SheetContent>
     </Sheet>
   )
