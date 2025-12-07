@@ -114,8 +114,8 @@ export function TaskCard({ id, boardId, title, assignees, comments }: TaskCardPr
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative rounded-lg border border-border bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
-        isDragging && "opacity-50 shadow-lg"
+        "group relative glass rounded-lg p-3 transition-all hover:shadow-lg hover:scale-[1.02]",
+        isDragging && "opacity-50 shadow-xl scale-105"
       )}
       {...attributes}
       {...listeners}

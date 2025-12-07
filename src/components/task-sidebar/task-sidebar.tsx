@@ -61,13 +61,13 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
           <div className="flex flex-1 min-h-0 flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
             {/* Task Details - First on mobile/tablet (stacked), right side on desktop */}
             <div className="relative order-1 lg:order-2 flex-none lg:flex-[3] min-h-0 lg:overflow-y-auto border-b lg:border-b-0 lg:border-l border-border">
-              {/* Sticky header with glassmorphism effect */}
-              <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 backdrop-blur-md bg-background/70 border-b border-border/40 shadow-sm">
+              {/* Sticky header - transparent to inherit sidebar glass */}
+              <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 border-b border-border/20">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleClose}
-                  className="h-8 gap-1 rounded-full px-2 text-muted-foreground hover:text-foreground"
+                  className="h-8 gap-1 rounded-full px-3 text-muted-foreground hover:text-foreground"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   <span className="text-sm">Back</span>

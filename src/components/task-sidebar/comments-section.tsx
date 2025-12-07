@@ -101,7 +101,7 @@ export function CommentsSection({
       )}
 
       {/* New comment form at the bottom */}
-      <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-3 mt-6">
+      <div className="rounded-lg border border-border/50 bg-white/30 dark:bg-white/5 backdrop-blur-sm p-3 space-y-3 mt-6">
         <h4 className="text-xs font-medium text-muted-foreground">Add a comment</h4>
         <div className="space-y-2">
           <AuthorSelect

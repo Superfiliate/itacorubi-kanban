@@ -10,7 +10,7 @@ export default async function Home() {
   const boards = isDevelopment ? await getBoards() : []
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col gradient-mesh">
       {/* Hero - everything above the fold */}
       <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <div className="mx-auto max-w-4xl">

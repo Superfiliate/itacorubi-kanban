@@ -98,7 +98,7 @@ export function TaskDetails({
         <EditableText
           value={task.title}
           onSave={handleTitleSave}
-          className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="block w-full rounded-lg border border-border/50 bg-white/40 dark:bg-white/5 backdrop-blur-sm px-3 py-2 text-sm shadow-sm hover:bg-white/60 dark:hover:bg-white/10 hover:border-border transition-all"
           inputClassName="w-full"
           placeholder="Task title"
         />

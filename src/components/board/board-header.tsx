@@ -25,7 +25,7 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
   }
 
   return (
-    <header className="flex items-center gap-4 border-b border-border bg-background px-6 py-4">
+    <header className="flex items-center gap-4 border-b glass glass-strong rounded-none px-6 py-4">
       <EditableText
         value={title}
         onSave={handleSave}

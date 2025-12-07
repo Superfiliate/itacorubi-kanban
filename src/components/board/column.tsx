@@ -125,7 +125,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
       ref={setSortableRef}
       style={style}
       className={cn(
-        "relative flex h-full shrink-0 flex-col rounded-lg border border-border bg-muted/50 transition-[width] duration-200 ease-in-out",
+        "relative flex h-full shrink-0 flex-col glass glass-strong transition-[width] duration-200 ease-in-out",
         collapsed ? "w-10" : "w-72",
         isDragging && "opacity-50"
       )}

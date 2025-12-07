@@ -61,7 +61,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   const taskData = task as TaskWithComments | null
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden gradient-mesh">
       <HydrateBoard boardId={board.id} boardData={boardData} taskData={taskData} />
       <TrackBoardVisit boardId={board.id} title={board.title} />
       <BoardHeader boardId={board.id} title={board.title} contributors={contributorsWithStats} />
