@@ -39,10 +39,8 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
 
   const handleClose = () => {
     setIsOpen(false)
-    // Small delay to allow animation to complete
-    setTimeout(() => {
-      router.replace(`/boards/${boardId}`)
-    }, 150)
+    // Update URL immediately for better responsiveness
+    router.replace(`/boards/${boardId}`)
   }
 
   return (

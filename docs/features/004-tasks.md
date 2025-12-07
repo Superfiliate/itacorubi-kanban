@@ -57,4 +57,5 @@ Tasks are the individual work items that live within columns. Each task can have
 - Task cards show comment count and days since last comment
 - Comment age indicator uses color coding (green → yellow → red)
 - Adding a comment moves the task to the top of its column
+- Initial task title (including emoji) is generated on the client and passed to the server to ensure consistency between optimistic UI and server response
 - See `006-comments.md` for full comment documentation

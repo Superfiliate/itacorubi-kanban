@@ -32,12 +32,13 @@ All text fields are encrypted:
 - **Access Control**: Password entry page (`/boards/{boardId}/unlock`) required before accessing board
 - **Sharing**: Share dialog provides URL + password, or public link with password embedded
 
-### Legacy Support
+### Public Links
 
-Boards created before encryption (without `encryptedVerification`) are treated as legacy:
-- No password required
-- Data returned as-is (not decrypted)
-- Detection: Check if data contains `:` (encryption format separator)
+Public links allow sharing a board with password prefilled:
+- URL format: `/boards/{id}/unlock?password={password}`
+- Redirects to unlock page with password prefilled in the form
+- User must still click "Unlock Board" button (no auto-unlock)
+- Password is visible in URL - treat as sensitive information
 
 ## Implementation Details
 
@@ -57,9 +58,9 @@ Boards created before encryption (without `encryptedVerification`) are treated a
 
 **Read Operations:**
 1. Fetch data from database
-2. Check if encrypted (contains `:`)
-3. If encrypted: get password from cookie, decrypt
-4. If legacy: return as-is
+2. Get password from cookie
+3. Decrypt all encrypted fields
+4. Return decrypted data
 
 **Write Operations:**
 1. Get password from cookie
@@ -72,7 +73,7 @@ Boards created before encryption (without `encryptedVerification`) are treated a
 - **Authenticated Encryption**: AES-GCM provides both confidentiality and authenticity
 - **Key Derivation**: PBKDF2 makes brute-force attacks harder
 - **Static Salt**: Acceptable trade-off since password provides security
-- **Public Links**: Password embedded in URL (`/boards/{id}/public/{password}`) - treat as sensitive
+- **Public Links**: Password embedded in URL (`/boards/{id}/unlock?password={password}`) - treat as sensitive
 
 ## Consequences
 
@@ -81,14 +82,13 @@ Boards created before encryption (without `encryptedVerification`) are treated a
 - Data encrypted at rest (in database)
 - Password never stored in database
 - HTTP-only cookies prevent XSS attacks
-- Legacy boards continue to work
+- Public links prefilled but require explicit unlock action
 
 ### Negative
 
 - Password lost = data lost (no recovery mechanism)
 - Public links expose password in URL
 - Encryption/decryption overhead on every read/write
-- Legacy detection heuristic (checking for `:`) is not foolproof
 
 ## Notes
 

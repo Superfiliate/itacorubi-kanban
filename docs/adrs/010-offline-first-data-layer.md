@@ -4,6 +4,7 @@ We use TanStack Query for optimistic UX and background sync.
 
 - Mutations: cancel related queries, snapshot, update optimistically, rollback on error
 - Client-generated UUIDs enable instant creates; swap to server IDs only if they differ
+- Client-generated initial titles (e.g., "{emoji} New task") ensure optimistic UI matches server response
 - Hydrate server data once; don’t overwrite optimistic cache on mount
 - Lightweight sync indicator to show syncing vs saved; debounce to avoid flicker (see `docs/features/009-sync-status.md`)
 - Conflict strategy: last-write-wins; keep cache updates simple and consistent with server actions

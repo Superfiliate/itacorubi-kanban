@@ -72,19 +72,19 @@ export function useCreateTask(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (columnId: string) => createTask(boardId, columnId),
-    onMutate: async (columnId) => {
+    mutationFn: ({ columnId, title }: { columnId: string; title: string }) =>
+      createTask(boardId, columnId, title),
+    onMutate: async ({ columnId, title }) => {
       await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
 
       const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
       const optimisticId = crypto.randomUUID()
-      const emoji = getRandomEmoji()
 
       const newTask: BoardTask = {
         id: optimisticId,
         boardId,
         columnId,
-        title: `${emoji} New task`,
+        title,
         position: 0,
         createdAt: new Date(),
         assignees: [],
@@ -116,6 +116,7 @@ export function useCreateTask(boardId: string) {
     },
     onSuccess: (serverId, _, context) => {
       // Replace optimistic ID with server ID in board cache
+      // The title already matches since we passed it to the server
       if (context?.optimisticId && serverId !== context.optimisticId) {
         queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
           if (!old) return old

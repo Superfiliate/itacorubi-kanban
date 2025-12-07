@@ -4,9 +4,8 @@ import { db } from "@/db"
 import { tasks, taskAssignees, comments } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { getRandomEmoji } from "@/lib/emojis"
 
-export async function createTask(boardId: string, columnId: string) {
+export async function createTask(boardId: string, columnId: string, title: string) {
   const { getBoardPassword } = await import("@/lib/board-password")
   const { encrypt } = await import("@/lib/encryption")
 
@@ -24,9 +23,7 @@ export async function createTask(boardId: string, columnId: string) {
   const maxPosition = maxPositionResult[0]?.maxPosition ?? -1
 
   const id = crypto.randomUUID()
-  const emoji = getRandomEmoji()
-  const plainTitle = `${emoji} New task`
-  const encryptedTitle = await encrypt(plainTitle, password)
+  const encryptedTitle = await encrypt(title, password)
 
   await db.insert(tasks).values({
     id,

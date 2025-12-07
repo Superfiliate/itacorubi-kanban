@@ -9,9 +9,10 @@ Boards are the top-level container for organizing work. Each board has its own c
 ### Create a Board
 
 - Click "Create a Board" button on homepage
-- Password dialog appears with suggested password
-- User can use suggested password or enter custom password
-- Password is required — cannot be empty
+- Dialog appears with title and password fields (both prefilled with suggestions)
+- Password field has eye icon to toggle visibility
+- User can use suggested values or enter custom title/password
+- Both fields are required — cannot be empty
 - Board is created and user is redirected to the board
 
 ### Access a Board
@@ -25,10 +26,12 @@ Boards are the top-level container for organizing work. Each board has its own c
 ### Unlock a Board
 
 - Navigate to `/boards/{uuid}/unlock`
-- Enter board password
+- Enter board password (eye icon to toggle visibility)
+- Password can be prefilled via query parameter: `/boards/{uuid}/unlock?password={password}`
 - Password is verified by decrypting verification string
 - On success: cookie is set, redirect to board
 - On failure: error message displayed
+- User must click "Unlock Board" button to proceed (no auto-unlock)
 
 ### Share a Board
 
@@ -41,9 +44,10 @@ Boards are the top-level container for organizing work. Each board has its own c
 - Password fetched from HTTP-only cookie via API
 
 **Public Link:**
-- URL format: `/boards/{uuid}/public/{password}`
-- Clicking this link sets password cookie and redirects to board
-- Warning: "Anyone with this link can access the board"
+- URL format: `/boards/{uuid}/unlock?password={password}`
+- Clicking this link opens unlock page with password prefilled
+- User must still click "Unlock Board" button to access the board
+- Description: "Anyone with this link will have the password prefilled, but still needs to click unlock"
 
 ### Rename a Board
 

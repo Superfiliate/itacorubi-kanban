@@ -26,6 +26,7 @@ import {
   useDeleteColumn,
 } from "@/hooks/use-board"
 import { useCreateTask } from "@/hooks/use-task"
+import { getRandomEmoji } from "@/lib/emojis"
 
 import type { ContributorColor } from "@/db/schema"
 
@@ -106,7 +107,9 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   }
 
   const handleAddTask = () => {
-    createTaskMutation.mutate(id, {
+    const emoji = getRandomEmoji()
+    const title = `${emoji} New task`
+    createTaskMutation.mutate({ columnId: id, title }, {
       onSuccess: (serverId) => {
         toast.success("Task created")
         // Navigate to the task (will use the server ID)
