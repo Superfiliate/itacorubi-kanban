@@ -6,7 +6,7 @@ import { getContributorsWithStats } from "@/actions/contributors"
 import { BoardHeader } from "@/components/board/board-header"
 import { BoardClient } from "@/components/board/board-client"
 import { TrackBoardVisit } from "@/components/board/track-board-visit"
-import { TaskSidebar } from "@/components/task-sidebar/task-sidebar"
+import { TaskSidebarHost } from "@/components/task-sidebar/task-sidebar"
 import { HydrateBoard } from "@/components/board/hydrate-board"
 import type { BoardData } from "@/hooks/use-board"
 import type { TaskWithComments } from "@/hooks/use-task"
@@ -95,14 +95,11 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
       <main className="relative flex-1 overflow-hidden">
         <BoardClient boardId={board.id} initialColumns={board.columns} />
       </main>
-      {task && (
-        <TaskSidebar
-          taskId={task.id}
-          boardId={board.id}
-          columns={board.columns.map((c) => ({ id: c.id, name: c.name }))}
-          contributors={board.contributors}
-        />
-      )}
+      <TaskSidebarHost
+        boardId={board.id}
+        columns={board.columns.map((c) => ({ id: c.id, name: c.name }))}
+        contributors={board.contributors}
+      />
     </div>
   )
 }

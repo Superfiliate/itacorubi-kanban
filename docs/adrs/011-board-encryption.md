@@ -48,6 +48,13 @@ Public links allow sharing a board with password prefilled:
 - `decrypt(encrypted, password)` → plain text (throws on wrong password)
 - `generatePassword()` → secure random 16-character password
 
+### Access Helpers (`src/lib/secure-board.ts`)
+
+- `requireBoardPassword(boardId)` → enforce cookie presence
+- `encryptForBoard(boardId, value)` → encrypt with the board password
+- `decryptWithFallback(value, password)` → tolerant decrypt with safe fallback
+- Prefer these helpers in server actions instead of ad-hoc imports to keep behavior consistent.
+
 ### Cookie Helpers (`src/lib/board-password.ts`)
 
 - `getBoardPassword(boardId)` → password from cookie or null

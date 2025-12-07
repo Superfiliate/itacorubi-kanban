@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { encrypt } from "@/lib/encryption"
 import { setBoardPassword } from "@/lib/board-password"
+import { decryptRequired, decryptWithFallback, encryptForBoard, getBoardPasswordOptional } from "@/lib/secure-board"
 
 export async function createBoard(title: string, password: string) {
   const id = crypto.randomUUID()
@@ -55,9 +56,6 @@ export async function getBoards() {
 }
 
 export async function getBoard(id: string) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { decrypt } = await import("@/lib/encryption")
-
   const board = await db.query.boards.findFirst({
     where: eq(boards.id, id),
     with: {
@@ -92,54 +90,38 @@ export async function getBoard(id: string) {
   }
 
   // Password is required
-  const password = await getBoardPassword(id)
+  const password = await getBoardPasswordOptional(id)
   if (!password) {
     // Password not set - board needs to be unlocked
     return null
   }
 
   // Decrypt board title
-  try {
-    board.title = await decrypt(board.title, password)
-  } catch (error) {
+  const decryptedTitle = await decryptRequired(board.title, password)
+  if (!decryptedTitle) {
     // Wrong password or corrupted data
     return null
   }
+  board.title = decryptedTitle
 
   // Decrypt column names
   for (const column of board.columns) {
-    try {
-      column.name = await decrypt(column.name, password)
-    } catch (error) {
-      column.name = "❌ Decryption Error"
-    }
+    column.name = await decryptWithFallback(column.name, password)
   }
 
   // Decrypt contributor names
   for (const contributor of board.contributors) {
-    try {
-      contributor.name = await decrypt(contributor.name, password)
-    } catch (error) {
-      contributor.name = "❌ Decryption Error"
-    }
+    contributor.name = await decryptWithFallback(contributor.name, password)
   }
 
   // Decrypt task titles and assignee contributor names
   for (const column of board.columns) {
     for (const task of column.tasks) {
-      try {
-        task.title = await decrypt(task.title, password)
-      } catch (error) {
-        task.title = "❌ Decryption Error"
-      }
+      task.title = await decryptWithFallback(task.title, password)
 
       // Decrypt assignee contributor names
       for (const assignee of task.assignees) {
-        try {
-          assignee.contributor.name = await decrypt(assignee.contributor.name, password)
-        } catch (error) {
-          assignee.contributor.name = "❌ Decryption Error"
-        }
+        assignee.contributor.name = await decryptWithFallback(assignee.contributor.name, password)
       }
     }
   }
@@ -148,15 +130,7 @@ export async function getBoard(id: string) {
 }
 
 export async function updateBoardTitle(id: string, title: string) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { encrypt } = await import("@/lib/encryption")
-
-  const password = await getBoardPassword(id)
-  if (!password) {
-    throw new Error("Board password not set")
-  }
-
-  const encryptedTitle = await encrypt(title, password)
+  const encryptedTitle = await encryptForBoard(id, title)
   await db.update(boards).set({ title: encryptedTitle }).where(eq(boards.id, id))
   revalidatePath(`/boards/${id}`)
 }

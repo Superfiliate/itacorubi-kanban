@@ -106,19 +106,18 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
     })
   }
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
+    if (createTaskMutation.isPending) return
     const emoji = getRandomEmoji()
     const title = `${emoji} New task`
-    createTaskMutation.mutate({ columnId: id, title }, {
-      onSuccess: (serverId) => {
-        toast.success("Task created")
-        // Navigate to the task (will use the server ID)
-        router.push(`/boards/${boardId}?task=${serverId}`)
-      },
-      onError: () => {
-        toast.error("Failed to create task")
-      },
-    })
+    try {
+      const serverId = await createTaskMutation.mutateAsync({ columnId: id, title })
+      toast.success("Task created")
+      // Navigate to the task (will use the server ID)
+      router.push(`/boards/${boardId}?task=${serverId}`)
+    } catch {
+      toast.error("Failed to create task")
+    }
   }
 
   const taskIds = tasks.map((t) => t.id)

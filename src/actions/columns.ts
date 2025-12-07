@@ -5,16 +5,9 @@ import { columns, tasks } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getRandomEmoji } from "@/lib/emojis"
+import { encryptForBoard } from "@/lib/secure-board"
 
 export async function createColumn(boardId: string) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { encrypt } = await import("@/lib/encryption")
-  
-  const password = await getBoardPassword(boardId)
-  if (!password) {
-    throw new Error("Board password not set")
-  }
-
   // Get the max position for this board
   const maxPositionResult = await db
     .select({ maxPosition: sql<number>`COALESCE(MAX(${columns.position}), -1)` })
@@ -26,8 +19,8 @@ export async function createColumn(boardId: string) {
   const id = crypto.randomUUID()
   const emoji = getRandomEmoji()
   const plainName = `${emoji} New column`
-  const encryptedName = await encrypt(plainName, password)
-  
+  const encryptedName = await encryptForBoard(boardId, plainName)
+
   await db.insert(columns).values({
     id,
     boardId,
@@ -40,15 +33,7 @@ export async function createColumn(boardId: string) {
 }
 
 export async function updateColumnName(id: string, name: string, boardId: string) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { encrypt } = await import("@/lib/encryption")
-  
-  const password = await getBoardPassword(boardId)
-  if (!password) {
-    throw new Error("Board password not set")
-  }
-
-  const encryptedName = await encrypt(name, password)
+  const encryptedName = await encryptForBoard(boardId, name)
   await db.update(columns).set({ name: encryptedName }).where(eq(columns.id, id))
   revalidatePath(`/boards/${boardId}`)
 }

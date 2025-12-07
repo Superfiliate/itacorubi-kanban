@@ -15,58 +15,39 @@ import {
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 
-// Generate a memorable password using color/animal combinations
-function generateSuggestedPassword(): string {
-  const colors = [
-    "red",
-    "blue",
-    "green",
-    "yellow",
-    "purple",
-    "orange",
-    "pink",
-    "cyan",
-    "lime",
-    "teal",
-    "indigo",
-    "violet",
-    "coral",
-    "amber",
-    "emerald",
-    "azure",
-    "crimson",
-    "gold",
-    "silver",
-    "bronze",
-  ]
+// Generate a strong, URL-safe password using Web Crypto
+function generateSuggestedPassword(length = 16): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  const buffer = new Uint8Array(length * 2) // extra space to allow discards
+  let password = ""
+  let cursor = 0
 
-  const animals = [
-    "leopard",
-    "whale",
-    "eagle",
-    "tiger",
-    "dolphin",
-    "penguin",
-    "otter",
-    "falcon",
-    "jaguar",
-    "shark",
-    "bear",
-    "wolf",
-    "fox",
-    "lynx",
-    "raven",
-    "hawk",
-    "panther",
-    "seal",
-    "swan",
-    "heron",
-  ]
+  const fillBuffer = () => {
+    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+      crypto.getRandomValues(buffer)
+    } else {
+      // Fallback for environments without Web Crypto (should be rare)
+      for (let i = 0; i < buffer.length; i++) {
+        buffer[i] = Math.floor(Math.random() * 256)
+      }
+    }
+    cursor = 0
+  }
 
-  const color = colors[Math.floor(Math.random() * colors.length)]
-  const animal = animals[Math.floor(Math.random() * animals.length)]
+  fillBuffer()
 
-  return `${color}${animal}`
+  while (password.length < length) {
+    if (cursor >= buffer.length) {
+      fillBuffer()
+    }
+
+    const byte = buffer[cursor++]
+    // 62 * 4 = 248 → discard high values to avoid modulo bias
+    if (byte >= 248) continue
+    password += chars[byte % chars.length]
+  }
+
+  return password
 }
 
 // Generate a creative suggested title with emoji

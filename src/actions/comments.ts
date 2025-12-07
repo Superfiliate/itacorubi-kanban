@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { comments, tasks } from "@/db/schema"
 import { eq, and, lt, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { encryptForBoard } from "@/lib/secure-board"
 
 export async function createComment(
   taskId: string,
@@ -11,16 +12,8 @@ export async function createComment(
   authorId: string,
   content: string
 ) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { encrypt } = await import("@/lib/encryption")
-
-  const password = await getBoardPassword(boardId)
-  if (!password) {
-    throw new Error("Board password not set")
-  }
-
   const id = crypto.randomUUID()
-  const encryptedContent = await encrypt(content, password)
+  const encryptedContent = await encryptForBoard(boardId, content)
 
   await db.insert(comments).values({
     id,
@@ -60,15 +53,7 @@ export async function updateComment(
   content: string,
   boardId: string
 ) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { encrypt } = await import("@/lib/encryption")
-
-  const password = await getBoardPassword(boardId)
-  if (!password) {
-    throw new Error("Board password not set")
-  }
-
-  const encryptedContent = await encrypt(content, password)
+  const encryptedContent = await encryptForBoard(boardId, content)
   await db.update(comments)
     .set({ authorId, content: encryptedContent })
     .where(eq(comments.id, commentId))

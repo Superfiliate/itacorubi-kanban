@@ -5,6 +5,7 @@ We don't use `.env` files. Code falls back to hardcoded defaults for local devel
 - Local dev uses a SQLite file with no sensitive data - no secrets to protect
 - Production env vars are injected automatically by Vercel/Turso marketplace
 - Simpler setup: developers run `pnpm dev` immediately without any configuration
+- To start clean locally, run `pnpm db:reset` (drops `local.db` and reapplies schema)
 
 ## Examples
 

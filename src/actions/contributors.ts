@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { contributors, taskAssignees, comments, columns, tasks, CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { decryptWithFallback, encryptForBoard, encryptWithPassword, getBoardPasswordOptional, requireBoardPassword } from "@/lib/secure-board"
 
 function getRandomColor() {
   const index = Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)
@@ -11,17 +12,9 @@ function getRandomColor() {
 }
 
 export async function createContributor(boardId: string, name: string) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { encrypt } = await import("@/lib/encryption")
-
-  const password = await getBoardPassword(boardId)
-  if (!password) {
-    throw new Error("Board password not set")
-  }
-
   const id = crypto.randomUUID()
   const color = getRandomColor()
-  const encryptedName = await encrypt(name, password)
+  const encryptedName = await encryptForBoard(boardId, name)
 
   await db.insert(contributors).values({
     id,
@@ -35,10 +28,7 @@ export async function createContributor(boardId: string, name: string) {
 }
 
 export async function getContributors(boardId: string) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { decrypt } = await import("@/lib/encryption")
-
-  const password = await getBoardPassword(boardId)
+  const password = await getBoardPasswordOptional(boardId)
   if (!password) {
     return []
   }
@@ -49,11 +39,7 @@ export async function getContributors(boardId: string) {
 
   // Decrypt contributor names
   for (const contributor of contributorsList) {
-    try {
-      contributor.name = await decrypt(contributor.name, password)
-    } catch (error) {
-      contributor.name = "❌ Decryption Error"
-    }
+    contributor.name = await decryptWithFallback(contributor.name, password)
   }
 
   return contributorsList
@@ -100,20 +86,14 @@ export async function updateContributor(
   boardId: string,
   updates: { name?: string; color?: ContributorColor }
 ) {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { encrypt } = await import("@/lib/encryption")
-
-  const password = await getBoardPassword(boardId)
-  if (!password) {
-    throw new Error("Board password not set")
-  }
+  const password = await requireBoardPassword(boardId)
 
   const updateData: { name?: string; color?: ContributorColor } = {}
   if (updates.color !== undefined) {
     updateData.color = updates.color
   }
   if (updates.name !== undefined) {
-    updateData.name = await encrypt(updates.name, password)
+    updateData.name = await encryptWithPassword(password, updates.name)
   }
 
   await db.update(contributors)
@@ -165,10 +145,7 @@ export type ContributorWithStats = {
 }
 
 export async function getContributorsWithStats(boardId: string): Promise<ContributorWithStats[]> {
-  const { getBoardPassword } = await import("@/lib/board-password")
-  const { decrypt } = await import("@/lib/encryption")
-
-  const password = await getBoardPassword(boardId)
+  const password = await getBoardPasswordOptional(boardId)
   if (!password) {
     return []
   }
@@ -186,20 +163,12 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
 
   // Decrypt column names
   for (const column of boardColumns) {
-    try {
-      column.name = await decrypt(column.name, password)
-    } catch (error) {
-      column.name = "❌ Decryption Error"
-    }
+    column.name = await decryptWithFallback(column.name, password)
   }
 
   // Decrypt contributor names
   for (const contributor of allContributors) {
-    try {
-      contributor.name = await decrypt(contributor.name, password)
-    } catch (error) {
-      contributor.name = "❌ Decryption Error"
-    }
+    contributor.name = await decryptWithFallback(contributor.name, password)
   }
 
   // Get task assignments with task column info

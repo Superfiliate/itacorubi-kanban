@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { CommentsSection } from "./comments-section"
 import { TaskDetails } from "./task-details"
@@ -42,6 +42,13 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
     // Update URL immediately for better responsiveness
     router.replace(`/boards/${boardId}`)
   }
+
+  useEffect(() => {
+    // If the task fails to load (e.g., invalid id), close the sidebar gracefully
+    if (!isLoading && !task) {
+      handleClose()
+    }
+  }, [isLoading, task])
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -100,5 +107,27 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
         )}
       </SheetContent>
     </Sheet>
+  )
+}
+
+interface TaskSidebarHostProps {
+  boardId: string
+  columns: Array<{ id: string; name: string }>
+  contributors: Array<{ id: string; name: string; color: ContributorColor }>
+}
+
+export function TaskSidebarHost({ boardId, columns, contributors }: TaskSidebarHostProps) {
+  const searchParams = useSearchParams()
+  const taskId = searchParams.get("task")
+
+  if (!taskId) return null
+
+  return (
+    <TaskSidebar
+      taskId={taskId}
+      boardId={boardId}
+      columns={columns}
+      contributors={contributors}
+    />
   )
 }

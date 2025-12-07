@@ -68,9 +68,12 @@ export function generatePassword(): string {
   const length = 16
   let password = ""
 
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length)
-    password += chars[randomIndex]
+  // Use cryptographically strong randomness; discard high values to avoid bias
+  // 62 * 4 = 248, so values >= 248 are skipped
+  while (password.length < length) {
+    const byte = randomBytes(1)[0]
+    if (byte >= 248) continue
+    password += chars[byte % chars.length]
   }
 
   return password
