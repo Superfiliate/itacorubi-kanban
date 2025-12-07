@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@import "./theme.css";
+@import "./shadcn.css";
+@import "./typography.css";
+@import "./glassmorphism.css";
+@import "./tiptap.css";

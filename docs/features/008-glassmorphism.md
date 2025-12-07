@@ -13,9 +13,10 @@ We use a light glassmorphism aesthetic (soft blur, translucent surfaces, subtle 
 
 ## Implementation Notes
 
-- Use the shared glass utility classes in `globals.css` for surfaces and controls
+- Use the shared glass utility classes in `src/styles/glassmorphism.css` (imported via `src/styles/globals.css`) for surfaces and controls
 - Cards, dialogs, and controls should feel related but can vary slightly by context
 - Test in light/dark themes to ensure borders and text remain legible
 
 ## Links
-- Utilities and variables: `src/app/globals.css`
+- Utilities: `src/styles/glassmorphism.css`
+- Variables: `src/styles/theme.css`

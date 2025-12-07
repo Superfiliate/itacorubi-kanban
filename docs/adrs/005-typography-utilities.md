@@ -1,6 +1,6 @@
 # ADR 005: Typography Utilities
 
-Use a small set of utility classes in `globals.css` to keep text consistent without adding wrapper components.
+Use a small set of utility classes in `src/styles/typography.css` (imported through `src/styles/globals.css`) to keep text consistent without adding wrapper components.
 
 - Semantic class names (`text-body`, `text-muted`, `text-heading`, etc.) map to lightweight Tailwind applies
 - Prefer utilities over bespoke per-component typography to stay consistent with shadcn primitives
@@ -25,4 +25,4 @@ Cheatsheet:
   ```
 
 ## Links
-- Utilities defined in: `src/app/globals.css`
+- Utilities defined in: `src/styles/typography.css`

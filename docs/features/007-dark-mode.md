@@ -24,7 +24,7 @@ The application supports light, dark, and system-based themes. Users can toggle 
 
 - Powered by `next-themes` library
 - Theme is applied via `.dark` class on the `<html>` element
-- CSS variables in `globals.css` define all color values for both themes
+- CSS variables in `src/styles/theme.css` (loaded via `src/styles/globals.css`) define all color values for both themes
 - `suppressHydrationWarning` on `<html>` prevents SSR hydration warnings
 - All shadcn/ui components automatically adapt to the current theme
 

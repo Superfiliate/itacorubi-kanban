@@ -25,4 +25,4 @@ Cheatsheet:
 - `xl`: 1280px (desktop sanity check)
 
 ## Links
-- Tailwind breakpoints: `tailwind.config.*` (if customized) and usage in `src/app/globals.css`
+- Tailwind breakpoints: `tailwind.config.*` (if customized) and usage in `src/styles/globals.css`
