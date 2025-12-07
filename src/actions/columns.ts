@@ -7,6 +7,14 @@ import { revalidatePath } from "next/cache"
 import { getRandomEmoji } from "@/lib/emojis"
 
 export async function createColumn(boardId: string) {
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+  
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
   // Get the max position for this board
   const maxPositionResult = await db
     .select({ maxPosition: sql<number>`COALESCE(MAX(${columns.position}), -1)` })
@@ -17,10 +25,13 @@ export async function createColumn(boardId: string) {
 
   const id = crypto.randomUUID()
   const emoji = getRandomEmoji()
+  const plainName = `${emoji} New column`
+  const encryptedName = await encrypt(plainName, password)
+  
   await db.insert(columns).values({
     id,
     boardId,
-    name: `${emoji} New column`,
+    name: encryptedName,
     position: maxPosition + 1,
   })
 
@@ -29,7 +40,16 @@ export async function createColumn(boardId: string) {
 }
 
 export async function updateColumnName(id: string, name: string, boardId: string) {
-  await db.update(columns).set({ name }).where(eq(columns.id, id))
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+  
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
+  const encryptedName = await encrypt(name, password)
+  await db.update(columns).set({ name: encryptedName }).where(eq(columns.id, id))
   revalidatePath(`/boards/${boardId}`)
 }
 

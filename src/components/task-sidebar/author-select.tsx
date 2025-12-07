@@ -19,6 +19,8 @@ import {
 import { cn } from "@/lib/utils"
 import { createContributor } from "@/actions/contributors"
 import { ContributorBadge } from "@/components/contributor-badge"
+import { useQueryClient } from "@tanstack/react-query"
+import { boardKeys } from "@/hooks/use-board"
 import type { ContributorColor } from "@/db/schema"
 
 function getStorageKey(boardId: string) {
@@ -56,6 +58,7 @@ export function AuthorSelect({
 }: AuthorSelectProps) {
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState("")
+  const queryClient = useQueryClient()
 
   const selectedContributor = contributors.find((c) => c.id === selectedAuthorId)
 
@@ -69,6 +72,8 @@ export function AuthorSelect({
     const name = inputValue.trim()
     if (name) {
       const contributorId = await createContributor(boardId, name)
+      // Invalidate queries to refresh contributor list
+      await queryClient.invalidateQueries({ queryKey: boardKeys.detail(boardId) })
       onAuthorChange(contributorId)
       setRememberedAuthor(boardId, contributorId)
       setInputValue("")

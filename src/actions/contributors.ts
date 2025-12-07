@@ -11,13 +11,22 @@ function getRandomColor() {
 }
 
 export async function createContributor(boardId: string, name: string) {
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
   const id = crypto.randomUUID()
   const color = getRandomColor()
+  const encryptedName = await encrypt(name, password)
 
   await db.insert(contributors).values({
     id,
     boardId,
-    name,
+    name: encryptedName,
     color,
   })
 
@@ -26,9 +35,28 @@ export async function createContributor(boardId: string, name: string) {
 }
 
 export async function getContributors(boardId: string) {
-  return db.query.contributors.findMany({
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { decrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    return []
+  }
+
+  const contributorsList = await db.query.contributors.findMany({
     where: eq(contributors.boardId, boardId),
   })
+
+  // Decrypt contributor names
+  for (const contributor of contributorsList) {
+    try {
+      contributor.name = await decrypt(contributor.name, password)
+    } catch (error) {
+      contributor.name = "❌ Decryption Error"
+    }
+  }
+
+  return contributorsList
 }
 
 export async function addAssignee(taskId: string, contributorId: string, boardId: string) {
@@ -72,8 +100,24 @@ export async function updateContributor(
   boardId: string,
   updates: { name?: string; color?: ContributorColor }
 ) {
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
+  const updateData: { name?: string; color?: ContributorColor } = {}
+  if (updates.color !== undefined) {
+    updateData.color = updates.color
+  }
+  if (updates.name !== undefined) {
+    updateData.name = await encrypt(updates.name, password)
+  }
+
   await db.update(contributors)
-    .set(updates)
+    .set(updateData)
     .where(eq(contributors.id, id))
 
   revalidatePath(`/boards/${boardId}`)
@@ -121,6 +165,14 @@ export type ContributorWithStats = {
 }
 
 export async function getContributorsWithStats(boardId: string): Promise<ContributorWithStats[]> {
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { decrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    return []
+  }
+
   // Get all contributors for this board
   const allContributors = await db.query.contributors.findMany({
     where: eq(contributors.boardId, boardId),
@@ -131,6 +183,24 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
     where: eq(columns.boardId, boardId),
     orderBy: columns.position,
   })
+
+  // Decrypt column names
+  for (const column of boardColumns) {
+    try {
+      column.name = await decrypt(column.name, password)
+    } catch (error) {
+      column.name = "❌ Decryption Error"
+    }
+  }
+
+  // Decrypt contributor names
+  for (const contributor of allContributors) {
+    try {
+      contributor.name = await decrypt(contributor.name, password)
+    } catch (error) {
+      contributor.name = "❌ Decryption Error"
+    }
+  }
 
   // Get task assignments with task column info
   const assignmentsWithColumns = await db
@@ -154,6 +224,7 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
 
   // Build the result
   return allContributors.map(contributor => {
+
     // Count tasks per column for this contributor
     const contributorAssignments = assignmentsWithColumns.filter(
       a => a.contributorId === contributor.id

@@ -1,13 +1,9 @@
-import Link from "next/link"
 import { Github } from "lucide-react"
-import { getBoards, createBoard } from "@/actions/boards"
 import { Button } from "@/components/ui/button"
 import { RecentBoards } from "@/components/recent-boards"
+import { CreateBoardButton } from "@/components/create-board-button"
 
-const isDevelopment = process.env.NODE_ENV === "development"
-
-export default async function Home() {
-  const boards = isDevelopment ? await getBoards() : []
+export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col gradient-mesh">
@@ -25,11 +21,7 @@ export default async function Home() {
             Just share the link and start working together.
           </p>
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <form action={createBoard}>
-              <Button type="submit" size="lg" className="h-14 px-8 text-lg">
-                Create a Board
-              </Button>
-            </form>
+            <CreateBoardButton />
 
             <Button variant="outline" size="lg" className="h-14 px-6" asChild>
               <a
@@ -44,32 +36,6 @@ export default async function Home() {
           </div>
 
           <RecentBoards />
-
-          {/* Debug board list - only visible in development */}
-          {isDevelopment && boards.length > 0 && (
-            <div className="mx-auto mt-12 max-w-md">
-              <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Existing Boards (Dev Only)
-              </h2>
-              <ul className="space-y-2 rounded-xl border border-border/50 bg-white/40 p-3 text-left shadow-sm backdrop-blur-sm dark:bg-white/5">
-                {boards.map((board) => (
-                  <li key={board.id}>
-                    <Link
-                      href={`/boards/${board.id}`}
-                      className="group flex items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-white/60 dark:hover:bg-white/10"
-                    >
-                      <span className="text-sm font-medium text-foreground group-hover:text-foreground">
-                        {board.title}
-                      </span>
-                      <code className="text-xs text-muted-foreground">
-                        {board.id.slice(0, 8)}...
-                      </code>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </main>
     </div>

@@ -11,14 +11,23 @@ export async function createComment(
   authorId: string,
   content: string
 ) {
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
   const id = crypto.randomUUID()
+  const encryptedContent = await encrypt(content, password)
 
   await db.insert(comments).values({
     id,
     taskId,
     boardId,
     authorId,
-    content,
+    content: encryptedContent,
   })
 
   // Move task to position 0 (top of column)
@@ -51,8 +60,17 @@ export async function updateComment(
   content: string,
   boardId: string
 ) {
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
+  const encryptedContent = await encrypt(content, password)
   await db.update(comments)
-    .set({ authorId, content })
+    .set({ authorId, content: encryptedContent })
     .where(eq(comments.id, commentId))
 
   revalidatePath(`/boards/${boardId}`)

@@ -7,6 +7,14 @@ import { revalidatePath } from "next/cache"
 import { getRandomEmoji } from "@/lib/emojis"
 
 export async function createTask(boardId: string, columnId: string) {
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
   // Get the max position for this column
   const maxPositionResult = await db
     .select({ maxPosition: sql<number>`COALESCE(MAX(${tasks.position}), -1)` })
@@ -17,11 +25,14 @@ export async function createTask(boardId: string, columnId: string) {
 
   const id = crypto.randomUUID()
   const emoji = getRandomEmoji()
+  const plainTitle = `${emoji} New task`
+  const encryptedTitle = await encrypt(plainTitle, password)
+
   await db.insert(tasks).values({
     id,
     boardId,
     columnId,
-    title: `${emoji} New task`,
+    title: encryptedTitle,
     position: maxPosition + 1,
   })
 
@@ -30,7 +41,10 @@ export async function createTask(boardId: string, columnId: string) {
 }
 
 export async function getTask(id: string) {
-  return db.query.tasks.findFirst({
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { decrypt } = await import("@/lib/encryption")
+
+  const task = await db.query.tasks.findFirst({
     where: eq(tasks.id, id),
     with: {
       column: true,
@@ -47,10 +61,65 @@ export async function getTask(id: string) {
       },
     },
   })
+
+  if (!task) {
+    return null
+  }
+
+  const password = await getBoardPassword(task.boardId)
+  if (!password) {
+    // Password not set
+    return null
+  }
+
+  // Decrypt task title
+  try {
+    task.title = await decrypt(task.title, password)
+  } catch (error) {
+    task.title = "❌ Decryption Error"
+  }
+
+  // Decrypt comment content
+  for (const comment of task.comments) {
+    try {
+      comment.content = await decrypt(comment.content, password)
+    } catch (error) {
+      comment.content = "❌ Decryption Error"
+    }
+  }
+
+  // Decrypt contributor names
+  for (const assignee of task.assignees) {
+    try {
+      assignee.contributor.name = await decrypt(assignee.contributor.name, password)
+    } catch (error) {
+      assignee.contributor.name = "❌ Decryption Error"
+    }
+  }
+
+  // Decrypt comment author names
+  for (const comment of task.comments) {
+    try {
+      comment.author.name = await decrypt(comment.author.name, password)
+    } catch (error) {
+      comment.author.name = "❌ Decryption Error"
+    }
+  }
+
+  return task
 }
 
 export async function updateTaskTitle(id: string, title: string, boardId: string) {
-  await db.update(tasks).set({ title }).where(eq(tasks.id, id))
+  const { getBoardPassword } = await import("@/lib/board-password")
+  const { encrypt } = await import("@/lib/encryption")
+
+  const password = await getBoardPassword(boardId)
+  if (!password) {
+    throw new Error("Board password not set")
+  }
+
+  const encryptedTitle = await encrypt(title, password)
+  await db.update(tasks).set({ title: encryptedTitle }).where(eq(tasks.id, id))
   revalidatePath(`/boards/${boardId}`)
 }
 

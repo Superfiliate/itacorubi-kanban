@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { getBoard } from "@/actions/boards"
 import { getTask } from "@/actions/tasks"
 import { getContributorsWithStats } from "@/actions/contributors"
@@ -22,10 +22,24 @@ export async function generateMetadata({
   params: Promise<{ boardId: string }>
 }): Promise<Metadata> {
   const { boardId } = await params
-  const board = await getBoard(boardId)
 
-  if (!board) {
+  // Check if board exists first (without password check)
+  const { db } = await import("@/db")
+  const { boards } = await import("@/db/schema")
+  const { eq } = await import("drizzle-orm")
+  const boardExists = await db.query.boards.findFirst({
+    where: eq(boards.id, boardId),
+  })
+
+  if (!boardExists) {
     return { title: "Board Not Found" }
+  }
+
+  // Try to get board with password (for title)
+  const board = await getBoard(boardId)
+  if (!board) {
+    // Board exists but password not set - return generic title
+    return { title: "Board Locked | Itacorubi Kanban" }
   }
 
   return {
@@ -37,14 +51,27 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   const { boardId } = await params
   const { task: taskId } = await searchParams
 
-  const [board, contributorsWithStats] = await Promise.all([
-    getBoard(boardId),
-    getContributorsWithStats(boardId),
-  ])
+  // Check if board exists first (without password check)
+  const { db } = await import("@/db")
+  const { boards } = await import("@/db/schema")
+  const { eq } = await import("drizzle-orm")
+  const boardExists = await db.query.boards.findFirst({
+    where: eq(boards.id, boardId),
+  })
 
-  if (!board) {
+  if (!boardExists) {
     notFound()
   }
+
+  // Now try to get board with password
+  const board = await getBoard(boardId)
+
+  // If board is null, password is not set - redirect to unlock
+  if (!board) {
+    redirect(`/boards/${boardId}/unlock`)
+  }
+
+  const contributorsWithStats = await getContributorsWithStats(boardId)
 
   // Fetch task if taskId is provided
   let task = null
