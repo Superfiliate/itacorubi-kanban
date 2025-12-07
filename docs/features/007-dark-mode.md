@@ -33,8 +33,21 @@ The application supports light, dark, and system-based themes. Users can toggle 
 ### Light Theme
 - White/light gray backgrounds
 - Dark text for readability
+- Glass backgrounds: `bg-white/40` to `bg-white/80`
+- Borders need higher opacity to be visible (avoid `border-border/30` or lower)
 
 ### Dark Theme
 - Dark gray/black backgrounds
 - Light text for contrast
 - Adjusted accent colors for visibility
+- Glass backgrounds: `bg-white/5` to `bg-black/80`
+- Borders are more visible due to white-on-dark contrast
+
+### Glassmorphism Considerations
+
+The app uses glassmorphism styling (see `docs/adrs/011-glassmorphism-styling.md`). When adding new components, ensure they work well in both themes:
+
+- **Backgrounds**: Always specify both light and dark variants (`bg-white/40 dark:bg-white/5`)
+- **Borders**: Use `border-border/50` minimum for visibility in light mode; `border-border/30` becomes invisible
+- **Shadows**: Light mode uses subtle shadows; dark mode uses darker, more prominent shadows
+- **Backdrop blur**: Works in both themes but is more noticeable against the gradient mesh background

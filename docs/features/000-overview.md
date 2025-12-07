@@ -44,6 +44,15 @@ Using Lucide React icons throughout:
 
 Light, dark, and system-based themes. Toggle via dropdown in the board header.
 
+### Glassmorphism Styling
+
+The app uses Apple Vision Pro inspired glassmorphism with frosted glass effects:
+
+- **Gradient mesh background**: Animated radial gradients provide depth
+- **Glass surfaces**: Cards, headers, dialogs use `backdrop-blur` with semi-transparent backgrounds
+- **Consistent form controls**: Inputs, selects, buttons follow unified glass-compatible styling
+- **See `docs/adrs/011-glassmorphism-styling.md`** for implementation patterns
+
 ### Mobile Responsiveness
 
 The app is fully responsive and usable on mobile devices:
