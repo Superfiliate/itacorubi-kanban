@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { tasks, taskAssignees } from "@/db/schema"
+import { tasks, taskAssignees, comments } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getRandomEmoji } from "@/lib/emojis"
@@ -136,6 +136,9 @@ export async function deleteTask(id: string, boardId: string) {
 
   // Delete assignees first
   await db.delete(taskAssignees).where(eq(taskAssignees.taskId, id))
+
+  // Delete comments before removing the task to honor restrict FKs
+  await db.delete(comments).where(eq(comments.taskId, id))
 
   await db.delete(tasks).where(eq(tasks.id, id))
 

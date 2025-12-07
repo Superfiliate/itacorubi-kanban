@@ -20,10 +20,14 @@ One-liner stating the decision clearly.
 Code snippets when helpful.
 ```
 
+## Scope
+
+ADRs are for technical/architectural decisions and patterns (how we build). Product behavior/UX belongs in `/docs/features/`.
+
 ## Guidelines
 
-- Keep the main content under 500 characters
+- Be succinct and decision-oriented
+- Add small examples/cheatsheets when they clarify the pattern; avoid long dumps
+- Place examples under a `## Examples` section when present
 - Prioritize the most important points
-- Be succinct - no lengthy explanations
-- Only include Examples section when code helps clarify
 - All ADRs in this folder are accepted (no status needed)

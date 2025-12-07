@@ -15,6 +15,10 @@ Each feature file focuses on a single model and its interactions:
 | `004-tasks.md` | Task | Create, view/edit, move, delete |
 | `005-contributors.md` | Contributor | Assign, create, remove, colors |
 | `006-comments.md` | Comment | Add, edit, delete, author memory, age indicators |
+| `007-dark-mode.md` | — | Theme toggle and persistence |
+| `008-glassmorphism.md` | — | Visual styling direction |
+| `009-sync-status.md` | — | Sync indicator behavior |
+| `010-user-feedback.md` | — | Toasts, confirmations, empty states |
 
 ## File Structure
 

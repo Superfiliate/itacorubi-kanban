@@ -45,7 +45,7 @@ The application supports light, dark, and system-based themes. Users can toggle 
 
 ### Glassmorphism Considerations
 
-The app uses glassmorphism styling (see `docs/adrs/011-glassmorphism-styling.md`). When adding new components, ensure they work well in both themes:
+The app uses glassmorphism styling (see `docs/features/008-glassmorphism.md`). When adding new components, ensure they work well in both themes:
 
 - **Backgrounds**: Always specify both light and dark variants (`bg-white/40 dark:bg-white/5`)
 - **Borders**: Use `border-border/50` minimum for visibility in light mode; `border-border/30` becomes invisible

@@ -4,10 +4,9 @@
 
 ## Required Steps
 
-1. **ALWAYS** read `/docs/README.md` first
-2. **ALWAYS** check `/docs/adrs/` for coding patterns and conventions
-3. **ALWAYS** check `/docs/features/` for user flows and requirements
-4. **ALWAYS** check `/docs/specs/` for active development instructions
+1. **ALWAYS** read `/docs/README.md` first, then the README inside any folder you touch (e.g., `/docs/adrs/README.md`, `/docs/features/README.md`) before editing files there.
+2. **ALWAYS** check `/docs/adrs/` for technical decisions and patterns. ADRs are technical/architectural—how we build, not what the product does.
+3. **ALWAYS** check `/docs/features/` for product/UX requirements. Features are product-facing behaviors and design directions—what the product should do/look like.
 
 ## Non-Negotiable
 
@@ -18,13 +17,12 @@
 
 ## Keep Docs Updated
 
-**Documentation updates are part of your work, not an afterthought.**
+**Documentation updates are part of your work, not an afterthought. Read the relevant README before adding or changing files in that area.**
 
 When planning any task, include documentation updates as explicit steps in your plan:
 
 - **New patterns or conventions?** → Plan to add to `/docs/adrs/`
 - **New features or user flows?** → Plan to add/update `/docs/features/`
-- **Progress on specs?** → Plan to update `/docs/specs/`
 
 If you use Plan mode, your plan MUST include documentation tasks when the work introduces:
 - New user-facing features

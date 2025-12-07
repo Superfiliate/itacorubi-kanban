@@ -558,14 +558,17 @@ export function useCreateComment(boardId: string) {
           ...old,
           columns: old.columns.map((col) => ({
             ...col,
-            tasks: col.tasks.map((task) =>
-              task.id === taskId
-                ? {
-                    ...task,
-                    comments: [...task.comments, { id: optimisticId, createdAt: new Date() }],
-                  }
-                : task
-            ),
+            tasks: col.tasks.map((task) => {
+              if (task.id !== taskId) return task
+
+              const newCommentMeta = { id: optimisticId, createdAt: new Date() }
+              const comments = [newCommentMeta, ...task.comments].sort((a, b) => {
+                if (!a.createdAt || !b.createdAt) return 0
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              })
+
+              return { ...task, comments }
+            }),
           })),
         }
       })

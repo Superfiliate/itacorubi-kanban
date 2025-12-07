@@ -6,7 +6,7 @@ This folder contains project documentation organized into distinct categories fo
 
 ### `/adrs` - Architecture Decision Records
 
-Contains coding patterns, conventions, and architectural decisions that should be followed throughout the codebase. These documents serve as a reference for maintaining consistency and best practices across the project.
+Technical/architectural decisions and patterns (how we build). Keep concise rationale plus small examples/cheatsheets. Do NOT capture product behavior or UX here.
 
 **What to store here:**
 - Coding style guidelines
@@ -17,7 +17,7 @@ Contains coding patterns, conventions, and architectural decisions that should b
 
 ### `/features` - Feature Documentation
 
-Contains general use-cases and user-flows describing how we expect the application to be used. These documents help understand the product from a user's perspective.
+Product/UX requirements and design directions (what the product should do/look like). Include user flows, behavior, and visual guidance. Avoid deep implementation specifics; those live in ADRs.
 
 **What to store here:**
 - User stories and use-cases
@@ -25,17 +25,6 @@ Contains general use-cases and user-flows describing how we expect the applicati
 - Feature requirements
 - Acceptance criteria
 - UI/UX specifications
-
-### `/specs` - Feature Specifications
-
-Contains prompting, instructions, and progress tracking for the development of new features. This is where active development specifications live.
-
-**What to store here:**
-- Feature development prompts and instructions
-- Development progress tracking
-- Implementation details and notes
-- Work-in-progress specifications
-- AI-assisted development context
 
 ---
 

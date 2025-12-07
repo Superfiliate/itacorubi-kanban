@@ -40,7 +40,8 @@ Columns represent workflow stages within a board (e.g., "To do", "Doing", "Done"
 
 - Only available when column has 0 tasks
 - Click trash icon (`Trash2`) left of task count
-- Immediate deletion (no confirmation)
+- Confirmation dialog appears (per ADR 007 destructive pattern)
+- If the column has tasks, deletion is blocked and an error toast explains why
 
 ## Notes
 

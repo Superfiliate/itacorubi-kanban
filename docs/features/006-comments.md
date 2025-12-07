@@ -109,3 +109,9 @@ The task sidebar is divided into two columns:
 - Anyone can edit or delete any comment (collaborative editing)
 - Adding a comment moves the task to the top of its column
 - The task "created at" date can be manually edited via date picker
+
+## Ordering Contract
+
+- Task sidebar: oldest → newest to preserve conversation flow
+- Task cards: newest comment timestamp drives the age badge; keep comment lists newest-first in card caches
+- Optimistic updates must preserve these orders (append for sidebar data, prepend or sort desc for card data) to avoid stale age indicators

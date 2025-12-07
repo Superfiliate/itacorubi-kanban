@@ -15,7 +15,7 @@ export const boards = sqliteTable("boards", {
 // Columns - belong to a board, orderable
 export const columns = sqliteTable("columns", {
   id: text("id").primaryKey(), // UUID
-  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "cascade" }),
+  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
   name: text("name").notNull(),
   position: integer("position").notNull(),
   isCollapsed: integer("is_collapsed", { mode: "boolean" }).default(false),
@@ -24,7 +24,7 @@ export const columns = sqliteTable("columns", {
 // Tasks - belong to a board and column
 export const tasks = sqliteTable("tasks", {
   id: text("id").primaryKey(), // UUID
-  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "cascade" }),
+  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
   columnId: text("column_id").notNull().references(() => columns.id, { onDelete: "restrict" }),
   title: text("title").notNull(),
   position: integer("position").notNull(),
@@ -57,7 +57,7 @@ export type ContributorColor = typeof CONTRIBUTOR_COLORS[number]
 // Contributors - belong to a board
 export const contributors = sqliteTable("contributors", {
   id: text("id").primaryKey(), // UUID
-  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "cascade" }),
+  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
   name: text("name").notNull(),
   color: text("color").notNull().$type<ContributorColor>(),
 })
@@ -72,8 +72,8 @@ export const taskAssignees = sqliteTable("task_assignees", {
 // Comments - belong to a task and have an author (contributor)
 export const comments = sqliteTable("comments", {
   id: text("id").primaryKey(), // UUID
-  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
-  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "cascade" }),
+  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
   authorId: text("author_id").notNull().references(() => contributors.id, { onDelete: "restrict" }),
   content: text("content").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
