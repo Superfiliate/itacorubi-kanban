@@ -50,3 +50,4 @@ When deletion is restricted:
 - **Positive**: No accidental data loss, explicit and predictable behavior
 - **Negative**: More code required to handle deletions properly
 - **Trade-off**: Users must manually clean up related records before deletion
+

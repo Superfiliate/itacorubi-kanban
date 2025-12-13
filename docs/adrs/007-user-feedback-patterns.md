@@ -8,3 +8,4 @@ Keep user feedback predictable across the app (toasts, confirmations, empty stat
 - Empty states: explain what to do next and give one primary action
 
 If we need a strict implementation pattern, prefer creating a reusable component over expanding this ADR.
+

@@ -9,7 +9,11 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:reset": "rm -f local.db local.db-journal && drizzle-kit push"
+    "db:reset": "rm -f local.db local.db-journal && drizzle-kit push",
+    "test": "playwright test --config=playwright/playwright.config.ts",
+    "test:ui": "playwright test --config=playwright/playwright.config.ts --ui",
+    "test:debug": "playwright test --config=playwright/playwright.config.ts --debug",
+    "test:codegen": "playwright codegen http://localhost:5800"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -42,6 +46,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -43,3 +43,4 @@ export async function decryptWithFallback(
   const value = await decryptRequired(encrypted, password)
   return value ?? fallback
 }
+
