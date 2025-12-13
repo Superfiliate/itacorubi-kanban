@@ -74,8 +74,9 @@ Use helpers from `playwright/utils/playwright.ts`:
 ### Database Isolation
 
 - Database is reset once before all tests via `global-setup.ts`
-- Tests are configured to run **serially** (single worker) to keep runs deterministic under strict 10s action/assertion timeouts
-- SQLite handles concurrent operations safely
+- Tests are configured to run **in parallel** (multiple workers) both locally and on CI
+- Each test creates isolated boards (unique IDs) so tests can run concurrently without stepping on each other
+- SQLite handles concurrent operations safely, but we treat any timeout/flakiness as a **bug** to fix (not something to hide with higher timeouts)
 - Each test should work with a clean database state
 
 ## Configuration
@@ -85,13 +86,13 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 - **Test server**: Automatically starts Next.js dev server on port 5900
 - **Test database**: Uses `file:test.db` via environment variable
 - **Browser**: Chromium only (can be extended to Firefox/WebKit)
-- **Retries**: 2 retries on CI, 0 locally
+- **Retries**: 2 retries on CI, 1 locally
 - **Screenshots/Videos**: Captured on failure for debugging
-- **Parallel execution**: Disabled (single worker) to avoid server/db contention that can cause timeouts
+- **Parallel execution**: Enabled (`fullyParallel: true`) with multiple workers
 - **Timeouts**: All timeouts configured globally:
-  - `testTimeout: 30000` - 30 seconds maximum per test
+  - `timeout: 30000` - 30 seconds maximum per test
   - `expect.timeout: 10000` - 10 seconds for assertions
-  - `timeout: 10000` - 10 seconds for actions (click, fill, etc.)
+  - `actionTimeout: 10000` - 10 seconds for actions (click, fill, etc.)
   - `navigationTimeout: 10000` - 10 seconds for navigation
 
 ## Timeout Configuration
@@ -124,9 +125,52 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 6. **No explicit timeouts** - Always use global timeout configuration
 7. **Parallel execution** - Tests run in parallel for faster feedback
 
-## Future Considerations
+## Gotchas (Lessons Learned)
 
-- Can add Playwright Component Testing if needed for isolated component tests
-- Can extend to Firefox and WebKit browsers for cross-browser testing
-- Can add visual regression testing with Playwright's screenshot comparison
-- Can add accessibility testing with Playwright's accessibility snapshots
+These are recurring root causes behind timeouts/flaky E2E tests. If a test starts failing, check these first.
+
+### Selector collisions (Playwright strict mode)
+
+- Prefer scoping queries to a container:
+  - Example: `const sidebar = page.getByRole("dialog", { name: /edit task/i })`
+  - Then query within it: `sidebar.getByRole("combobox", { name: /assignees/i })`
+- Avoid `getByText(/foo/i)` when the same text can appear in multiple places:
+  - Empty states often include the keyword (e.g. "No comments yet" matches `/comments/i`)
+  - Dropdown suggestion lists can contain the same labels as the selected value
+- When you *must* use text matching, disambiguate with `.first()` / `.nth()` or a more specific role-based locator.
+
+### Accessibility drives testability
+
+We rely on `getByRole(..., { name })` heavily. That requires proper accessible names.
+
+- Icon-only buttons must have `aria-label` (and ideally `title`)
+- Custom combobox triggers (e.g. Popover + Button) must have an accessible name:
+  - Add `aria-label` (or an associated `<label htmlFor>` + `id`) so tests can do:
+    `getByRole("combobox", { name: /assignees/i })`
+
+### Escape key closes the wrong layer
+
+`Escape` can close:
+- Popovers/menus (desired), **or**
+- the whole sidebar Sheet/dialog (undesired), depending on focus.
+
+Recommendations:
+- Prefer closing the sidebar via the explicit UI control (e.g. `Back`) instead of `page.keyboard.press("Escape")`
+- In the app, close selection popovers after selecting/creating items to avoid needing Escape at all.
+
+### Optimistic updates should keep stable identities
+
+If the UI swaps an optimistic entity ID for a server ID, it can:
+- detach the node Playwright is interacting with (click becomes “element detached”)
+- cause confirm dialogs/buttons to become “not stable”
+
+Preferred patterns:
+- Create the entity with a deterministic id when possible (client generates id and server accepts it), **or**
+- If replacement is unavoidable, ensure the UI remains stable (avoid unmount/remount during critical interactions).
+
+### Drag and drop needs explicit handles
+
+For DnD (dnd-kit):
+- Do not attach drag listeners to large interactive regions (headers that also contain inputs/buttons)
+- Provide a dedicated “Drag …” handle/button and attach listeners there
+- In tests, use pointer-based dragging that matches the app’s sensor/activation constraints.

@@ -9,17 +9,16 @@ export default defineConfig({
   testMatch: /.*\.spec\.ts$/,
   globalSetup: require.resolve("./global-setup.ts"),
   /* Run tests in files in parallel */
-  fullyParallel: false,
+  fullyParallel: true,
   /**
-   * Keep workers to 1.
-   * With 10s action/assertion timeouts, running multiple E2E files concurrently against a single
-   * dev server + sqlite file tends to cause timeouts/flakiness.
+   * We WANT parallel execution (locally + CI).
+   * Keep tests/app deterministic under strict 10s action/assertion timeouts.
    */
-  workers: 1,
+  workers: process.env.CI ? 2 : 4,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   /* Timeout for each test */
   timeout: 30000, // 30s per test maximum
   /* Timeout for expect assertions */
