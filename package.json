@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "pnpm db:push && next dev -p 5800",
     "kill": "kill -9 $(lsof -ti :5800) || true",
-    "build": "pnpm db:push && next build",
+    "build": "pnpm db:push --force && next build",
     "start": "next start -p 5800",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
