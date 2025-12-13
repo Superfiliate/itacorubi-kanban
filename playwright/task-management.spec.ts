@@ -10,8 +10,8 @@ test.describe("Task Management", () => {
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
 
-    // Wait for task to be created and sidebar to open
-    await page.waitForURL(/task=/)
+    // URL should update quickly (local-first sidebar open)
+    await page.waitForURL(/task=/, { timeout: 1000 })
 
     // Verify sidebar is open
     await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
@@ -20,6 +20,59 @@ test.describe("Task Management", () => {
     // Look specifically in the dialog/sidebar, not the task card
     const sidebar = page.getByRole("dialog")
     await expect(sidebar.getByText(/new task/i).first()).toBeVisible()
+  })
+
+  test("should reflect contributor rename on task cards without refresh (and keep color stable)", async ({ page }) => {
+    const boardId = await createTestBoard(page, "Contributor Sync Test", "testpass123")
+    await waitForBoardLoad(page)
+
+    // Create a task
+    await page.getByRole("button", { name: /add task/i }).first().click()
+    await page.waitForURL(/task=/, { timeout: 1000 })
+
+    const sidebar = page.getByRole("dialog")
+    await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
+
+    // Create & assign a new contributor from Assignees select
+    const assigneesCombobox = sidebar.getByRole("combobox", { name: /assignees/i })
+    await assigneesCombobox.click()
+    await page.getByPlaceholder(/search or create/i).fill("Alice")
+    await page.getByRole("option", { name: /create.*alice/i }).click()
+
+    // Badge should appear in sidebar
+    const aliceBadge = sidebar.locator("span").filter({ hasText: "Alice" }).first()
+    await expect(aliceBadge).toBeVisible()
+
+    // Color class should not change after a bit (no flicker)
+    const classBefore = await aliceBadge.getAttribute("class")
+    await page.waitForTimeout(2000)
+    const classAfter = await aliceBadge.getAttribute("class")
+    expect(classAfter).toBe(classBefore)
+
+    // Close sidebar
+    await page.keyboard.press("Escape")
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+
+    // Card should show contributor immediately
+    const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..")
+    await expect(taskCard.getByText("Alice")).toBeVisible()
+
+    // Open contributors dialog and rename Alice -> Alicia
+    await page.getByRole("button", { name: /manage contributors/i }).click()
+    const contributorsDialog = page.getByRole("dialog").filter({ hasText: /contributors/i })
+    await expect(contributorsDialog).toBeVisible()
+
+    await contributorsDialog.getByText("Alice", { exact: true }).click()
+    const nameInput = contributorsDialog.locator('input[value="Alice"]')
+    await expect(nameInput).toBeVisible()
+    await nameInput.fill("Alicia")
+    await page.keyboard.press("Enter")
+
+    // Close dialog
+    await page.keyboard.press("Escape")
+
+    // Task card should reflect rename without refresh
+    await expect(taskCard.getByText("Alicia")).toBeVisible()
   })
 
   test("should edit task title", async ({ page }) => {

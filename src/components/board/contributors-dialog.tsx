@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Users, Trash2, ChevronDown, ChevronRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,12 +22,13 @@ import { EditableText } from "@/components/editable-text"
 import { cn } from "@/lib/utils"
 import { CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
 import {
-  createContributor,
-  updateContributor,
-  deleteContributor,
   type ContributorWithStats,
 } from "@/actions/contributors"
 import { toast } from "sonner"
+import { useBoardStore, selectBoard } from "@/stores/board-store"
+import { flushBoardOutbox } from "@/lib/outbox/flush"
+import { useQueryClient } from "@tanstack/react-query"
+import { boardKeys, type BoardData } from "@/hooks/use-board"
 
 // Color styles matching contributor-badge.tsx
 const colorStyles: Record<ContributorColor, string> = {
@@ -129,27 +130,108 @@ function ContributorRow({
   contributor: ContributorWithStats
   boardId: string
 }) {
+  const queryClient = useQueryClient()
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const canDelete = contributor.taskCount === 0 && contributor.commentCount === 0
   const hasActivity = contributor.taskCount > 0 || contributor.commentCount > 0
+  const localBoard = useBoardStore(selectBoard(boardId))
+  const localContributor = localBoard?.contributorsById[contributor.id]
+
+  const displayName = localContributor?.name ?? contributor.name
+  const displayColor = localContributor?.color ?? contributor.color
 
   const handleNameSave = async (name: string) => {
-    await updateContributor(contributor.id, boardId, { name })
+    // Local-first
+    useBoardStore.getState().updateContributorLocal({ boardId, contributorId: contributor.id, name })
+
+    // Keep TanStack board cache consistent for current UI (task cards use nested contributor objects)
+    queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+      if (!old) return old
+      return {
+        ...old,
+        contributors: old.contributors.map((c) => (c.id === contributor.id ? { ...c, name } : c)),
+        columns: old.columns.map((col) => ({
+          ...col,
+          tasks: col.tasks.map((t) => ({
+            ...t,
+            assignees: t.assignees.map((a) =>
+              a.contributor.id === contributor.id ? { contributor: { ...a.contributor, name } } : a
+            ),
+          })),
+        })),
+      }
+    })
+
+    useBoardStore.getState().enqueue({
+      type: "updateContributor",
+      boardId,
+      payload: { contributorId: contributor.id, name },
+    })
+    void flushBoardOutbox(boardId)
+
     toast.success("Contributor updated")
   }
 
   const handleColorChange = async (color: ContributorColor) => {
-    await updateContributor(contributor.id, boardId, { color })
+    useBoardStore.getState().updateContributorLocal({ boardId, contributorId: contributor.id, color })
+
+    queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+      if (!old) return old
+      return {
+        ...old,
+        contributors: old.contributors.map((c) => (c.id === contributor.id ? { ...c, color } : c)),
+        columns: old.columns.map((col) => ({
+          ...col,
+          tasks: col.tasks.map((t) => ({
+            ...t,
+            assignees: t.assignees.map((a) =>
+              a.contributor.id === contributor.id ? { contributor: { ...a.contributor, color } } : a
+            ),
+          })),
+        })),
+      }
+    })
+
+    useBoardStore.getState().enqueue({
+      type: "updateContributor",
+      boardId,
+      payload: { contributorId: contributor.id, color },
+    })
+    void flushBoardOutbox(boardId)
+
     toast.success("Contributor updated")
   }
 
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteContributor(contributor.id, boardId)
+      useBoardStore.getState().deleteContributorLocal({ boardId, contributorId: contributor.id })
+
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          contributors: old.contributors.filter((c) => c.id !== contributor.id),
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((t) => ({
+              ...t,
+              assignees: t.assignees.filter((a) => a.contributor.id !== contributor.id),
+            })),
+          })),
+        }
+      })
+
+      useBoardStore.getState().enqueue({
+        type: "deleteContributor",
+        boardId,
+        payload: { contributorId: contributor.id },
+      })
+      void flushBoardOutbox(boardId)
+
       toast.success("Contributor deleted")
       setIsDeleteDialogOpen(false)
     } catch {
@@ -166,18 +248,18 @@ function ContributorRow({
       <div className="flex items-center gap-3 py-3">
         {/* Color selector */}
         <ColorSelector
-          currentColor={contributor.color}
+          currentColor={displayColor}
           onSelect={handleColorChange}
         />
 
         {/* Name (editable) */}
         <div className="flex-1 min-w-0">
           <EditableText
-            value={contributor.name}
+            value={displayName}
             onSave={handleNameSave}
             className={cn(
               "inline-flex items-center rounded-md px-2 py-0.5 text-sm font-medium",
-              colorStyles[contributor.color]
+              colorStyles[displayColor]
             )}
             inputClassName="text-sm"
           />
@@ -239,7 +321,7 @@ function ContributorRow({
           <DialogHeader>
             <DialogTitle>Delete Contributor</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{contributor.name}&quot;? This action
+              Are you sure you want to delete &quot;{displayName}&quot;? This action
               cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -280,6 +362,7 @@ function EmptyState() {
 }
 
 function AddContributorForm({ boardId }: { boardId: string }) {
+  const queryClient = useQueryClient()
   const [name, setName] = useState("")
   const [isAdding, setIsAdding] = useState(false)
 
@@ -290,7 +373,32 @@ function AddContributorForm({ boardId }: { boardId: string }) {
 
     setIsAdding(true)
     try {
-      await createContributor(boardId, trimmedName)
+      const contributorId = crypto.randomUUID()
+      const color =
+        CONTRIBUTOR_COLORS[Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)]
+
+      useBoardStore.getState().createContributorLocal({
+        boardId,
+        contributorId,
+        name: trimmedName,
+        color,
+      })
+
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          contributors: [...old.contributors, { id: contributorId, boardId, name: trimmedName, color }],
+        }
+      })
+
+      useBoardStore.getState().enqueue({
+        type: "createContributor",
+        boardId,
+        payload: { contributorId, name: trimmedName, color },
+      })
+      void flushBoardOutbox(boardId)
+
       setName("")
       toast.success("Contributor added")
     } catch {
@@ -325,6 +433,40 @@ export function ContributorsDialog({
   open,
   onOpenChange,
 }: ContributorsDialogProps) {
+  const localBoard = useBoardStore(selectBoard(boardId))
+
+  const displayContributors = useMemo<ContributorWithStats[]>(() => {
+    const byId = new Map<string, ContributorWithStats>()
+
+    // Start from server-provided stats, but overlay name/color from local store if present.
+    for (const c of contributors) {
+      const local = localBoard?.contributorsById[c.id]
+      byId.set(c.id, {
+        ...c,
+        name: local?.name ?? c.name,
+        color: local?.color ?? c.color,
+      })
+    }
+
+    // Append local-only contributors (created locally) with empty stats.
+    for (const id of localBoard?.contributorOrder ?? []) {
+      if (byId.has(id)) continue
+      const c = localBoard?.contributorsById[id]
+      if (!c) continue
+      byId.set(id, {
+        id: c.id,
+        name: c.name,
+        color: c.color,
+        boardId,
+        taskCount: 0,
+        commentCount: 0,
+        tasksByColumn: [],
+      })
+    }
+
+    return Array.from(byId.values())
+  }, [contributors, localBoard, boardId])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -339,11 +481,11 @@ export function ContributorsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {contributors.length === 0 ? (
+        {displayContributors.length === 0 ? (
           <EmptyState />
         ) : (
           <ScrollArea className="max-h-[400px] -mx-6 px-6">
-            {contributors.map((contributor) => (
+            {displayContributors.map((contributor) => (
               <ContributorRow
                 key={contributor.id}
                 contributor={contributor}
@@ -358,4 +500,3 @@ export function ContributorsDialog({
     </Dialog>
   )
 }
-

@@ -27,6 +27,7 @@ import {
   type BoardColumn,
 } from "@/hooks/use-board"
 import { useUpdateTaskColumn } from "@/hooks/use-task"
+import { useBoardPolling } from "@/hooks/use-board-polling"
 
 interface BoardClientProps {
   boardId: string
@@ -34,6 +35,8 @@ interface BoardClientProps {
 }
 
 export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
+  useBoardPolling(boardId)
+
   // Use TanStack Query for columns data
   const { data: board } = useBoardQuery(boardId)
   const columns = board?.columns ?? initialColumns

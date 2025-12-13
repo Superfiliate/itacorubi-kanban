@@ -15,23 +15,26 @@ export async function createTestBoard(page: Page, title: string = "Test Board", 
   await page.getByLabel(/password/i).fill(password)
 
   // Submit the form and wait for navigation
-  // Use response wait for faster detection - wait for the board page to load
-  const [response] = await Promise.all([
-    page.waitForResponse((response) => response.url().includes('/boards/') && response.status() === 200),
-    page.getByRole("button", { name: /create/i }).click(),
-  ])
+  await page.getByRole("button", { name: /create/i }).click()
 
-  // Wait for header to ensure page is rendered
-  await page.waitForSelector('header')
+  // Wait for either board page or unlock page (cookie timing can vary in tests)
+  await page.waitForURL(/\/boards\/[a-f0-9-]+(\/unlock)?$/)
 
-  // Extract board ID from URL
+  // Extract board ID from URL (works for both /boards/{id} and /boards/{id}/unlock)
   const url = page.url()
-  const match = url.match(/\/boards\/([a-f0-9-]+)$/)
-  if (!match) {
-    throw new Error(`Failed to extract board ID from URL: ${url}`)
+  const match = url.match(/\/boards\/([a-f0-9-]+)(?:\/unlock)?$/)
+  if (!match) throw new Error(`Failed to extract board ID from URL: ${url}`)
+  const boardId = match[1]
+
+  // If we landed on unlock page, unlock using the provided password
+  if (url.endsWith("/unlock")) {
+    await unlockTestBoard(page, boardId, password)
+  } else {
+    // Wait for header to ensure page is rendered
+    await page.waitForSelector("header")
   }
 
-  return match[1]
+  return boardId
 }
 
 /**

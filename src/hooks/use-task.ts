@@ -18,6 +18,9 @@ import { createComment, updateComment, deleteComment } from "@/actions/comments"
 import { getRandomEmoji } from "@/lib/emojis"
 import { boardKeys, type BoardData, type BoardTask } from "./use-board"
 import type { ContributorColor } from "@/db/schema"
+import { CONTRIBUTOR_COLORS } from "@/db/schema"
+import { useBoardStore } from "@/stores/board-store"
+import { flushBoardOutbox } from "@/lib/outbox/flush"
 
 // Types for full task with comments
 export interface TaskComment {
@@ -500,36 +503,27 @@ export function useCreateAndAssignContributor(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, name }: { taskId: string; name: string }) =>
-      createAndAssignContributor(taskId, boardId, name),
-    onMutate: async ({ taskId, name }) => {
+    mutationFn: async ({ taskId, name }: { taskId: string; name: string }) => {
+      // Local-first: pick stable values on the client
+      const contributorId = crypto.randomUUID()
+      const color = CONTRIBUTOR_COLORS[Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)]
+
+      // Update local store immediately (single source for contributor identity)
+      useBoardStore.getState().createContributorLocal({
+        boardId,
+        contributorId,
+        name,
+        color,
+      })
+      useBoardStore.getState().addAssigneeLocal({ boardId, taskId, contributorId })
+
+      // Update TanStack caches for current UI (board cards + sidebar task cache)
       await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
       await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
 
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-
-      const optimisticContributorId = crypto.randomUUID()
-      const optimisticContributor = {
-        id: optimisticContributorId,
-        name,
-        // Color is only visual; server will pick the final color.
-        color: "blue" as ContributorColor,
-        boardId,
-      }
-
-      // Update board cache: add contributor + assign to task (for task cards)
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
-
-        const alreadyAssigned = old.columns.some((col) =>
-          col.tasks.some(
-            (t) =>
-              t.id === taskId &&
-              t.assignees.some((a) => a.contributor.id === optimisticContributorId)
-          )
-        )
-
+        const optimisticContributor = { id: contributorId, name, color, boardId }
         return {
           ...old,
           contributors: [...old.contributors, optimisticContributor],
@@ -537,12 +531,11 @@ export function useCreateAndAssignContributor(boardId: string) {
             ...col,
             tasks: col.tasks.map((t) => {
               if (t.id !== taskId) return t
-              if (alreadyAssigned) return t
               return {
                 ...t,
                 assignees: [
                   ...t.assignees,
-                  { contributor: { id: optimisticContributorId, name, color: optimisticContributor.color } },
+                  { contributor: { id: contributorId, name, color } },
                 ],
               }
             }),
@@ -550,72 +543,36 @@ export function useCreateAndAssignContributor(boardId: string) {
         }
       })
 
-      // Update task cache: add assignee so sidebar updates immediately
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return {
           ...old,
           assignees: [
             ...old.assignees,
-            { contributor: { id: optimisticContributorId, name, color: optimisticContributor.color } },
+            { contributor: { id: contributorId, name, color } },
           ],
         }
       })
 
-      return { previousBoard, previousTask, optimisticContributorId }
-    },
-    onSuccess: (serverContributorId, { taskId }, context) => {
-      // Replace optimistic contributor ID with server ID (keeps UI stable and avoids waiting)
-      const optimisticId = context?.optimisticContributorId
-      if (!optimisticId || serverContributorId === optimisticId) return
-
-      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-        if (!old) return old
-        return {
-          ...old,
-          contributors: old.contributors.map((c) =>
-            c.id === optimisticId ? { ...c, id: serverContributorId } : c
-          ),
-          columns: old.columns.map((col) => ({
-            ...col,
-            tasks: col.tasks.map((t) => {
-              if (t.id !== taskId) return t
-              return {
-                ...t,
-                assignees: t.assignees.map((a) =>
-                  a.contributor.id === optimisticId
-                    ? { contributor: { ...a.contributor, id: serverContributorId } }
-                    : a
-                ),
-              }
-            }),
-          })),
-        }
+      // Background sync via outbox (no placeholder color, no flicker)
+      useBoardStore.getState().enqueue({
+        type: "createAndAssignContributor",
+        boardId,
+        payload: { taskId, contributorId, name, color },
       })
+      void flushBoardOutbox(boardId)
 
-      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
-        if (!old) return old
-        return {
-          ...old,
-          assignees: old.assignees.map((a) =>
-            a.contributor.id === optimisticId
-              ? { contributor: { ...a.contributor, id: serverContributorId } }
-              : a
-          ),
-        }
-      })
-
-      // Invalidate to get the server-picked contributor color + ensure consistency
-      queryClient.invalidateQueries({ queryKey: boardKeys.detail(boardId) })
-      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
+      return contributorId
     },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
+    onMutate: async () => {
+      // mutationFn performs local-first work; keep onMutate as a no-op placeholder
+      return {}
+    },
+    onSuccess: () => {
+      // No invalidation needed; server stores client-chosen id/color.
+    },
+    onError: () => {
+      // We optimize for good actors; errors are acceptable divergence.
     },
   })
 }
@@ -625,7 +582,7 @@ export function useCreateComment(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       taskId,
       authorId,
       content,
@@ -633,37 +590,35 @@ export function useCreateComment(boardId: string) {
       taskId: string
       authorId: string
       content: string
-    }) => createComment(taskId, boardId, authorId, content),
-    onMutate: async ({ taskId, authorId, content }) => {
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+    }) => {
+      const board = useBoardStore.getState().boardsById[boardId]
+      const authorFromStore = board?.contributorsById[authorId]
+      const authorFromCache = queryClient
+        .getQueryData<BoardData>(boardKeys.detail(boardId))
+        ?.contributors.find((c) => c.id === authorId)
 
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
+      const author = authorFromStore ?? authorFromCache
+      if (!author) throw new Error("Author not found")
 
-      // Find author info
-      const author = previousBoard?.contributors.find((c) => c.id === authorId)
-      if (!author) return { previousTask, previousBoard }
+      const commentId = crypto.randomUUID()
+      const createdAt = new Date()
 
-      const optimisticId = crypto.randomUUID()
       const newComment: TaskComment = {
-        id: optimisticId,
+        id: commentId,
         content,
-        createdAt: new Date(),
-        author: {
-          id: author.id,
-          name: author.name,
-          color: author.color,
-        },
+        createdAt,
+        author: { id: author.id, name: author.name, color: author.color },
       }
 
-      // Update task cache
+      // Local-first store (drives sidebar UI)
+      useBoardStore.getState().createCommentLocal({ boardId, taskId, comment: newComment })
+
+      // TanStack caches (board card meta + task query if present)
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return { ...old, comments: [...old.comments, newComment] }
       })
 
-      // Update board cache (comment count in task card)
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
@@ -672,42 +627,26 @@ export function useCreateComment(boardId: string) {
             ...col,
             tasks: col.tasks.map((task) => {
               if (task.id !== taskId) return task
-
-              const newCommentMeta = { id: optimisticId, createdAt: new Date() }
+              const newCommentMeta = { id: commentId, createdAt }
               const comments = [newCommentMeta, ...task.comments].sort((a, b) => {
                 if (!a.createdAt || !b.createdAt) return 0
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
               })
-
               return { ...task, comments }
             }),
           })),
         }
       })
 
-      return { previousTask, previousBoard, optimisticId }
-    },
-    onSuccess: (serverId, { taskId }, context) => {
-      // Replace optimistic ID with server ID
-      if (context?.optimisticId && serverId !== context.optimisticId) {
-        queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
-          if (!old) return old
-          return {
-            ...old,
-            comments: old.comments.map((c) =>
-              c.id === context.optimisticId ? { ...c, id: serverId } : c
-            ),
-          }
-        })
-      }
-    },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
+      // Outbox sync (ensures ordering behind task creation)
+      useBoardStore.getState().enqueue({
+        type: "createComment",
+        boardId,
+        payload: { taskId, commentId, authorId, content, createdAt },
+      })
+      void flushBoardOutbox(boardId)
+
+      return commentId
     },
   })
 }
@@ -717,8 +656,9 @@ export function useUpdateComment(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       commentId,
+      taskId,
       authorId,
       content,
     }: {
@@ -726,7 +666,45 @@ export function useUpdateComment(boardId: string) {
       taskId: string
       authorId: string
       content: string
-    }) => updateComment(commentId, authorId, content, boardId),
+    }) => {
+      const board = useBoardStore.getState().boardsById[boardId]
+      const authorFromStore = board?.contributorsById[authorId]
+      const authorFromCache = queryClient
+        .getQueryData<BoardData>(boardKeys.detail(boardId))
+        ?.contributors.find((c) => c.id === authorId)
+      const author = authorFromStore ?? authorFromCache
+
+      useBoardStore.getState().updateCommentLocal({
+        boardId,
+        taskId,
+        commentId,
+        author: author ? { id: author.id, name: author.name, color: author.color } : undefined,
+        content,
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          comments: old.comments.map((c) =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  content,
+                  author: author ? { id: author.id, name: author.name, color: author.color } : c.author,
+                }
+              : c
+          ),
+        }
+      })
+
+      useBoardStore.getState().enqueue({
+        type: "updateComment",
+        boardId,
+        payload: { taskId, commentId, authorId, content },
+      })
+      void flushBoardOutbox(boardId)
+    },
     onMutate: async ({ commentId, taskId, authorId, content }) => {
       await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
 
@@ -769,8 +747,36 @@ export function useDeleteComment(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ commentId }: { commentId: string; taskId: string }) =>
-      deleteComment(commentId, boardId),
+    mutationFn: async ({ commentId, taskId }: { commentId: string; taskId: string }) => {
+      useBoardStore.getState().deleteCommentLocal({ boardId, taskId, commentId })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return { ...old, comments: old.comments.filter((c) => c.id !== commentId) }
+      })
+
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((task) =>
+              task.id === taskId
+                ? { ...task, comments: task.comments.filter((c) => c.id !== commentId) }
+                : task
+            ),
+          })),
+        }
+      })
+
+      useBoardStore.getState().enqueue({
+        type: "deleteComment",
+        boardId,
+        payload: { taskId, commentId },
+      })
+      void flushBoardOutbox(boardId)
+    },
     onMutate: async ({ commentId, taskId }) => {
       await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
       await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })

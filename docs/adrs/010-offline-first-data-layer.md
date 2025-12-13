@@ -1,32 +1,26 @@
-# ADR 010: Offline-First Data Layer with TanStack Query
+# ADR 010: Offline-First Data Layer (Local-First Store + Outbox)
 
-We use TanStack Query for optimistic UX and background sync.
+We treat the **client as the primary source of truth** for interactive UX using a **local-first in-memory store**, and we sync changes to the backend in the background via an **outbox**.
 
-- Mutations: cancel related queries, snapshot, update optimistically, rollback on error
-- Client-generated UUIDs enable instant creates; swap to server IDs only if they differ
-- Client-generated initial titles (e.g., "{emoji} New task") ensure optimistic UI matches server response
-- Hydrate server data once; don’t overwrite optimistic cache on mount
-- Lightweight sync indicator to show syncing vs saved; debounce to avoid flicker (see `docs/features/009-sync-status.md`)
-- Conflict strategy: last-write-wins; keep cache updates simple and consistent with server actions
+- **Local-first**: UI reads/writes from a normalized in-memory store (no waiting on network for interactions)
+- **Outbox background sync**: local writes enqueue mutations that flush to server actions asynchronously
+- **Stable client-chosen values**: client generates UUIDs and (where applicable) chooses visual fields (e.g. contributor color) so the backend does not “surprise” the UI later
+- **Hydration**: server data is used to hydrate local state once; do not overwrite local edits while outbox is pending
+- **Conflict strategy**: last-write-wins; optimize for good actors and low concurrency
+- **Sync indicator**: driven by outbox in-flight / pending state (see `docs/features/009-sync-status.md`)
 
-Prefer shared helpers for cache updates and a consistent key shape (boards, tasks) to reduce drift.
+TanStack Query may still be used for **one-time hydration**, **polling/revalidation**, and non-interactive fetches, but it is not the primary offline-first interaction layer.
 
-## Examples
+## Examples (optional)
 
-Optimistic skeleton:
-```tsx
-useMutation({
-  mutationFn: doAction,
-  onMutate: async () => {
-    await qc.cancelQueries({ queryKey })
-    const prev = qc.getQueryData(queryKey)
-    qc.setQueryData(queryKey, updater)
-    return { prev }
-  },
-  onError: (_e, _v, ctx) => ctx?.prev && qc.setQueryData(queryKey, ctx.prev),
-})
+Local-first skeleton:
+```ts
+applyLocalChange()
+enqueueOutboxMutation()
+flushOutboxInBackground()
 ```
 
 ## Links
-- Query plumbing: `src/lib/query-client.tsx`
-- Offline sync indicator: `src/components/sync-indicator.tsx`
+- Store/outbox decision: `docs/adrs/016-local-first-store-and-outbox.md`
+- Query plumbing (when used): `src/lib/query-client.tsx`
+- Sync indicator: `src/components/sync-indicator.tsx`

@@ -46,7 +46,7 @@ pnpm test playwright/board-creation.spec.ts
 
 - Tests use a separate `test.db` file (not `local.db`)
 - Database is reset before all tests run via `global-setup.ts`
-- The webServer automatically initializes the database with `pnpm db:push`
+- The build step automatically initializes the database with `pnpm db:push`
 - Environment variable `TURSO_DATABASE_URL=file:test.db` is set for test runs
 
 ## Test Patterns
@@ -83,7 +83,7 @@ Use helpers from `playwright/utils/playwright.ts`:
 
 The Playwright config (`playwright/playwright.config.ts`) includes:
 
-- **Test server**: Automatically starts Next.js dev server on port 5900
+- **Test server**: Automatically builds and starts Next.js production server on port 5800
 - **Test database**: Uses `file:test.db` via environment variable
 - **Browser**: Chromium only (can be extended to Firefox/WebKit)
 - **Retries**: 2 retries on CI, 1 locally

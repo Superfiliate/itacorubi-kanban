@@ -1,16 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { CommentsSection } from "./comments-section"
 import { TaskDetails } from "./task-details"
 import { useTaskQuery } from "@/hooks/use-task"
-import { useBoardQuery } from "@/hooks/use-board"
 import { SyncIndicator } from "@/components/sync-indicator"
 import { Button } from "@/components/ui/button"
 import type { ContributorColor } from "@/db/schema"
 import { ChevronLeft, Loader2 } from "lucide-react"
+import { selectBoard, selectTaskDetails, useBoardStore } from "@/stores/board-store"
 
 interface TaskSidebarProps {
   taskId: string
@@ -30,12 +30,53 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(true)
 
-  // Use TanStack Query for task data
-  const { data: task, isLoading } = useTaskQuery(taskId)
-  const { data: board } = useBoardQuery(boardId)
+  const board = useBoardStore(selectBoard(boardId))
+  const localTaskEntity = board?.tasksById[taskId]
+  const pendingCreate = (board?.outbox ?? []).some(
+    (i) => i.type === "createTask" && i.payload.taskId === taskId
+  )
 
-  // Use fresh contributors from board query if available
-  const currentContributors = board?.contributors ?? contributors
+  // Server fetch is only for deep-links / missing local state; never blocks local-first creates.
+  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(
+    localTaskEntity || pendingCreate ? null : taskId
+  )
+
+  // Task details from server hydration (when available)
+  const hydratedTaskDetails = useBoardStore(selectTaskDetails(boardId, taskId))
+
+  const taskForUI = useMemo(() => {
+    if (hydratedTaskDetails) return hydratedTaskDetails
+    if (localTaskEntity && board) {
+      const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
+      const assignees = assigneeIds
+        .map((cid) => board.contributorsById[cid])
+        .filter(Boolean)
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+
+      return {
+        id: localTaskEntity.id,
+        title: localTaskEntity.title,
+        columnId: localTaskEntity.columnId,
+        boardId,
+        createdAt: localTaskEntity.createdAt,
+        column: { id: localTaskEntity.columnId, name: columns.find((c) => c.id === localTaskEntity.columnId)?.name ?? "" },
+        assignees,
+        comments: [],
+      }
+    }
+    if (serverTask) return serverTask
+    return undefined
+  }, [hydratedTaskDetails, localTaskEntity, board, taskId, boardId, columns, serverTask])
+
+  const currentContributors = useMemo(() => {
+    if (board) {
+      return board.contributorOrder
+        .map((id) => board.contributorsById[id])
+        .filter(Boolean)
+        .map((c) => ({ id: c.id, name: c.name, color: c.color }))
+    }
+    return contributors
+  }, [board, contributors])
 
   const handleClose = () => {
     setIsOpen(false)
@@ -44,11 +85,12 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
   }
 
   useEffect(() => {
-    // If the task fails to load (e.g., invalid id), close the sidebar gracefully
-    if (!isLoading && !task) {
+    // If the task is truly missing (deep-link to invalid id), close gracefully.
+    // For local-first creates, we never close while the create is pending.
+    if (!pendingCreate && !localTaskEntity && !isServerLoading && !taskForUI) {
       handleClose()
     }
-  }, [isLoading, task])
+  }, [pendingCreate, localTaskEntity, isServerLoading, taskForUI])
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -57,7 +99,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
           <SheetTitle>Edit Task</SheetTitle>
         </SheetHeader>
 
-        {isLoading || !task ? (
+        {(!taskForUI || (isServerLoading && !localTaskEntity && !hydratedTaskDetails)) ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
@@ -81,12 +123,12 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
               </div>
               <TaskDetails
                 task={{
-                  id: task.id,
-                  title: task.title,
-                  columnId: task.columnId,
+                  id: taskForUI.id,
+                  title: taskForUI.title,
+                  columnId: taskForUI.columnId,
                   boardId: boardId,
-                  createdAt: task.createdAt,
-                  assignees: task.assignees,
+                  createdAt: taskForUI.createdAt,
+                  assignees: taskForUI.assignees,
                 }}
                 columns={columns}
                 contributors={currentContributors}
@@ -97,9 +139,9 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
             {/* Comments - Second on mobile/tablet (stacked), left side on desktop */}
             <div className="order-2 lg:order-1 flex-1 lg:flex-[7] min-h-0 lg:overflow-y-auto">
               <CommentsSection
-                taskId={task.id}
+                taskId={taskForUI.id}
                 boardId={boardId}
-                comments={task.comments}
+                comments={taskForUI.comments}
                 contributors={currentContributors}
               />
             </div>

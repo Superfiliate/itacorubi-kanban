@@ -20,13 +20,16 @@ import {
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   useUpdateColumnName,
   useToggleColumnCollapsed,
   useDeleteColumn,
 } from "@/hooks/use-board"
-import { useCreateTask } from "@/hooks/use-task"
 import { getRandomEmoji } from "@/lib/emojis"
+import { boardKeys, type BoardData, type BoardTask } from "@/hooks/use-board"
+import { useBoardStore } from "@/stores/board-store"
+import { flushBoardOutbox } from "@/lib/outbox/flush"
 
 import type { ContributorColor } from "@/db/schema"
 
@@ -54,6 +57,7 @@ interface ColumnProps {
 
 export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const collapsed = isCollapsed ?? false
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
@@ -61,7 +65,6 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   const updateColumnNameMutation = useUpdateColumnName(boardId)
   const toggleCollapsedMutation = useToggleColumnCollapsed(boardId)
   const deleteColumnMutation = useDeleteColumn(boardId)
-  const createTaskMutation = useCreateTask(boardId)
 
   const {
     attributes,
@@ -107,14 +110,60 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   }
 
   const handleAddTask = async () => {
-    if (createTaskMutation.isPending) return
     const emoji = getRandomEmoji()
     const title = `${emoji} New task`
+    const taskId = crypto.randomUUID()
+    const createdAt = new Date()
+
     try {
-      const serverId = await createTaskMutation.mutateAsync({ columnId: id, title })
+      // 1) Local-first: update in-memory store immediately
+      useBoardStore.getState().createTaskLocal({
+        boardId,
+        taskId,
+        columnId: id,
+        title,
+        createdAt,
+      })
+
+      // 2) Keep current board UI stable (still TanStack-driven for now)
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+
+        const newTask: BoardTask = {
+          id: taskId,
+          boardId,
+          columnId: id,
+          title,
+          position: 0,
+          createdAt,
+          assignees: [],
+          comments: [],
+        }
+
+        return {
+          ...old,
+          columns: old.columns.map((col) => {
+            if (col.id !== id) return col
+            const maxPosition = col.tasks.length > 0
+              ? Math.max(...col.tasks.map((t) => t.position))
+              : -1
+            return { ...col, tasks: [...col.tasks, { ...newTask, position: maxPosition + 1 }] }
+          }),
+        }
+      })
+
+      // 3) Navigate immediately (sidebar uses local-first data; no waiting on backend)
+      router.push(`/boards/${boardId}?task=${taskId}`)
+
+      // 4) Background sync (outbox)
+      useBoardStore.getState().enqueue({
+        type: "createTask",
+        boardId,
+        payload: { taskId, columnId: id, title, createdAt },
+      })
+      void flushBoardOutbox(boardId)
+
       toast.success("Task created")
-      // Navigate to the task (will use the server ID)
-      router.push(`/boards/${boardId}?task=${serverId}`)
     } catch {
       toast.error("Failed to create task")
     }
@@ -228,7 +277,6 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
             variant="ghost"
             size="sm"
             onClick={handleAddTask}
-            disabled={createTaskMutation.isPending}
             className="h-7 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
           >
             <Plus className="h-4 w-4" />

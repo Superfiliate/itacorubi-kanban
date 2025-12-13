@@ -11,10 +11,18 @@ function getRandomColor() {
   return CONTRIBUTOR_COLORS[index]
 }
 
-export async function createContributor(boardId: string, name: string) {
+export async function createContributor(
+  boardId: string,
+  name: string,
+  opts?: { id?: string; color?: ContributorColor }
+) {
   await requireBoardAccess(boardId)
-  const id = crypto.randomUUID()
-  const color = getRandomColor()
+
+  const id = opts?.id ?? crypto.randomUUID()
+  const color =
+    opts?.color && CONTRIBUTOR_COLORS.includes(opts.color)
+      ? opts.color
+      : getRandomColor()
 
   await db.insert(contributors).values({
     id,
@@ -94,8 +102,13 @@ export async function removeAssignee(taskId: string, contributorId: string, boar
   revalidatePath(`/boards/${boardId}`)
 }
 
-export async function createAndAssignContributor(taskId: string, boardId: string, name: string) {
-  const contributorId = await createContributor(boardId, name)
+export async function createAndAssignContributor(
+  taskId: string,
+  boardId: string,
+  name: string,
+  opts?: { id?: string; color?: ContributorColor }
+) {
+  const contributorId = await createContributor(boardId, name, opts)
   await addAssignee(taskId, contributorId, boardId)
   return contributorId
 }

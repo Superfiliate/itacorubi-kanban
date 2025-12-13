@@ -34,7 +34,7 @@ export default defineConfig({
     /* Navigation timeout */
     navigationTimeout: 10000, // 10s for navigation
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:5900",
+    baseURL: "http://localhost:5800",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
     /* Screenshot on failure */
@@ -51,10 +51,10 @@ export default defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* Build and run production server before starting the tests */
   webServer: {
-    command: "pnpm db:push && pnpm next dev -p 5900",
-    url: "http://localhost:5900",
+    command: "pnpm build && pnpm start",
+    url: "http://localhost:5800",
     reuseExistingServer: false,
     timeout: 120 * 1000,
     stdout: "ignore",

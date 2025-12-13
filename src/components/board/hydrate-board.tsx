@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { boardKeys, type BoardData } from "@/hooks/use-board"
 import { taskKeys, type TaskWithComments } from "@/hooks/use-task"
+import { useBoardStore } from "@/stores/board-store"
 
 interface HydrateBoardProps {
   boardId: string
@@ -28,9 +29,13 @@ export function HydrateBoard({ boardId, boardData, taskData }: HydrateBoardProps
     // Hydrate board data
     queryClient.setQueryData(boardKeys.detail(boardId), boardData)
 
+    // Hydrate local-first store data
+    useBoardStore.getState().hydrateBoardFromServer(boardId, boardData)
+
     // Hydrate task data if provided
     if (taskData) {
       queryClient.setQueryData(taskKeys.detail(taskData.id), taskData)
+      useBoardStore.getState().hydrateTaskFromServer(boardId, taskData)
     }
   }, [queryClient, boardId, boardData, taskData])
 

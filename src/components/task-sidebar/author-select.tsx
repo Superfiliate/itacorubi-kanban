@@ -17,11 +17,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { createContributor } from "@/actions/contributors"
 import { ContributorBadge } from "@/components/contributor-badge"
 import { useQueryClient } from "@tanstack/react-query"
-import { boardKeys } from "@/hooks/use-board"
+import { boardKeys, type BoardData } from "@/hooks/use-board"
 import type { ContributorColor } from "@/db/schema"
+import { CONTRIBUTOR_COLORS } from "@/db/schema"
+import { useBoardStore } from "@/stores/board-store"
+import { flushBoardOutbox } from "@/lib/outbox/flush"
 
 function getStorageKey(boardId: string) {
   return `kanban-author-${boardId}`
@@ -71,9 +73,27 @@ export function AuthorSelect({
   const handleCreateNew = async () => {
     const name = inputValue.trim()
     if (name) {
-      const contributorId = await createContributor(boardId, name)
-      // Invalidate queries to refresh contributor list
-      await queryClient.invalidateQueries({ queryKey: boardKeys.detail(boardId) })
+      const contributorId = crypto.randomUUID()
+      const color =
+        CONTRIBUTOR_COLORS[Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)]
+
+      useBoardStore.getState().createContributorLocal({ boardId, contributorId, name, color })
+
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          contributors: [...old.contributors, { id: contributorId, boardId, name, color }],
+        }
+      })
+
+      useBoardStore.getState().enqueue({
+        type: "createContributor",
+        boardId,
+        payload: { contributorId, name, color },
+      })
+      void flushBoardOutbox(boardId)
+
       onAuthorChange(contributorId)
       setRememberedAuthor(boardId, contributorId)
       setInputValue("")

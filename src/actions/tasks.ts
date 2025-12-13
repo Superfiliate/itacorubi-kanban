@@ -6,7 +6,13 @@ import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
 
-export async function createTask(boardId: string, columnId: string, title: string) {
+export async function createTask(
+  boardId: string,
+  columnId: string,
+  title: string,
+  id?: string,
+  createdAt?: Date
+) {
   await requireBoardAccess(boardId)
 
   const column = await db.query.columns.findFirst({ where: eq(columns.id, columnId) })
@@ -22,18 +28,19 @@ export async function createTask(boardId: string, columnId: string, title: strin
 
   const maxPosition = maxPositionResult[0]?.maxPosition ?? -1
 
-  const id = crypto.randomUUID()
+  const taskId = id ?? crypto.randomUUID()
 
   await db.insert(tasks).values({
-    id,
+    id: taskId,
     boardId,
     columnId,
     title,
     position: maxPosition + 1,
+    ...(createdAt ? { createdAt } : null),
   })
 
   revalidatePath(`/boards/${boardId}`)
-  return id
+  return taskId
 }
 
 export async function getTask(id: string) {

@@ -10,7 +10,9 @@ export async function createComment(
   taskId: string,
   boardId: string,
   authorId: string,
-  content: string
+  content: string,
+  id?: string,
+  createdAt?: Date
 ) {
   await requireBoardAccess(boardId)
 
@@ -19,14 +21,15 @@ export async function createComment(
     throw new Error("Task not found")
   }
 
-  const id = crypto.randomUUID()
+  const commentId = id ?? crypto.randomUUID()
 
   await db.insert(comments).values({
-    id,
+    id: commentId,
     taskId,
     boardId,
     authorId,
     content,
+    ...(createdAt ? { createdAt } : null),
   })
 
   // Move task to position 0 (top of column)
@@ -46,7 +49,7 @@ export async function createComment(
   }
 
   revalidatePath(`/boards/${boardId}`)
-  return id
+  return commentId
 }
 
 export async function updateComment(

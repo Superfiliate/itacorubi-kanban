@@ -6,7 +6,7 @@ Show a small, unobtrusive indicator of sync state so users know when optimistic 
 
 ## Behavior
 
-- Shows “Saving…” (spinner) while any mutation is in flight
+- Shows “Saving…” (spinner) while any local-first outbox mutation is pending/in flight
 - Briefly shows “Saved” after mutations settle, then hides
 - Remains hidden when idle to reduce noise
 - Debounced to avoid flicker on fast connections
@@ -14,7 +14,7 @@ Show a small, unobtrusive indicator of sync state so users know when optimistic 
 ## Notes
 
 - Indicator should appear near editing contexts (e.g., task sidebar header) without blocking actions
-- Use global mutation state (e.g., TanStack Query `useIsMutating`) to avoid duplicating logic
+- Prefer a single global signal (outbox pending/in-flight). TanStack Query `useIsMutating` can be used during transitions.
 - Keep copy concise; avoid stacking multiple status elements
 
 ## Links
