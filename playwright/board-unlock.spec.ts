@@ -81,7 +81,7 @@ test.describe("Board Unlock", () => {
     await page.getByRole("button", { name: /unlock board/i }).click()
 
     // Should redirect to board
-    await page.waitForURL(`/boards/${boardId}`, { timeout: 10000 })
+    await page.waitForURL(`/boards/${boardId}`)
     await waitForBoardLoad(page)
   })
 

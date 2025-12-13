@@ -83,12 +83,14 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
 
             {/* Board URL */}
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Board URL</label>
+              <label htmlFor="board-url-input" className="text-xs text-muted-foreground">Board URL</label>
               <div className="flex gap-2">
                 <Input
+                  id="board-url-input"
                   value={boardUrl}
                   readOnly
                   className="flex-1 font-mono text-xs"
+                  aria-label="Board URL"
                 />
                 <Button
                   type="button"
@@ -108,13 +110,15 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
 
             {/* Password */}
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Password</label>
+              <label htmlFor="board-password-input" className="text-xs text-muted-foreground">Password</label>
               <div className="flex gap-2">
                 <PasswordInput
+                  id="board-password-input"
                   value={password || ""}
                   readOnly
                   className="flex-1 font-mono text-xs"
                   placeholder={isLoading ? "Loading..." : ""}
+                  aria-label="Password"
                 />
                 <Button
                   type="button"
@@ -142,13 +146,15 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
             </p>
 
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Public URL</label>
+              <label htmlFor="public-url-input" className="text-xs text-muted-foreground">Public URL</label>
               <div className="flex gap-2">
                 <Input
+                  id="public-url-input"
                   value={publicUrl}
                   readOnly
                   className="flex-1 font-mono text-xs"
                   placeholder={password ? "" : "Loading..."}
+                  aria-label="Public URL"
                 />
                 <Button
                   type="button"

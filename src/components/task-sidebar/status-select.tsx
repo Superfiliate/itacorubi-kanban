@@ -35,9 +35,9 @@ export function StatusSelect({
 
   return (
     <div className="space-y-2">
-      <label className="text-label">Status</label>
+      <label htmlFor="status-select" className="text-label">Status</label>
       <Select value={currentColumnId} onValueChange={handleValueChange}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger id="status-select" className="w-full" aria-label="Status">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -9,7 +9,7 @@ export default defineConfig({
   testMatch: /.*\.spec\.ts$/,
   globalSetup: require.resolve("./global-setup.ts"),
   /* Run tests in files in parallel */
-  fullyParallel: true, // Enable parallel execution - tests create isolated boards (unique UUIDs)
+  fullyParallel: false, // Enable parallel execution - tests create isolated boards (unique UUIDs)
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
@@ -29,7 +29,7 @@ export default defineConfig({
     /* Navigation timeout */
     navigationTimeout: 10000, // 10s for navigation
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:5800",
+    baseURL: "http://localhost:5900",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
     /* Screenshot on failure */
@@ -48,9 +48,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "pnpm db:push && pnpm next dev -p 5800",
-    url: "http://localhost:5800",
-    reuseExistingServer: !process.env.CI,
+    command: "pnpm db:push && pnpm next dev -p 5900",
+    url: "http://localhost:5900",
+    reuseExistingServer: false,
     timeout: 120 * 1000,
     stdout: "ignore",
     stderr: "pipe",

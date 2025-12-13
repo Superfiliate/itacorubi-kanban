@@ -82,7 +82,7 @@ Use helpers from `playwright/utils/playwright.ts`:
 
 The Playwright config (`playwright/playwright.config.ts`) includes:
 
-- **Test server**: Automatically starts Next.js dev server on port 5800
+- **Test server**: Automatically starts Next.js dev server on port 5900
 - **Test database**: Uses `file:test.db` via environment variable
 - **Browser**: Chromium only (can be extended to Firefox/WebKit)
 - **Retries**: 2 retries on CI, 0 locally
@@ -100,13 +100,19 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 
 - **10 second maximum** for actions, assertions, and navigation
 - **30 second maximum** for full test execution
-- If an operation takes longer than 10 seconds, it's treated as a bug to be fixed
+- **10 seconds is already very generous** - if an operation takes longer than 10 seconds, it's treated as a bug to be fixed
+- **Never increase timeouts** - if a test fails due to timeout, fix the underlying issue (slow operation, missing wait, race condition, etc.)
 - This forces us to optimize slow operations rather than masking them with long waits
 
 **Why no explicit timeouts?**
 - Consistency - all tests use the same timeout values
 - Maintainability - timeout changes happen in one place
 - Forces optimization - slow operations are caught early
+
+**Strict Policy:**
+- If a test times out, investigate and fix the root cause
+- Do not increase timeouts as a workaround
+- Common fixes: add proper waits, optimize slow queries, fix race conditions, ensure proper loading states
 
 ## Best Practices
 

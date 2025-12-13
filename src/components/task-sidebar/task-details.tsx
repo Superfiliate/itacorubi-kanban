@@ -75,12 +75,12 @@ export function TaskDetails({
   }
 
   const handleDelete = () => {
-    onClose()
     deleteTaskMutation.mutate(task.id, {
       onSuccess: () => {
-        router.replace(`/boards/${task.boardId}`)
-        toast.success("Task deleted")
         setIsDeleteDialogOpen(false)
+        toast.success("Task deleted")
+        onClose()
+        router.replace(`/boards/${task.boardId}`)
       },
       onError: () => {
         toast.error("Failed to delete task")
