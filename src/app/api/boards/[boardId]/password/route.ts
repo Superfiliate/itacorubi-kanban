@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getBoardPassword } from "@/lib/board-password"
+import { requireBoardPassword } from "@/lib/secure-board"
 
 interface RouteParams {
   params: Promise<{ boardId: string }>
@@ -11,13 +11,11 @@ export async function GET(
 ) {
   const { boardId } = await params
 
-  const password = await getBoardPassword(boardId)
-
-  if (!password) {
-    return NextResponse.json(
-      { error: "Password not found" },
-      { status: 404 }
-    )
+  let password: string
+  try {
+    password = await requireBoardPassword(boardId)
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   return NextResponse.json({ password })

@@ -1,12 +1,19 @@
 "use server"
 
 import { db } from "@/db"
-import { tasks, taskAssignees, comments } from "@/db/schema"
+import { columns, tasks, taskAssignees, comments } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { decryptRequired, decryptWithFallback, encryptForBoard, getBoardPasswordOptional } from "@/lib/secure-board"
+import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
 
 export async function createTask(boardId: string, columnId: string, title: string) {
+  await requireBoardAccess(boardId)
+
+  const column = await db.query.columns.findFirst({ where: eq(columns.id, columnId) })
+  if (!column || column.boardId !== boardId) {
+    throw new Error("Invalid column")
+  }
+
   // Get the max position for this column
   const maxPositionResult = await db
     .select({ maxPosition: sql<number>`COALESCE(MAX(${tasks.position}), -1)` })
@@ -16,13 +23,12 @@ export async function createTask(boardId: string, columnId: string, title: strin
   const maxPosition = maxPositionResult[0]?.maxPosition ?? -1
 
   const id = crypto.randomUUID()
-  const encryptedTitle = await encryptForBoard(boardId, title)
 
   await db.insert(tasks).values({
     id,
     boardId,
     columnId,
-    title: encryptedTitle,
+    title,
     position: maxPosition + 1,
   })
 
@@ -53,54 +59,52 @@ export async function getTask(id: string) {
     return null
   }
 
-  const password = await getBoardPasswordOptional(task.boardId)
-  if (!password) {
-    // Password not set
+  const passwordOk = await getBoardPasswordOptional(task.boardId)
+  if (!passwordOk) {
     return null
-  }
-
-  // Decrypt task title
-  const decryptedTitle = await decryptRequired(task.title, password)
-  if (!decryptedTitle) {
-    return null
-  }
-  task.title = decryptedTitle
-
-  // Decrypt comment content
-  for (const comment of task.comments) {
-    comment.content = await decryptWithFallback(comment.content, password)
-  }
-
-  // Decrypt contributor names
-  for (const assignee of task.assignees) {
-    assignee.contributor.name = await decryptWithFallback(assignee.contributor.name, password)
-  }
-
-  // Decrypt comment author names
-  for (const comment of task.comments) {
-    comment.author.name = await decryptWithFallback(comment.author.name, password)
   }
 
   return task
 }
 
 export async function updateTaskTitle(id: string, title: string, boardId: string) {
-  const encryptedTitle = await encryptForBoard(boardId, title)
-  await db.update(tasks).set({ title: encryptedTitle }).where(eq(tasks.id, id))
+  await requireBoardAccess(boardId)
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, id) })
+  if (!task || task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
+
+  await db.update(tasks).set({ title }).where(eq(tasks.id, id))
   revalidatePath(`/boards/${boardId}`)
 }
 
 export async function updateTaskCreatedAt(id: string, createdAt: Date, boardId: string) {
+  await requireBoardAccess(boardId)
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, id) })
+  if (!task || task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
+
   await db.update(tasks).set({ createdAt }).where(eq(tasks.id, id))
   revalidatePath(`/boards/${boardId}`)
 }
 
 export async function updateTaskColumn(id: string, newColumnId: string, boardId: string, newPosition?: number) {
+  await requireBoardAccess(boardId)
+
+  const newColumn = await db.query.columns.findFirst({ where: eq(columns.id, newColumnId) })
+  if (!newColumn || newColumn.boardId !== boardId) {
+    throw new Error("Invalid column")
+  }
+
   const task = await db.query.tasks.findFirst({
     where: eq(tasks.id, id),
   })
 
   if (!task) return
+  if (task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
 
   const oldColumnId = task.columnId
   const oldPosition = task.position
@@ -164,11 +168,15 @@ export async function updateTaskColumn(id: string, newColumnId: string, boardId:
 }
 
 export async function deleteTask(id: string, boardId: string) {
+  await requireBoardAccess(boardId)
   const task = await db.query.tasks.findFirst({
     where: eq(tasks.id, id),
   })
 
   if (!task) return
+  if (task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
 
   // Delete assignees first
   await db.delete(taskAssignees).where(eq(taskAssignees.taskId, id))

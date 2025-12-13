@@ -9,7 +9,7 @@ import { relations } from "drizzle-orm"
 export const boards = sqliteTable("boards", {
   id: text("id").primaryKey(), // UUID
   title: text("title").notNull().default("New board"),
-  encryptedVerification: text("encrypted_verification"), // Encrypted known string for password verification
+  passwordHash: text("password_hash").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 

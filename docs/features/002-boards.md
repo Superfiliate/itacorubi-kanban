@@ -2,7 +2,7 @@
 
 ## Overview
 
-Boards are the top-level container for organizing work. Each board has its own columns, tasks, and contributors. Boards are password-protected and encrypted — a password is required to access board content.
+Boards are the top-level container for organizing work. Each board has its own columns, tasks, and contributors. Boards are password-protected — a password is required to access board content.
 
 ## User Flows
 
@@ -28,7 +28,7 @@ Boards are the top-level container for organizing work. Each board has its own c
 - Navigate to `/boards/{uuid}/unlock`
 - Enter board password (eye icon to toggle visibility)
 - Password can be prefilled via query parameter: `/boards/{uuid}/unlock?password={password}`
-- Password is verified by decrypting verification string
+- Password is verified against the board’s stored password hash
 - On success: cookie is set, redirect to board
 - On failure: error message displayed
 - User must click "Unlock Board" button to proceed (no auto-unlock)
@@ -54,4 +54,4 @@ Boards are the top-level container for organizing work. Each board has its own c
 - Click on board title in the header
 - Edit inline
 - Auto-saves after 1 second or on Enter/blur
-- Title is encrypted before saving
+- Title is saved in plaintext

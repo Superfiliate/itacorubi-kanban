@@ -5,9 +5,11 @@ import { columns, tasks } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getRandomEmoji } from "@/lib/emojis"
-import { encryptForBoard } from "@/lib/secure-board"
+import { requireBoardAccess } from "@/lib/secure-board"
 
 export async function createColumn(boardId: string, id?: string) {
+  await requireBoardAccess(boardId)
+
   // Get the max position for this board
   const maxPositionResult = await db
     .select({ maxPosition: sql<number>`COALESCE(MAX(${columns.position}), -1)` })
@@ -19,12 +21,11 @@ export async function createColumn(boardId: string, id?: string) {
   const columnId = id ?? crypto.randomUUID()
   const emoji = getRandomEmoji()
   const plainName = `${emoji} New column`
-  const encryptedName = await encryptForBoard(boardId, plainName)
 
   await db.insert(columns).values({
     id: columnId,
     boardId,
-    name: encryptedName,
+    name: plainName,
     position: maxPosition + 1,
   })
 
@@ -33,23 +34,33 @@ export async function createColumn(boardId: string, id?: string) {
 }
 
 export async function updateColumnName(id: string, name: string, boardId: string) {
-  const encryptedName = await encryptForBoard(boardId, name)
-  await db.update(columns).set({ name: encryptedName }).where(eq(columns.id, id))
+  await requireBoardAccess(boardId)
+  const column = await db.query.columns.findFirst({ where: eq(columns.id, id) })
+  if (!column || column.boardId !== boardId) {
+    throw new Error("Column not found")
+  }
+
+  await db.update(columns).set({ name }).where(eq(columns.id, id))
   revalidatePath(`/boards/${boardId}`)
 }
 
 export async function toggleColumnCollapsed(id: string, boardId: string) {
+  await requireBoardAccess(boardId)
   const column = await db.query.columns.findFirst({
     where: eq(columns.id, id),
   })
 
   if (column) {
+    if (column.boardId !== boardId) {
+      throw new Error("Column not found")
+    }
     await db.update(columns).set({ isCollapsed: !column.isCollapsed }).where(eq(columns.id, id))
     revalidatePath(`/boards/${boardId}`)
   }
 }
 
 export async function deleteColumn(id: string, boardId: string) {
+  await requireBoardAccess(boardId)
   // Check if there are any tasks in this column
   const taskCount = await db
     .select({ count: count() })
@@ -65,6 +76,9 @@ export async function deleteColumn(id: string, boardId: string) {
   })
 
   if (!column) {
+    return { error: "Column not found" }
+  }
+  if (column.boardId !== boardId) {
     return { error: "Column not found" }
   }
 
@@ -83,11 +97,15 @@ export async function deleteColumn(id: string, boardId: string) {
 }
 
 export async function reorderColumns(boardId: string, columnId: string, newPosition: number) {
+  await requireBoardAccess(boardId)
   const column = await db.query.columns.findFirst({
     where: eq(columns.id, columnId),
   })
 
   if (!column) return
+  if (column.boardId !== boardId) {
+    throw new Error("Column not found")
+  }
 
   const oldPosition = column.position
 

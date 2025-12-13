@@ -1,5 +1,5 @@
 import { redirect, notFound } from "next/navigation"
-import { getBoardPassword } from "@/lib/board-password"
+import { getBoardPasswordOptional } from "@/lib/secure-board"
 import { db } from "@/db"
 import { boards } from "@/db/schema"
 import { eq } from "drizzle-orm"
@@ -24,7 +24,7 @@ export default async function UnlockPage({ params, searchParams }: UnlockPagePro
   }
 
   // Check if already unlocked
-  const password = await getBoardPassword(boardId)
+  const password = await getBoardPasswordOptional(boardId)
   if (password) {
     redirect(`/boards/${boardId}`)
   }

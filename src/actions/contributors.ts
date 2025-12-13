@@ -4,7 +4,7 @@ import { db } from "@/db"
 import { contributors, taskAssignees, comments, columns, tasks, CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { decryptWithFallback, encryptForBoard, encryptWithPassword, getBoardPasswordOptional, requireBoardPassword } from "@/lib/secure-board"
+import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
 
 function getRandomColor() {
   const index = Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)
@@ -12,14 +12,14 @@ function getRandomColor() {
 }
 
 export async function createContributor(boardId: string, name: string) {
+  await requireBoardAccess(boardId)
   const id = crypto.randomUUID()
   const color = getRandomColor()
-  const encryptedName = await encryptForBoard(boardId, name)
 
   await db.insert(contributors).values({
     id,
     boardId,
-    name: encryptedName,
+    name,
     color,
   })
 
@@ -37,15 +37,22 @@ export async function getContributors(boardId: string) {
     where: eq(contributors.boardId, boardId),
   })
 
-  // Decrypt contributor names
-  for (const contributor of contributorsList) {
-    contributor.name = await decryptWithFallback(contributor.name, password)
-  }
-
   return contributorsList
 }
 
 export async function addAssignee(taskId: string, contributorId: string, boardId: string) {
+  await requireBoardAccess(boardId)
+
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  if (!task || task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
+
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  if (!contributor || contributor.boardId !== boardId) {
+    throw new Error("Contributor not found")
+  }
+
   // Check if already assigned
   const existing = await db.query.taskAssignees.findFirst({
     where: and(
@@ -65,6 +72,18 @@ export async function addAssignee(taskId: string, contributorId: string, boardId
 }
 
 export async function removeAssignee(taskId: string, contributorId: string, boardId: string) {
+  await requireBoardAccess(boardId)
+
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  if (!task || task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
+
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  if (!contributor || contributor.boardId !== boardId) {
+    throw new Error("Contributor not found")
+  }
+
   await db.delete(taskAssignees).where(
     and(
       eq(taskAssignees.taskId, taskId),
@@ -86,14 +105,19 @@ export async function updateContributor(
   boardId: string,
   updates: { name?: string; color?: ContributorColor }
 ) {
-  const password = await requireBoardPassword(boardId)
+  await requireBoardAccess(boardId)
+
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) })
+  if (!contributor || contributor.boardId !== boardId) {
+    throw new Error("Contributor not found")
+  }
 
   const updateData: { name?: string; color?: ContributorColor } = {}
   if (updates.color !== undefined) {
     updateData.color = updates.color
   }
   if (updates.name !== undefined) {
-    updateData.name = await encryptWithPassword(password, updates.name)
+    updateData.name = updates.name
   }
 
   await db.update(contributors)
@@ -104,6 +128,13 @@ export async function updateContributor(
 }
 
 export async function deleteContributor(id: string, boardId: string) {
+  await requireBoardAccess(boardId)
+
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) })
+  if (!contributor || contributor.boardId !== boardId) {
+    throw new Error("Contributor not found")
+  }
+
   // Check if contributor has any task assignments
   const assignmentCount = await db
     .select({ count: sql<number>`count(*)` })
@@ -160,16 +191,6 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
     where: eq(columns.boardId, boardId),
     orderBy: columns.position,
   })
-
-  // Decrypt column names
-  for (const column of boardColumns) {
-    column.name = await decryptWithFallback(column.name, password)
-  }
-
-  // Decrypt contributor names
-  for (const contributor of allContributors) {
-    contributor.name = await decryptWithFallback(contributor.name, password)
-  }
 
   // Get task assignments with task column info
   const assignmentsWithColumns = await db
