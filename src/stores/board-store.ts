@@ -156,6 +156,9 @@ type BoardStoreState = {
   addAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
   removeAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
 
+  // Task title update (for sidebar consistency)
+  updateTaskTitleLocal: (args: { boardId: string; taskId: string; title: string }) => void
+
   // Comments (local-first)
   createCommentLocal: (args: { boardId: string; taskId: string; comment: TaskComment }) => void
   updateCommentLocal: (args: {
@@ -293,6 +296,11 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
         return s
       }
       const normalized = normalizeBoard(boardId, boardData)
+      // Preserve taskDetailsById from previous state - these are fetched separately
+      // and should not be wiped when board polling refreshes board-level data
+      if (current?.taskDetailsById && Object.keys(current.taskDetailsById).length > 0) {
+        normalized.taskDetailsById = { ...current.taskDetailsById }
+      }
       return { boardsById: { ...s.boardsById, [boardId]: normalized } }
     })
   },
@@ -435,6 +443,22 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
       if (current.includes(contributorId)) {
         return { boardsById: { ...s.boardsById, [boardId]: board } }
       }
+      const contributor = board.contributorsById[contributorId]
+
+      // Also update taskDetailsById if it exists (so sidebar shows new assignee)
+      let updatedTaskDetails = board.taskDetailsById
+      const existingDetails = board.taskDetailsById[taskId]
+      if (existingDetails && contributor) {
+        const newAssignee = { contributor: { id: contributor.id, name: contributor.name, color: contributor.color } }
+        updatedTaskDetails = {
+          ...board.taskDetailsById,
+          [taskId]: {
+            ...existingDetails,
+            assignees: [...existingDetails.assignees, newAssignee],
+          },
+        }
+      }
+
       return {
         boardsById: {
           ...s.boardsById,
@@ -444,6 +468,37 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
               ...board.assigneeIdsByTaskId,
               [taskId]: [...current, contributorId],
             },
+            taskDetailsById: updatedTaskDetails,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  updateTaskTitleLocal: ({ boardId, taskId, title }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const task = board.tasksById[taskId]
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      // Also update taskDetailsById if it exists (so sidebar shows new title)
+      let updatedTaskDetails = board.taskDetailsById
+      const existingDetails = board.taskDetailsById[taskId]
+      if (existingDetails) {
+        updatedTaskDetails = {
+          ...board.taskDetailsById,
+          [taskId]: { ...existingDetails, title },
+        }
+      }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tasksById: { ...board.tasksById, [taskId]: { ...task, title } },
+            taskDetailsById: updatedTaskDetails,
             lastLocalActivityAt: Date.now(),
           },
         },
@@ -458,6 +513,20 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
       if (!current.includes(contributorId)) {
         return { boardsById: { ...s.boardsById, [boardId]: board } }
       }
+
+      // Also update taskDetailsById if it exists (so sidebar reflects removal)
+      let updatedTaskDetails = board.taskDetailsById
+      const existingDetails = board.taskDetailsById[taskId]
+      if (existingDetails) {
+        updatedTaskDetails = {
+          ...board.taskDetailsById,
+          [taskId]: {
+            ...existingDetails,
+            assignees: existingDetails.assignees.filter((a) => a.contributor.id !== contributorId),
+          },
+        }
+      }
+
       return {
         boardsById: {
           ...s.boardsById,
@@ -467,6 +536,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
               ...board.assigneeIdsByTaskId,
               [taskId]: current.filter((id) => id !== contributorId),
             },
+            taskDetailsById: updatedTaskDetails,
             lastLocalActivityAt: Date.now(),
           },
         },

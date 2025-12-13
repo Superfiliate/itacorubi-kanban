@@ -36,13 +36,16 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
     (i) => i.type === "createTask" && i.payload.taskId === taskId
   )
 
-  // Server fetch is only for deep-links / missing local state; never blocks local-first creates.
-  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(
-    localTaskEntity || pendingCreate ? null : taskId
-  )
-
-  // Task details from server hydration (when available)
+  // Task details from local store (includes comments if previously fetched/created)
   const hydratedTaskDetails = useBoardStore(selectTaskDetails(boardId, taskId))
+
+  // Fetch server task details when:
+  // - We don't have hydrated task details (which includes comments), AND
+  // - There's no pending create for this task (local-first creates don't need server fetch)
+  const needsServerFetch = !hydratedTaskDetails && !pendingCreate
+  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(
+    needsServerFetch ? taskId : null
+  )
 
   const taskForUI = useMemo(() => {
     if (hydratedTaskDetails) return hydratedTaskDetails
@@ -83,6 +86,13 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
     // Update URL immediately for better responsiveness
     router.replace(`/boards/${boardId}`)
   }
+
+  // Hydrate server task into local store when it arrives
+  useEffect(() => {
+    if (serverTask && !hydratedTaskDetails) {
+      useBoardStore.getState().hydrateTaskFromServer(boardId, serverTask)
+    }
+  }, [serverTask, hydratedTaskDetails, boardId])
 
   useEffect(() => {
     // If the task is truly missing (deep-link to invalid id), close gracefully.

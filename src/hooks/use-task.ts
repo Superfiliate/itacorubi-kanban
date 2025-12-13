@@ -157,6 +157,9 @@ export function useUpdateTaskTitle(boardId: string) {
       const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
       const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
 
+      // Update local store (for sidebar)
+      useBoardStore.getState().updateTaskTitleLocal({ boardId, taskId, title })
+
       // Update board cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
@@ -406,6 +409,9 @@ export function useAddAssignee(boardId: string) {
         },
       }
 
+      // Update local store (for sidebar)
+      useBoardStore.getState().addAssigneeLocal({ boardId, taskId, contributorId })
+
       // Update board cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
@@ -454,6 +460,9 @@ export function useRemoveAssignee(boardId: string) {
 
       const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
       const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
+
+      // Update local store (for sidebar)
+      useBoardStore.getState().removeAssigneeLocal({ boardId, taskId, contributorId })
 
       // Update board cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
