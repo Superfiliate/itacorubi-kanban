@@ -102,7 +102,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
 
   if (isEditing) {
     return (
-      <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+      <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-3">
         <div className="space-y-2">
           <label className="text-xs font-medium text-muted-foreground">Author</label>
           <AuthorSelect
@@ -143,7 +143,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
 
   return (
     <>
-      <div className="group rounded-lg border border-border bg-card p-3">
+      <div className="group rounded-lg border border-border/50 bg-card p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
             <ContributorBadge

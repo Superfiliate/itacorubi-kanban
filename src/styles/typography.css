@@ -15,6 +15,9 @@
   .text-heading {
     @apply text-lg font-semibold tracking-tight;
   }
+  .text-heading-lg {
+    @apply text-xl font-semibold tracking-tight;
+  }
   .text-heading-sm {
     @apply text-sm font-medium;
   }

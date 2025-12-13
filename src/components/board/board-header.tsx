@@ -32,8 +32,8 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
         value={title}
         onSave={handleSave}
         as="h1"
-        className="text-xl font-semibold"
-        inputClassName="text-xl font-semibold"
+        className="text-heading-lg"
+        inputClassName="text-heading-lg"
       />
       <div className="ml-auto flex items-center gap-2">
         <SyncIndicator />

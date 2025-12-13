@@ -76,7 +76,7 @@ export function CommentsSection({
 
   return (
     <div className="space-y-3 p-6">
-      <h3 className="text-sm font-medium text-foreground">Comments</h3>
+      <h3 className="text-heading-sm">Comments</h3>
 
       {comments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -101,7 +101,7 @@ export function CommentsSection({
       )}
 
       {/* New comment form at the bottom */}
-      <div className="rounded-lg border border-border/50 bg-white/30 dark:bg-white/5 backdrop-blur-sm p-3 space-y-3 mt-6">
+      <div className="glass-subtle rounded-lg border p-3 space-y-3 mt-6">
         <h4 className="text-xs font-medium text-muted-foreground">Add a comment</h4>
         <div className="space-y-2">
           <AuthorSelect

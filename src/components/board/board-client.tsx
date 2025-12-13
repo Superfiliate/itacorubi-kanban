@@ -239,12 +239,12 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
 
       <DragOverlay>
         {activeColumn && (
-          <div className="w-72 rounded-lg border border-border bg-muted/50 p-3 shadow-lg">
+          <div className="w-72 rounded-lg border border-border/50 bg-muted/50 p-3 shadow-lg">
             <span className="text-sm font-medium">{activeColumn.name}</span>
           </div>
         )}
         {activeTask && (
-          <div className="w-64 rounded-lg border border-border bg-card p-3 shadow-lg">
+          <div className="w-64 rounded-lg border border-border/50 bg-card p-3 shadow-lg">
             <span className="text-sm font-medium">{activeTask.title}</span>
           </div>
         )}
