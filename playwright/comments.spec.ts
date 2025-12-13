@@ -9,7 +9,7 @@ test.describe("Comments", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Wait for sidebar to fully load
     await expect(page.getByText(/comments/i)).toBeVisible()
@@ -32,7 +32,7 @@ test.describe("Comments", () => {
     await page.getByRole("button", { name: /add comment/i }).click()
 
     // Wait for toast
-    await expect(page.getByText(/comment added/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/comment added/i)).toBeVisible()
 
     // Verify comment appears
     await expect(page.getByText(/this is a test comment/i)).toBeVisible()
@@ -45,7 +45,7 @@ test.describe("Comments", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Create an author and add a comment
     const authorSelect = page.getByRole("combobox", { name: /who are you/i })
@@ -58,16 +58,16 @@ test.describe("Comments", () => {
     await editor.click()
     await editor.fill("First comment")
     await page.getByRole("button", { name: /add comment/i }).click()
-    await expect(page.getByText(/comment added/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/comment added/i)).toBeVisible()
 
     // Close sidebar and create another task
     await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Create another task
     const addTaskButton2 = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton2.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Author should be pre-selected
     await expect(page.getByText(/remembered author/i)).toBeVisible()
@@ -80,7 +80,7 @@ test.describe("Comments", () => {
     // Create a task and add a comment
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Create author and comment
     const authorSelect = page.getByRole("combobox", { name: /who are you/i })
@@ -93,7 +93,7 @@ test.describe("Comments", () => {
     await editor.click()
     await editor.fill("Original comment")
     await page.getByRole("button", { name: /add comment/i }).click()
-    await expect(page.getByText(/comment added/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/comment added/i)).toBeVisible()
 
     // Find the comment and click edit (should be a menu button)
     const comment = page.getByText(/original comment/i).locator("..").locator("..")
@@ -122,7 +122,7 @@ test.describe("Comments", () => {
     // Create a task and add a comment
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Create author and comment
     const authorSelect = page.getByRole("combobox", { name: /who are you/i })
@@ -135,7 +135,7 @@ test.describe("Comments", () => {
     await editor.click()
     await editor.fill("Comment to delete")
     await page.getByRole("button", { name: /add comment/i }).click()
-    await expect(page.getByText(/comment added/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/comment added/i)).toBeVisible()
 
     // Find comment and delete it
     const comment = page.getByText(/comment to delete/i).locator("..").locator("..")
@@ -163,7 +163,7 @@ test.describe("Comments", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Add a comment
     const authorSelect = page.getByRole("combobox", { name: /who are you/i })
@@ -176,11 +176,11 @@ test.describe("Comments", () => {
     await editor.click()
     await editor.fill("Comment for count")
     await page.getByRole("button", { name: /add comment/i }).click()
-    await expect(page.getByText(/comment added/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/comment added/i)).toBeVisible()
 
     // Close sidebar
     await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Verify comment count shows on task card (should show "1")
     const taskCard = page.getByText(/new task/i).locator("..").locator("..")

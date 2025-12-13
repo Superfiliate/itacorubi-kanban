@@ -74,7 +74,8 @@ Use helpers from `playwright/utils/playwright.ts`:
 ### Database Isolation
 
 - Database is reset once before all tests via `global-setup.ts`
-- Tests run sequentially (`fullyParallel: false`) to avoid database conflicts
+- Tests run in parallel (`fullyParallel: true`) - each test creates isolated boards (unique UUIDs) so no conflicts
+- SQLite handles concurrent operations safely
 - Each test should work with a clean database state
 
 ## Configuration
@@ -86,6 +87,26 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 - **Browser**: Chromium only (can be extended to Firefox/WebKit)
 - **Retries**: 2 retries on CI, 0 locally
 - **Screenshots/Videos**: Captured on failure for debugging
+- **Parallel execution**: Tests run in parallel (`fullyParallel: true`) for faster execution
+- **Timeouts**: All timeouts configured globally:
+  - `testTimeout: 30000` - 30 seconds maximum per test
+  - `expect.timeout: 10000` - 10 seconds for assertions
+  - `timeout: 10000` - 10 seconds for actions (click, fill, etc.)
+  - `navigationTimeout: 10000` - 10 seconds for navigation
+
+## Timeout Configuration
+
+**All timeouts are configured globally** - no explicit timeouts allowed in test files or helpers.
+
+- **10 second maximum** for actions, assertions, and navigation
+- **30 second maximum** for full test execution
+- If an operation takes longer than 10 seconds, it's treated as a bug to be fixed
+- This forces us to optimize slow operations rather than masking them with long waits
+
+**Why no explicit timeouts?**
+- Consistency - all tests use the same timeout values
+- Maintainability - timeout changes happen in one place
+- Forces optimization - slow operations are caught early
 
 ## Best Practices
 
@@ -94,6 +115,8 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 3. **Test user flows** - Focus on what users do, not implementation details
 4. **Keep tests independent** - Each test should work in isolation
 5. **Use test steps** - Use `test.step()` for better test organization and reporting
+6. **No explicit timeouts** - Always use global timeout configuration
+7. **Parallel execution** - Tests run in parallel for faster feedback
 
 ## Future Considerations
 

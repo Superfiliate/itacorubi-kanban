@@ -14,11 +14,15 @@ export async function createTestBoard(page: Page, title: string = "Test Board", 
   await page.getByLabel(/title/i).fill(title)
   await page.getByLabel(/password/i).fill(password)
 
-  // Submit the form
-  await page.getByRole("button", { name: /create/i }).click()
+  // Submit the form and wait for navigation
+  // Use response wait for faster detection - wait for the board page to load
+  const [response] = await Promise.all([
+    page.waitForResponse((response) => response.url().includes('/boards/') && response.status() === 200),
+    page.getByRole("button", { name: /create/i }).click(),
+  ])
 
-  // Wait for redirect to board page
-  await page.waitForURL(/\/boards\/[a-f0-9-]+$/, { timeout: 10000 })
+  // Wait for header to ensure page is rendered
+  await page.waitForSelector('header')
 
   // Extract board ID from URL
   const url = page.url()
@@ -40,22 +44,27 @@ export async function unlockTestBoard(page: Page, boardId: string, password: str
   // Fill in password
   await page.getByLabel(/password/i).fill(password)
 
-  // Click unlock button
-  await page.getByRole("button", { name: /unlock.*board/i }).click()
+  // Click unlock button and wait for navigation
+  const [response] = await Promise.all([
+    page.waitForResponse((response) => response.url().includes(`/boards/${boardId}`) && !response.url().includes('/unlock') && response.status() === 200),
+    page.getByRole("button", { name: /unlock.*board/i }).click(),
+  ])
 
-  // Wait for redirect to board page
-  await page.waitForURL(`/boards/${boardId}`, { timeout: 10000 })
+  // Wait for header to ensure page is rendered
+  await page.waitForSelector('header')
 }
 
 /**
  * Waits for the board to be fully loaded
+ * Uses global timeout configuration (10s)
  */
 export async function waitForBoardLoad(page: Page): Promise<void> {
-  // Wait for board header to be visible
-  await page.waitForSelector('header', { timeout: 10000 })
-
-  // Wait for at least one column to be visible (look for column text like "To do", "Doing", "Done" - may have emoji prefix)
-  await page.waitForSelector('text=/.*to do|.*doing|.*done/i', { timeout: 10000 })
+  // Wait for board header and at least one column to be visible
+  // Using Promise.all for parallel waiting instead of sequential
+  await Promise.all([
+    page.waitForSelector('header'),
+    page.waitForSelector('text=/.*to do|.*doing|.*done/i'),
+  ])
 }
 
 /**

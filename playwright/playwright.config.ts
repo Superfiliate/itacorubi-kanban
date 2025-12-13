@@ -9,17 +9,25 @@ export default defineConfig({
   testMatch: /.*\.spec\.ts$/,
   globalSetup: require.resolve("./global-setup.ts"),
   /* Run tests in files in parallel */
-  fullyParallel: false, // Disable parallel to avoid database conflicts
+  fullyParallel: true, // Enable parallel execution - tests create isolated boards (unique UUIDs)
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Timeout for each test */
+  testTimeout: 30000, // 30s per test maximum
+  /* Timeout for expect assertions */
+  expect: {
+    timeout: 10000, // 10s for assertions
+  },
+  /* Timeout for actions */
+  timeout: 10000, // 10s for actions (click, fill, etc.)
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
+    /* Navigation timeout */
+    navigationTimeout: 10000, // 10s for navigation
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: "http://localhost:5800",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */

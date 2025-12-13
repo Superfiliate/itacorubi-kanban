@@ -11,7 +11,7 @@ test.describe("Columns", () => {
     await addColumnButton.click()
 
     // Wait for toast notification
-    await expect(page.getByText(/column created/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/column created/i)).toBeVisible()
 
     // Verify new column appears (should have "New column" in name)
     await expect(page.getByText(/new column/i)).toBeVisible()
@@ -72,7 +72,7 @@ test.describe("Columns", () => {
     await page.getByRole("button", { name: /delete/i }).click()
 
     // Wait for toast
-    await expect(page.getByText(/column deleted/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/column deleted/i)).toBeVisible()
 
     // Column should be gone
     await expect(page.getByText(/new column/i)).not.toBeVisible()
@@ -87,7 +87,7 @@ test.describe("Columns", () => {
     await addTaskButton.click()
 
     // Wait for task to be created and sidebar to open
-    await page.waitForURL(/task=/, { timeout: 5000 })
+    await page.waitForURL(/task=/)
 
     // Close sidebar
     await page.keyboard.press("Escape")

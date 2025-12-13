@@ -11,7 +11,7 @@ test.describe("Task Management", () => {
     await addTaskButton.click()
 
     // Wait for task to be created and sidebar to open
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Verify sidebar is open
     await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
@@ -50,7 +50,7 @@ test.describe("Task Management", () => {
 
     // Close sidebar to see the board
     await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Verify task is in first column (To do)
     await expect(page.getByText(/new task/i)).toBeVisible()
@@ -66,7 +66,7 @@ test.describe("Task Management", () => {
 
     // Close sidebar
     await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Task should now be in "Done" column
     const doneColumn = page.getByText(/done/i).locator("..").locator("..")
@@ -84,7 +84,7 @@ test.describe("Task Management", () => {
 
     // Close sidebar
     await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Find the task card
     const taskCard = page.getByText(/new task/i).locator("..").locator("..")
@@ -95,9 +95,6 @@ test.describe("Task Management", () => {
     await page.mouse.down()
     await targetColumn.hover({ position: { x: 100, y: 100 } })
     await page.mouse.up()
-
-    // Wait a bit for the move to complete
-    await page.waitForTimeout(1000)
 
     // Task should be in "Doing" column
     await expect(targetColumn.getByText(/new task/i)).toBeVisible()
@@ -121,10 +118,10 @@ test.describe("Task Management", () => {
     await page.getByRole("button", { name: /delete/i }).last().click()
 
     // Wait for toast
-    await expect(page.getByText(/task deleted/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/task deleted/i)).toBeVisible()
 
     // Sidebar should close
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Task should be gone from board
     await expect(page.getByText(/new task/i)).not.toBeVisible()

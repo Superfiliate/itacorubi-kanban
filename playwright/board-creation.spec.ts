@@ -37,7 +37,7 @@ test.describe("Board Creation", () => {
     await page.getByRole("button", { name: /create board/i }).click()
 
     // Wait for redirect to board page
-    await page.waitForURL(/\/boards\/[a-f0-9-]+$/, { timeout: 10000 })
+    await page.waitForURL(/\/boards\/[a-f0-9-]+$/)
 
     // Verify board page loads
     await waitForBoardLoad(page)
@@ -54,17 +54,14 @@ test.describe("Board Creation", () => {
     await page.waitForURL(`/boards/${boardId}`)
     await waitForBoardLoad(page)
 
-    // Wait a bit for columns to render
-    await page.waitForTimeout(1000)
-
     // Verify default columns exist (they have emoji prefixes, use containsText for flexibility)
     const toDoColumn = page.locator('*').filter({ hasText: /to do/i }).first()
     const doingColumn = page.locator('*').filter({ hasText: /doing/i }).first()
     const doneColumn = page.locator('*').filter({ hasText: /done/i }).first()
 
-    await expect(toDoColumn).toBeVisible({ timeout: 10000 })
-    await expect(doingColumn).toBeVisible({ timeout: 10000 })
-    await expect(doneColumn).toBeVisible({ timeout: 10000 })
+    await expect(toDoColumn).toBeVisible()
+    await expect(doingColumn).toBeVisible()
+    await expect(doneColumn).toBeVisible()
   })
 
   test("should track board in recent boards", async ({ page, context }) => {

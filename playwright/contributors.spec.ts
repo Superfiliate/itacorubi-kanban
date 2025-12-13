@@ -9,7 +9,7 @@ test.describe("Contributors", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Open assignees dropdown
     const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
@@ -33,7 +33,7 @@ test.describe("Contributors", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Create a contributor first
     const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
@@ -48,11 +48,11 @@ test.describe("Contributors", () => {
 
     // Create another task
     await page.keyboard.press("Escape") // Close sidebar
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     const addTaskButton2 = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton2.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Open assignees dropdown
     await page.getByRole("combobox", { name: /assignees/i }).click()
@@ -71,7 +71,7 @@ test.describe("Contributors", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Create and assign a contributor
     const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
@@ -97,7 +97,7 @@ test.describe("Contributors", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 10000 })
+    await page.waitForURL(/task=/)
 
     // Assign a contributor
     const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
@@ -108,7 +108,7 @@ test.describe("Contributors", () => {
 
     // Close sidebar
     await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`), { timeout: 5000 })
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Verify contributor badge appears on task card
     const taskCard = page.getByText(/new task/i).locator("..").locator("..")

@@ -13,7 +13,7 @@ test.describe("Board Unlock", () => {
     await page.goto(`/boards/${boardId}`)
 
     // Should redirect to unlock page
-    await page.waitForURL(`/boards/${boardId}/unlock`, { timeout: 10000 })
+    await page.waitForURL(`/boards/${boardId}/unlock`)
 
     // Verify unlock page is displayed
     await expect(page.getByRole("heading", { name: /board locked/i })).toBeVisible()
@@ -36,7 +36,7 @@ test.describe("Board Unlock", () => {
     await page.getByRole("button", { name: /unlock board/i }).click()
 
     // Should redirect to board page
-    await page.waitForURL(`/boards/${boardId}`, { timeout: 10000 })
+    await page.waitForURL(`/boards/${boardId}`)
 
     // Verify board loads
     await waitForBoardLoad(page)
@@ -58,7 +58,7 @@ test.describe("Board Unlock", () => {
     await page.getByRole("button", { name: /unlock board/i }).click()
 
     // Should show error message
-    await expect(page.getByText(/invalid password/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/invalid password/i)).toBeVisible()
 
     // Should still be on unlock page
     expect(page.url()).toContain("/unlock")
@@ -93,21 +93,18 @@ test.describe("Board Unlock", () => {
     await shareButton.click()
 
     // Verify share dialog opens
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 })
+    await expect(page.getByRole("dialog")).toBeVisible()
 
     // Verify share dialog title
-    await expect(page.getByText(/share board/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/share board/i)).toBeVisible()
 
-    // Wait for password to load
-    await page.waitForTimeout(1000)
-
-    // Verify board URL is shown in input field
+    // Verify board URL is shown in input field (wait for password to load via proper waiting)
     const urlInput = page.getByLabel(/board url/i).or(page.locator('input').filter({ hasText: new RegExp(`/boards/${boardId}`, "i") })).first()
-    await expect(urlInput).toBeVisible({ timeout: 5000 })
+    await expect(urlInput).toBeVisible()
     await expect(urlInput).toHaveValue(new RegExp(`/boards/${boardId}`, "i"))
 
     // Copy button should exist (icon button with Copy icon)
     const copyButtons = page.locator('button[title*="Copy"]').or(page.locator('button').filter({ hasText: /copy/i }))
-    await expect(copyButtons.first()).toBeVisible({ timeout: 5000 })
+    await expect(copyButtons.first()).toBeVisible()
   })
 })
