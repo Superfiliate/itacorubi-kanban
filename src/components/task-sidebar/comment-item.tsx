@@ -163,6 +163,8 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Comment actions"
+                aria-label="Comment actions"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>

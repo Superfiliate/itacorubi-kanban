@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useDroppable } from "@dnd-kit/core"
-import { Minimize2, Maximize2, Plus, Trash2 } from "lucide-react"
+import { GripVertical, Minimize2, Maximize2, Plus, Trash2 } from "lucide-react"
 import { EditableText } from "@/components/editable-text"
 import { TaskCard } from "./task-card"
 import { Button } from "@/components/ui/button"
@@ -138,8 +138,6 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           "absolute inset-0 flex flex-col items-end py-3 transition-opacity duration-200",
           collapsed ? "opacity-100" : "pointer-events-none opacity-0"
         )}
-        {...attributes}
-        {...listeners}
       >
         <Button
           variant="ghost"
@@ -149,6 +147,17 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           title="Expand column"
         >
           <Maximize2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="mt-2 h-6 w-6 shrink-0 self-center text-muted-foreground"
+          title="Drag column"
+          aria-label="Drag column"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
         </Button>
         <div
           className="mt-2 flex items-center gap-3 whitespace-nowrap text-sm"
@@ -172,9 +181,18 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         {/* Column Header */}
         <div
           className="flex items-center gap-2 border-b border-border px-3 py-2"
-          {...attributes}
-          {...listeners}
         >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0 text-muted-foreground"
+            title="Drag column"
+            aria-label="Drag column"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </Button>
           <EditableText
             value={name}
             onSave={handleNameSave}

@@ -74,7 +74,7 @@ Use helpers from `playwright/utils/playwright.ts`:
 ### Database Isolation
 
 - Database is reset once before all tests via `global-setup.ts`
-- Tests run in parallel (`fullyParallel: true`) - each test creates isolated boards (unique UUIDs) so no conflicts
+- Tests are configured to run **serially** (single worker) to keep runs deterministic under strict 10s action/assertion timeouts
 - SQLite handles concurrent operations safely
 - Each test should work with a clean database state
 
@@ -87,7 +87,7 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 - **Browser**: Chromium only (can be extended to Firefox/WebKit)
 - **Retries**: 2 retries on CI, 0 locally
 - **Screenshots/Videos**: Captured on failure for debugging
-- **Parallel execution**: Tests run in parallel (`fullyParallel: true`) for faster execution
+- **Parallel execution**: Disabled (single worker) to avoid server/db contention that can cause timeouts
 - **Timeouts**: All timeouts configured globally:
   - `testTimeout: 30000` - 30 seconds maximum per test
   - `expect.timeout: 10000` - 10 seconds for assertions

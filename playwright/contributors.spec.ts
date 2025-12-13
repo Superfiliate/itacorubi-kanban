@@ -11,8 +11,10 @@ test.describe("Contributors", () => {
     await addTaskButton.click()
     await page.waitForURL(/task=/)
 
+    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+
     // Open assignees dropdown
-    const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
+    const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i })
     await assigneesSelect.click()
 
     // Type a new contributor name
@@ -23,7 +25,7 @@ test.describe("Contributors", () => {
     await page.getByRole("option", { name: /create.*new contributor/i }).click()
 
     // Contributor should be created and assigned
-    await expect(page.getByText(/new contributor/i)).toBeVisible()
+    await expect(sidebar.getByText(/new contributor/i)).toBeVisible()
   })
 
   test("should assign existing contributor to task", async ({ page }) => {
@@ -35,33 +37,34 @@ test.describe("Contributors", () => {
     await addTaskButton.click()
     await page.waitForURL(/task=/)
 
+    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+
     // Create a contributor first
-    const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
+    const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i })
     await assigneesSelect.click()
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Existing Contributor")
     await page.getByRole("option", { name: /create.*existing contributor/i }).click()
-    await expect(page.getByText(/existing contributor/i)).toBeVisible()
-
-    // Close dropdown
-    await page.keyboard.press("Escape")
+    await expect(sidebar.getByText(/existing contributor/i)).toBeVisible()
 
     // Create another task
-    await page.keyboard.press("Escape") // Close sidebar
+    await sidebar.getByRole("button", { name: /back/i }).click() // Close sidebar
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     const addTaskButton2 = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton2.click()
     await page.waitForURL(/task=/)
 
+    const sidebar2 = page.getByRole("dialog", { name: /edit task/i })
+
     // Open assignees dropdown
-    await page.getByRole("combobox", { name: /assignees/i }).click()
+    await sidebar2.getByRole("combobox", { name: /assignees/i }).click()
 
     // Select existing contributor
     await page.getByRole("option", { name: /existing contributor/i }).click()
 
     // Contributor should be assigned
-    await expect(page.getByText(/existing contributor/i)).toBeVisible()
+    await expect(sidebar2.getByText(/existing contributor/i)).toBeVisible()
   })
 
   test("should remove assignee from task", async ({ page }) => {
@@ -73,21 +76,22 @@ test.describe("Contributors", () => {
     await addTaskButton.click()
     await page.waitForURL(/task=/)
 
+    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+
     // Create and assign a contributor
-    const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
+    const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i })
     await assigneesSelect.click()
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("To Remove")
     await page.getByRole("option", { name: /create.*to remove/i }).click()
-    await expect(page.getByText(/to remove/i)).toBeVisible()
+    await expect(sidebar.getByText(/to remove/i)).toBeVisible()
 
     // Remove by clicking X on badge
-    const badge = page.getByText(/to remove/i).locator("..")
-    const removeButton = badge.locator('button').filter({ hasText: /×/ }).or(badge.locator('[aria-label*="remove"]'))
-    await removeButton.click()
+    const badge = sidebar.getByText(/to remove/i).locator("..")
+    await badge.getByRole("button", { name: /remove to remove/i }).click()
 
     // Contributor should be removed
-    await expect(page.getByText(/to remove/i)).not.toBeVisible()
+    await expect(sidebar.getByText(/to remove/i)).not.toBeVisible()
   })
 
   test("should show contributor badges on task cards", async ({ page }) => {
@@ -99,15 +103,17 @@ test.describe("Contributors", () => {
     await addTaskButton.click()
     await page.waitForURL(/task=/)
 
+    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+
     // Assign a contributor
-    const assigneesSelect = page.getByRole("combobox", { name: /assignees/i })
+    const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i })
     await assigneesSelect.click()
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Card Contributor")
     await page.getByRole("option", { name: /create.*card contributor/i }).click()
 
     // Close sidebar
-    await page.keyboard.press("Escape")
+    await sidebar.getByRole("button", { name: /back/i }).click()
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Verify contributor badge appears on task card
@@ -120,11 +126,12 @@ test.describe("Contributors", () => {
     await waitForBoardLoad(page)
 
     // Click contributors button (users icon) in header
-    const contributorsButton = page.getByRole("button", { name: /contributors/i }).or(page.locator('button[aria-label*="users"]'))
+    const contributorsButton = page.getByRole("button", { name: /manage contributors/i })
     await contributorsButton.click()
 
     // Verify dialog opens
-    await expect(page.getByRole("dialog")).toBeVisible()
-    await expect(page.getByText(/contributors/i)).toBeVisible()
+    const dialog = page.getByRole("dialog", { name: /contributors/i })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole("heading", { name: /^contributors$/i })).toBeVisible()
   })
 })

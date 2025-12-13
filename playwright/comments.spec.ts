@@ -11,11 +11,13 @@ test.describe("Comments", () => {
     await addTaskButton.click()
     await page.waitForURL(/task=/)
 
+    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+
     // Wait for sidebar to fully load
-    await expect(page.getByText(/comments/i)).toBeVisible()
+    await expect(sidebar.getByRole("heading", { name: /^comments$/i })).toBeVisible()
 
     // Select an author (should be a dropdown)
-    const authorSelect = page.getByRole("combobox", { name: /who are you/i })
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
 
     // Create a new contributor/author
@@ -24,7 +26,7 @@ test.describe("Comments", () => {
     await page.getByRole("option", { name: /create.*test author/i }).click()
 
     // Type a comment in the rich text editor
-    const editor = page.locator('[contenteditable="true"]').filter({ hasText: /write your comment/i }).first()
+    const editor = sidebar.locator('[contenteditable="true"]').first()
     await editor.click()
     await editor.fill("This is a test comment")
 
@@ -47,14 +49,16 @@ test.describe("Comments", () => {
     await addTaskButton.click()
     await page.waitForURL(/task=/)
 
+    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+
     // Create an author and add a comment
-    const authorSelect = page.getByRole("combobox", { name: /who are you/i })
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
     const authorInput = page.getByPlaceholder(/search or create/i)
     await authorInput.fill("Remembered Author")
     await page.getByRole("option", { name: /create.*remembered author/i }).click()
 
-    const editor = page.locator('[contenteditable="true"]').filter({ hasText: /write your comment/i }).first()
+    const editor = sidebar.locator('[contenteditable="true"]').first()
     await editor.click()
     await editor.fill("First comment")
     await page.getByRole("button", { name: /add comment/i }).click()
@@ -70,7 +74,8 @@ test.describe("Comments", () => {
     await page.waitForURL(/task=/)
 
     // Author should be pre-selected
-    await expect(page.getByText(/remembered author/i)).toBeVisible()
+    const sidebar2 = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    await expect(sidebar2.getByRole("combobox").getByText(/remembered author/i)).toBeVisible()
   })
 
   test("should edit a comment", async ({ page }) => {
@@ -83,25 +88,22 @@ test.describe("Comments", () => {
     await page.waitForURL(/task=/)
 
     // Create author and comment
-    const authorSelect = page.getByRole("combobox", { name: /who are you/i })
+    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
     const authorInput = page.getByPlaceholder(/search or create/i)
     await authorInput.fill("Editor")
     await page.getByRole("option", { name: /create.*editor/i }).click()
 
-    const editor = page.locator('[contenteditable="true"]').filter({ hasText: /write your comment/i }).first()
+    const editor = sidebar.locator('[contenteditable="true"]').first()
     await editor.click()
     await editor.fill("Original comment")
     await page.getByRole("button", { name: /add comment/i }).click()
     await expect(page.getByText(/comment added/i)).toBeVisible()
 
     // Find the comment and click edit (should be a menu button)
-    const comment = page.getByText(/original comment/i).locator("..").locator("..")
-    await comment.hover()
-
-    // Click the menu button (three dots)
-    const menuButton = comment.locator('button').filter({ hasText: /\.\.\./ }).or(comment.locator('[aria-label*="menu"]'))
-    await menuButton.click()
+    await page.getByText(/original comment/i).hover()
+    await page.getByRole("button", { name: /comment actions/i }).click()
 
     // Click edit
     await page.getByRole("menuitem", { name: /edit/i }).click()
@@ -125,32 +127,30 @@ test.describe("Comments", () => {
     await page.waitForURL(/task=/)
 
     // Create author and comment
-    const authorSelect = page.getByRole("combobox", { name: /who are you/i })
+    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
     const authorInput = page.getByPlaceholder(/search or create/i)
     await authorInput.fill("Deleter")
     await page.getByRole("option", { name: /create.*deleter/i }).click()
 
-    const editor = page.locator('[contenteditable="true"]').filter({ hasText: /write your comment/i }).first()
+    const editor = sidebar.locator('[contenteditable="true"]').first()
     await editor.click()
     await editor.fill("Comment to delete")
     await page.getByRole("button", { name: /add comment/i }).click()
     await expect(page.getByText(/comment added/i)).toBeVisible()
 
     // Find comment and delete it
-    const comment = page.getByText(/comment to delete/i).locator("..").locator("..")
-    await comment.hover()
-
-    // Click menu
-    const menuButton = comment.locator('button').filter({ hasText: /\.\.\./ }).or(comment.locator('[aria-label*="menu"]'))
-    await menuButton.click()
+    await page.getByText(/comment to delete/i).hover()
+    await page.getByRole("button", { name: /comment actions/i }).click()
 
     // Click delete
     await page.getByRole("menuitem", { name: /delete/i }).click()
 
     // Confirm deletion
-    await expect(page.getByRole("dialog")).toBeVisible()
-    await page.getByRole("button", { name: /delete/i }).last().click()
+    const confirmDialog = page.getByRole("dialog", { name: /delete comment/i })
+    await expect(confirmDialog).toBeVisible()
+    await confirmDialog.getByRole("button", { name: /^delete$/i }).click()
 
     // Comment should be gone
     await expect(page.getByText(/comment to delete/i)).not.toBeVisible()
@@ -166,13 +166,14 @@ test.describe("Comments", () => {
     await page.waitForURL(/task=/)
 
     // Add a comment
-    const authorSelect = page.getByRole("combobox", { name: /who are you/i })
+    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
     const authorInput = page.getByPlaceholder(/search or create/i)
     await authorInput.fill("Counter")
     await page.getByRole("option", { name: /create.*counter/i }).click()
 
-    const editor = page.locator('[contenteditable="true"]').filter({ hasText: /write your comment/i }).first()
+    const editor = sidebar.locator('[contenteditable="true"]').first()
     await editor.click()
     await editor.fill("Comment for count")
     await page.getByRole("button", { name: /add comment/i }).click()

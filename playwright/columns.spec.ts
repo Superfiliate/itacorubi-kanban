@@ -28,8 +28,9 @@ test.describe("Columns", () => {
     await columnNameEditable.click()
 
     // Edit the name - wait for input to appear
-    const input = page.locator('input[type="text"]').filter({ hasText: /to do/i }).first()
+    const input = page.locator('input[type="text"]').first()
     await expect(input).toBeVisible()
+    await expect(input).toHaveValue(/to do/i)
     await input.fill("Renamed Column")
     await input.press("Enter")
 
@@ -54,7 +55,7 @@ test.describe("Columns", () => {
     await expandButton.click()
 
     // Should be expanded again
-    await expect(page.getByText(/to do/i)).toBeVisible()
+    await expect(page.getByText(/to do/i).first()).toBeVisible()
   })
 
   test("should delete empty column", async ({ page }) => {
@@ -71,8 +72,10 @@ test.describe("Columns", () => {
     await deleteButton.click()
 
     // Confirm deletion
-    await expect(page.getByRole("dialog")).toBeVisible()
-    await page.getByRole("button", { name: /delete/i }).click()
+    // There are devtools dialogs mounted in test env; scope by dialog accessible name.
+    const dialog = page.getByRole("dialog", { name: /delete column/i })
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole("button", { name: /^delete$/i }).click()
 
     // Note: Toast should appear but there may be a timing issue with sonner
     // The important verification (column deletion) is confirmed below
@@ -115,18 +118,17 @@ test.describe("Columns", () => {
     await expect(page.getByText(/new column/i).first()).toBeVisible()
 
     // Get the first column header
-    const firstColumn = page.getByText(/to do/i).first()
-    const secondColumn = page.getByText(/doing/i).first()
+    const firstHeader = page.locator('[title="Click to edit"]').filter({ hasText: /to do/i }).first().locator("..")
+    const secondHeader = page.locator('[title="Click to edit"]').filter({ hasText: /doing/i }).first().locator("..")
+    const firstColumn = firstHeader.getByRole("button", { name: /drag column/i })
+    const secondColumn = secondHeader.getByRole("button", { name: /drag column/i })
 
     // Drag first column to the right of second column
-    await firstColumn.hover()
-    await page.mouse.down()
-    await secondColumn.hover({ position: { x: 200, y: 0 } })
-    await page.mouse.up()
+    await firstColumn.dragTo(secondColumn)
 
     // Columns should have reordered (visual verification)
     // The order might change, so we just verify columns are still visible
-    await expect(page.getByText(/to do/i)).toBeVisible()
-    await expect(page.getByText(/doing/i)).toBeVisible()
+    await expect(page.getByText(/to do/i).first()).toBeVisible()
+    await expect(page.getByText(/doing/i).first()).toBeVisible()
   })
 })

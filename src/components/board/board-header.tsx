@@ -43,6 +43,7 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
           className="h-9 w-9"
           onClick={() => setIsShareOpen(true)}
           title="Share board"
+          aria-label="Share board"
         >
           <Share2 className="h-4 w-4" />
         </Button>
@@ -52,6 +53,7 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
           className="h-9 w-9"
           onClick={() => setIsContributorsOpen(true)}
           title="Manage contributors"
+          aria-label="Manage contributors"
         >
           <Users className="h-4 w-4" />
         </Button>

@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache"
 import { getRandomEmoji } from "@/lib/emojis"
 import { encryptForBoard } from "@/lib/secure-board"
 
-export async function createColumn(boardId: string) {
+export async function createColumn(boardId: string, id?: string) {
   // Get the max position for this board
   const maxPositionResult = await db
     .select({ maxPosition: sql<number>`COALESCE(MAX(${columns.position}), -1)` })
@@ -16,20 +16,20 @@ export async function createColumn(boardId: string) {
 
   const maxPosition = maxPositionResult[0]?.maxPosition ?? -1
 
-  const id = crypto.randomUUID()
+  const columnId = id ?? crypto.randomUUID()
   const emoji = getRandomEmoji()
   const plainName = `${emoji} New column`
   const encryptedName = await encryptForBoard(boardId, plainName)
 
   await db.insert(columns).values({
-    id,
+    id: columnId,
     boardId,
     name: encryptedName,
     position: maxPosition + 1,
   })
 
   revalidatePath(`/boards/${boardId}`)
-  return id
+  return columnId
 }
 
 export async function updateColumnName(id: string, name: string, boardId: string) {

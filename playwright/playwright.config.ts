@@ -9,23 +9,29 @@ export default defineConfig({
   testMatch: /.*\.spec\.ts$/,
   globalSetup: require.resolve("./global-setup.ts"),
   /* Run tests in files in parallel */
-  fullyParallel: false, // Enable parallel execution - tests create isolated boards (unique UUIDs)
+  fullyParallel: false,
+  /**
+   * Keep workers to 1.
+   * With 10s action/assertion timeouts, running multiple E2E files concurrently against a single
+   * dev server + sqlite file tends to cause timeouts/flakiness.
+   */
+  workers: 1,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Timeout for each test */
-  testTimeout: 30000, // 30s per test maximum
+  timeout: 30000, // 30s per test maximum
   /* Timeout for expect assertions */
   expect: {
     timeout: 10000, // 10s for assertions
   },
-  /* Timeout for actions */
-  timeout: 10000, // 10s for actions (click, fill, etc.)
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
+    /* Timeout for actions */
+    actionTimeout: 10000, // 10s for actions (click, fill, etc.)
     /* Navigation timeout */
     navigationTimeout: 10000, // 10s for navigation
     /* Base URL to use in actions like `await page.goto('/')`. */

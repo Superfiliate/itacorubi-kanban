@@ -12,7 +12,8 @@ export function AddColumnButton({ boardId }: AddColumnButtonProps) {
   const createColumnMutation = useCreateColumn(boardId)
 
   const handleClick = () => {
-    createColumnMutation.mutate(undefined, {
+    const id = crypto.randomUUID()
+    createColumnMutation.mutate({ id }, {
       onSuccess: () => {
         toast.success("Column created")
       },

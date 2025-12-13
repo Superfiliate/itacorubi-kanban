@@ -64,6 +64,9 @@ export function AssigneesSelect({
     } else {
       addAssigneeMutation.mutate({ taskId, contributorId })
     }
+    // Close after selecting to avoid focus/escape closing the whole sidebar (Sheet)
+    setOpen(false)
+    setInputValue("")
   }
 
   const handleCreateNew = () => {
@@ -71,6 +74,7 @@ export function AssigneesSelect({
     if (name) {
       createAndAssignMutation.mutate({ taskId, name })
       setInputValue("")
+      setOpen(false)
     }
   }
 
@@ -111,6 +115,7 @@ export function AssigneesSelect({
             asInput
             role="combobox"
             aria-expanded={open}
+            aria-label="Assignees"
             className="w-full justify-between"
           >
             {assignees.length === 0

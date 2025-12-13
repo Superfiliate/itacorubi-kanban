@@ -107,16 +107,23 @@ test.describe("Task Management", () => {
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Find the task card
-    const taskCard = page.getByText(/new task/i).locator("..").locator("..")
+    const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..")
 
-    // Find the "Doing" column - use a more specific selector
-    const doingColumnHeader = page.getByRole("button", { name: /doing/i }).first()
-    const targetColumn = doingColumnHeader.locator("..").locator("..")
+    // Drag to the "Doing" column root (sortable container)
+    const targetColumn = page
+      .locator('[title="Click to edit"]')
+      .filter({ hasText: /doing/i })
+      .first()
+      .locator("..") // header
+      .locator("..") // expanded view
+      .locator("..") // column root (sortable)
 
     // Drag task to "Doing" column
+    // Use pointer-based drag (dnd-kit PointerSensor) with a small move to activate.
     await taskCard.hover()
     await page.mouse.down()
-    await targetColumn.hover({ position: { x: 100, y: 100 } })
+    await page.mouse.move(0, 20)
+    await targetColumn.hover({ position: { x: 120, y: 200 } })
     await page.mouse.up()
 
     // Task should be in "Doing" column

@@ -502,9 +502,120 @@ export function useCreateAndAssignContributor(boardId: string) {
   return useMutation({
     mutationFn: ({ taskId, name }: { taskId: string; name: string }) =>
       createAndAssignContributor(taskId, boardId, name),
-    onSuccess: () => {
-      // Invalidate to get fresh contributor list
+    onMutate: async ({ taskId, name }) => {
+      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
+
+      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
+      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
+
+      const optimisticContributorId = crypto.randomUUID()
+      const optimisticContributor = {
+        id: optimisticContributorId,
+        name,
+        // Color is only visual; server will pick the final color.
+        color: "blue" as ContributorColor,
+        boardId,
+      }
+
+      // Update board cache: add contributor + assign to task (for task cards)
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+
+        const alreadyAssigned = old.columns.some((col) =>
+          col.tasks.some(
+            (t) =>
+              t.id === taskId &&
+              t.assignees.some((a) => a.contributor.id === optimisticContributorId)
+          )
+        )
+
+        return {
+          ...old,
+          contributors: [...old.contributors, optimisticContributor],
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((t) => {
+              if (t.id !== taskId) return t
+              if (alreadyAssigned) return t
+              return {
+                ...t,
+                assignees: [
+                  ...t.assignees,
+                  { contributor: { id: optimisticContributorId, name, color: optimisticContributor.color } },
+                ],
+              }
+            }),
+          })),
+        }
+      })
+
+      // Update task cache: add assignee so sidebar updates immediately
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          assignees: [
+            ...old.assignees,
+            { contributor: { id: optimisticContributorId, name, color: optimisticContributor.color } },
+          ],
+        }
+      })
+
+      return { previousBoard, previousTask, optimisticContributorId }
+    },
+    onSuccess: (serverContributorId, { taskId }, context) => {
+      // Replace optimistic contributor ID with server ID (keeps UI stable and avoids waiting)
+      const optimisticId = context?.optimisticContributorId
+      if (!optimisticId || serverContributorId === optimisticId) return
+
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          contributors: old.contributors.map((c) =>
+            c.id === optimisticId ? { ...c, id: serverContributorId } : c
+          ),
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((t) => {
+              if (t.id !== taskId) return t
+              return {
+                ...t,
+                assignees: t.assignees.map((a) =>
+                  a.contributor.id === optimisticId
+                    ? { contributor: { ...a.contributor, id: serverContributorId } }
+                    : a
+                ),
+              }
+            }),
+          })),
+        }
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          assignees: old.assignees.map((a) =>
+            a.contributor.id === optimisticId
+              ? { contributor: { ...a.contributor, id: serverContributorId } }
+              : a
+          ),
+        }
+      })
+
+      // Invalidate to get the server-picked contributor color + ensure consistency
       queryClient.invalidateQueries({ queryKey: boardKeys.detail(boardId) })
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
+    },
+    onError: (_err, { taskId }, context) => {
+      if (context?.previousBoard) {
+        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
+      }
+      if (context?.previousTask) {
+        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
+      }
     },
   })
 }

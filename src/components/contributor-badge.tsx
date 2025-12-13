@@ -44,6 +44,8 @@ export function ContributorBadge({ name, color, className, onRemove }: Contribut
         <button
           onClick={onRemove}
           className="ml-0.5 rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10"
+          aria-label={`Remove ${name}`}
+          title={`Remove ${name}`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

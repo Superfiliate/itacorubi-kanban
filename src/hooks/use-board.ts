@@ -109,12 +109,12 @@ export function useCreateColumn(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => createColumn(boardId),
-    onMutate: async () => {
+    mutationFn: ({ id }: { id: string }) => createColumn(boardId, id),
+    onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
 
       const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const optimisticId = crypto.randomUUID()
+      const optimisticId = id
       const emoji = getRandomEmoji()
 
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
@@ -136,20 +136,6 @@ export function useCreateColumn(boardId: string) {
       })
 
       return { previous, optimisticId }
-    },
-    onSuccess: (serverId, _, context) => {
-      // Replace optimistic ID with server ID
-      if (context?.optimisticId && serverId !== context.optimisticId) {
-        queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-          if (!old) return old
-          return {
-            ...old,
-            columns: old.columns.map((col) =>
-              col.id === context.optimisticId ? { ...col, id: serverId } : col
-            ),
-          }
-        })
-      }
     },
     onError: (_err, _, context) => {
       if (context?.previous) {
