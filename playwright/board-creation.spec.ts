@@ -58,10 +58,12 @@ test.describe("Board Creation", () => {
     const toDoColumn = page.locator('*').filter({ hasText: /to do/i }).first()
     const doingColumn = page.locator('*').filter({ hasText: /doing/i }).first()
     const doneColumn = page.locator('*').filter({ hasText: /done/i }).first()
+    const archiveColumn = page.locator('*').filter({ hasText: /archive/i }).first()
 
     await expect(toDoColumn).toBeVisible()
     await expect(doingColumn).toBeVisible()
     await expect(doneColumn).toBeVisible()
+    await expect(archiveColumn).toBeVisible()
   })
 
   test("should track board in recent boards", async ({ page, context }) => {

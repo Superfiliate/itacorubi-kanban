@@ -105,7 +105,9 @@ test.describe("Columns", () => {
 
     // Delete button should not be visible for columns with tasks
     // Only empty columns should have delete buttons
-    expect(count).toBeLessThan(3) // Should only have delete buttons on empty columns
+    // With 4 default columns (To do, Doing, Done, Archive) and 1 task in To do,
+    // we should have 3 delete buttons (for Doing, Done, Archive)
+    expect(count).toBeLessThan(4) // Should only have delete buttons on empty columns
   })
 
   test("should reorder columns via drag and drop", async ({ page }) => {

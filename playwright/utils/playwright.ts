@@ -63,7 +63,7 @@ export async function waitForBoardLoad(page: Page): Promise<void> {
   // Using Promise.all for parallel waiting instead of sequential
   await Promise.all([
     page.waitForSelector('header'),
-    page.waitForSelector('text=/.*to do|.*doing|.*done/i'),
+    page.waitForSelector('text=/.*to do|.*doing|.*done|.*archive/i'),
   ])
 }
 

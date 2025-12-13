@@ -46,4 +46,4 @@ Columns represent workflow stages within a board (e.g., "To do", "Doing", "Done"
 ## Notes
 
 - Columns cannot be deleted if they contain tasks — move or delete tasks first
-- New boards start with 3 default columns: "📥 To do", "🔄 Doing", "✅ Done"
+- New boards start with 4 default columns: "📥 To do", "🔄 Doing", "✅ Done", and "📦 Archive" (collapsed by default)

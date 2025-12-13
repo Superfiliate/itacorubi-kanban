@@ -10,7 +10,7 @@ The landing page where users can create new boards and access recently visited b
 
 - User visits homepage (`/`)
 - Clicks "Create a Board" button
-- New board created with default columns: "📥 To do", "🔄 Doing", "✅ Done"
+- New board created with default columns: "📥 To do", "🔄 Doing", "✅ Done", and "📦 Archive" (collapsed by default)
 - Board title defaults to "{emoji} New board" with a random emoji prefix
 - User automatically redirected to new board (`/boards/{uuid}`)
 

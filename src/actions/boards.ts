@@ -38,6 +38,17 @@ export async function createBoard(title: string, password: string) {
     })
   }
 
+  // Create Archive column (collapsed by default)
+  const archiveColumnName = "📦 Archive"
+  const encryptedArchiveName = await encrypt(archiveColumnName, password)
+  await db.insert(columns).values({
+    id: crypto.randomUUID(),
+    boardId: id,
+    name: encryptedArchiveName,
+    position: defaultColumns.length,
+    isCollapsed: true,
+  })
+
   // Set password in HTTP-only cookie
   await setBoardPassword(id, password)
 
