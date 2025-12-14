@@ -36,6 +36,15 @@ Contributors are people who can be assigned to tasks within a board. Each contri
 ## Notes
 
 - Contributors are scoped to a board — each board has its own contributor list
-- Colors are randomly assigned from a palette of 17 colors
+- Colors are randomly assigned from a palette of 17 colors (see `src/lib/contributor-colors.ts`)
 - Colors help visually scan the board for tasks assigned to specific people
 - Contributor names should be unique within a board
+
+## Implementation Notes
+
+Color utilities are centralized in `src/lib/contributor-colors.ts`:
+- `getRandomContributorColor()` — use when creating new contributors
+- `contributorColorStyles` — badge styles for each color
+- `contributorColorSwatches` — solid swatches for the color picker
+
+The palette itself is defined in `src/db/schema.ts` as `CONTRIBUTOR_COLORS`.

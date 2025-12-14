@@ -5,11 +5,7 @@ import { contributors, taskAssignees, comments, columns, tasks, CONTRIBUTOR_COLO
 import { eq, and, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
-
-function getRandomColor() {
-  const index = Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)
-  return CONTRIBUTOR_COLORS[index]
-}
+import { getRandomContributorColor } from "@/lib/contributor-colors"
 
 export async function createContributor(
   boardId: string,
@@ -22,7 +18,7 @@ export async function createContributor(
   const color =
     opts?.color && CONTRIBUTOR_COLORS.includes(opts.color)
       ? opts.color
-      : getRandomColor()
+      : getRandomContributorColor()
 
   await db.insert(contributors).values({
     id,

@@ -21,7 +21,7 @@ import { ContributorBadge } from "@/components/contributor-badge"
 import { useQueryClient } from "@tanstack/react-query"
 import { boardKeys, type BoardData } from "@/hooks/use-board"
 import type { ContributorColor } from "@/db/schema"
-import { CONTRIBUTOR_COLORS } from "@/db/schema"
+import { getRandomContributorColor } from "@/lib/contributor-colors"
 import { useBoardStore } from "@/stores/board-store"
 import { flushBoardOutbox } from "@/lib/outbox/flush"
 
@@ -74,8 +74,7 @@ export function AuthorSelect({
     const name = inputValue.trim()
     if (name) {
       const contributorId = crypto.randomUUID()
-      const color =
-        CONTRIBUTOR_COLORS[Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)]
+      const color = getRandomContributorColor()
 
       useBoardStore.getState().createContributorLocal({ boardId, contributorId, name, color })
 

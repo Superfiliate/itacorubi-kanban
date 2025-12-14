@@ -20,6 +20,28 @@ Use a local-first, **in-memory normalized store** for interactive UI state, with
 
 UI uses **selectors** to build view models by joining these structures. A contributor rename/color change updates `contributorsById` once and is reflected everywhere.
 
+### Deriving vs. Denormalizing
+
+**Always derive** nested entity data (like contributor info in assignees) from the normalized stores at render time.
+
+```ts
+// ✅ Good: Derive assignees from normalized store
+const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
+const assignees = assigneeIds
+  .map((id) => board.contributorsById[id])
+  .filter(Boolean)
+```
+
+**Never cache** denormalized copies of entity data in component state or nested objects—they become stale when the source entity is updated.
+
+```ts
+// ❌ Bad: Using nested contributor data directly without looking up from store
+// This won't reflect color/name changes made elsewhere
+const assignees = task.assignees // Contains stale { contributor: { color, name } }
+```
+
+If a data structure like `taskDetailsById` stores nested entity references for caching purposes, the UI layer must still resolve the current entity values from `contributorsById` at render time.
+
 ## Outbox
 
 Local writes enqueue an outbox item describing the server mutation to perform.

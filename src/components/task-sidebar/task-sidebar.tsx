@@ -48,7 +48,11 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
   )
 
   const taskForUI = useMemo(() => {
-    if (hydratedTaskDetails) return hydratedTaskDetails
+    // Start with hydrated task details or server task as base
+    const baseTask = hydratedTaskDetails ?? serverTask
+
+    // If we have a local task entity and board, derive assignees from normalized store
+    // This ensures contributor updates (name, color) are immediately reflected
     if (localTaskEntity && board) {
       const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
       const assignees = assigneeIds
@@ -65,11 +69,26 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
         createdAt: localTaskEntity.createdAt,
         column: { id: localTaskEntity.columnId, name: columns.find((c) => c.id === localTaskEntity.columnId)?.name ?? "" },
         assignees,
-        comments: [],
+        comments: baseTask?.comments ?? [],
       }
     }
-    if (serverTask) return serverTask
-    return undefined
+
+    // Fallback: if we have a base task but no local entity, still derive assignees from normalized store
+    // when available to ensure contributor color updates are reflected
+    if (baseTask && board) {
+      const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? baseTask.assignees.map((a) => a.contributor.id)
+      const assignees = assigneeIds
+        .map((cid) => board.contributorsById[cid])
+        .filter(Boolean)
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+
+      return {
+        ...baseTask,
+        assignees,
+      }
+    }
+
+    return baseTask
   }, [hydratedTaskDetails, localTaskEntity, board, taskId, boardId, columns, serverTask])
 
   const currentContributors = useMemo(() => {

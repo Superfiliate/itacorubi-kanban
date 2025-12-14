@@ -19,7 +19,7 @@ import { createComment, updateComment, deleteComment } from "@/actions/comments"
 import { getRandomEmoji } from "@/lib/emojis"
 import { boardKeys, type BoardData, type BoardTask } from "./use-board"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
-import { CONTRIBUTOR_COLORS } from "@/db/schema"
+import { getRandomContributorColor } from "@/lib/contributor-colors"
 import { useBoardStore } from "@/stores/board-store"
 import { flushBoardOutbox } from "@/lib/outbox/flush"
 
@@ -571,7 +571,7 @@ export function useCreateAndAssignContributor(boardId: string) {
     mutationFn: async ({ taskId, name }: { taskId: string; name: string }) => {
       // Local-first: pick stable values on the client
       const contributorId = crypto.randomUUID()
-      const color = CONTRIBUTOR_COLORS[Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)]
+      const color = getRandomContributorColor()
 
       // Update local store immediately (single source for contributor identity)
       useBoardStore.getState().createContributorLocal({
