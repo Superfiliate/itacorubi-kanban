@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { contributors, taskAssignees, comments, columns, tasks, CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
+import { contributors, taskAssignees, taskStakeholders, comments, columns, tasks, CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
@@ -109,6 +109,71 @@ export async function createAndAssignContributor(
   return contributorId
 }
 
+export async function addStakeholder(taskId: string, contributorId: string, boardId: string) {
+  await requireBoardAccess(boardId)
+
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  if (!task || task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
+
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  if (!contributor || contributor.boardId !== boardId) {
+    throw new Error("Contributor not found")
+  }
+
+  // Check if already a stakeholder
+  const existing = await db.query.taskStakeholders.findFirst({
+    where: and(
+      eq(taskStakeholders.taskId, taskId),
+      eq(taskStakeholders.contributorId, contributorId)
+    ),
+  })
+
+  if (existing) return
+
+  await db.insert(taskStakeholders).values({
+    taskId,
+    contributorId,
+  })
+
+  revalidatePath(`/boards/${boardId}`)
+}
+
+export async function removeStakeholder(taskId: string, contributorId: string, boardId: string) {
+  await requireBoardAccess(boardId)
+
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  if (!task || task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
+
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  if (!contributor || contributor.boardId !== boardId) {
+    throw new Error("Contributor not found")
+  }
+
+  await db.delete(taskStakeholders).where(
+    and(
+      eq(taskStakeholders.taskId, taskId),
+      eq(taskStakeholders.contributorId, contributorId)
+    )
+  )
+
+  revalidatePath(`/boards/${boardId}`)
+}
+
+export async function createAndAddStakeholder(
+  taskId: string,
+  boardId: string,
+  name: string,
+  opts?: { id?: string; color?: ContributorColor }
+) {
+  const contributorId = await createContributor(boardId, name, opts)
+  await addStakeholder(taskId, contributorId, boardId)
+  return contributorId
+}
+
 export async function updateContributor(
   id: string,
   boardId: string,
@@ -155,7 +220,18 @@ export async function deleteContributor(id: string, boardId: string) {
     throw new Error("Cannot delete contributor with task assignments")
   }
 
-  // Check if contributor has any comments
+  // Check if contributor has any task stakeholder relationships
+  const stakeholderCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(taskStakeholders)
+    .where(eq(taskStakeholders.contributorId, id))
+    .then(rows => rows[0]?.count ?? 0)
+
+  if (stakeholderCount > 0) {
+    throw new Error("Cannot delete contributor with task stakeholder relationships")
+  }
+
+  // Check if contributor has any comments as author
   const commentCount = await db
     .select({ count: sql<number>`count(*)` })
     .from(comments)
@@ -164,6 +240,17 @@ export async function deleteContributor(id: string, boardId: string) {
 
   if (commentCount > 0) {
     throw new Error("Cannot delete contributor with comments")
+  }
+
+  // Check if contributor is referenced as stakeholder in any comments
+  const commentStakeholderCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(comments)
+    .where(eq(comments.stakeholderId, id))
+    .then(rows => rows[0]?.count ?? 0)
+
+  if (commentStakeholderCount > 0) {
+    throw new Error("Cannot delete contributor referenced as stakeholder in comments")
   }
 
   await db.delete(contributors).where(eq(contributors.id, id))

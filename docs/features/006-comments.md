@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comments allow team members to discuss tasks and track progress. Each comment has an author (a contributor) and rich-text content. Comments are displayed chronologically in the task sidebar.
+Comments allow team members to discuss tasks and track progress. Each comment has an author (a contributor), optional stakeholder (also a contributor), and rich-text content. Comments are displayed chronologically in the task sidebar.
 
 ## Rich-Text Formatting
 
@@ -46,6 +46,7 @@ Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. Th
 - Open task sidebar
 - Scroll to bottom of comments section
 - Select yourself from the author dropdown (or create a new contributor)
+- Optionally select a stakeholder from the stakeholder dropdown (or create a new contributor)
 - Write your comment in the rich-text editor (use toolbar for formatting)
 - Click "Add Comment" button
 - Your author selection is remembered per board (via localStorage)
@@ -55,7 +56,7 @@ Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. Th
 
 - Hover over a comment to reveal the "..." menu
 - Click "Edit" option
-- Modify the author and/or content
+- Modify the author, stakeholder (optional), and/or content
 - Click "Save" to apply changes
 
 ### Delete Comment
@@ -99,6 +100,7 @@ The task sidebar is divided into two columns:
 - Task title (editable)
 - Status/column selector
 - Assignees selector
+- Stakeholders selector
 - Created at date picker
 - Delete task button
 

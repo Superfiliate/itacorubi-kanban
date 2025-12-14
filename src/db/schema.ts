@@ -74,12 +74,20 @@ export const taskAssignees = sqliteTable("task_assignees", {
   contributorId: text("contributor_id").notNull().references(() => contributors.id, { onDelete: "restrict" }),
 }, (t) => [primaryKey({ columns: [t.taskId, t.contributorId] })])
 
-// Comments - belong to a task and have an author (contributor)
+// Task stakeholders - many-to-many (reuses contributors)
+// Note: Using "restrict" to force intentional deletion of stakeholder relationships before removing tasks/contributors
+export const taskStakeholders = sqliteTable("task_stakeholders", {
+  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  contributorId: text("contributor_id").notNull().references(() => contributors.id, { onDelete: "restrict" }),
+}, (t) => [primaryKey({ columns: [t.taskId, t.contributorId] })])
+
+// Comments - belong to a task and have an author (contributor) and optional stakeholder
 export const comments = sqliteTable("comments", {
   id: text("id").primaryKey(), // UUID
   taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
   boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
   authorId: text("author_id").notNull().references(() => contributors.id, { onDelete: "restrict" }),
+  stakeholderId: text("stakeholder_id").references(() => contributors.id, { onDelete: "restrict" }),
   content: text("content").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
@@ -113,6 +121,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [columns.id],
   }),
   assignees: many(taskAssignees),
+  stakeholders: many(taskStakeholders),
   comments: many(comments),
 }))
 
@@ -122,7 +131,9 @@ export const contributorsRelations = relations(contributors, ({ one, many }) => 
     references: [boards.id],
   }),
   taskAssignees: many(taskAssignees),
+  taskStakeholders: many(taskStakeholders),
   comments: many(comments),
+  commentsAsStakeholder: many(comments),
 }))
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -132,6 +143,17 @@ export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
   }),
   contributor: one(contributors, {
     fields: [taskAssignees.contributorId],
+    references: [contributors.id],
+  }),
+}))
+
+export const taskStakeholdersRelations = relations(taskStakeholders, ({ one }) => ({
+  task: one(tasks, {
+    fields: [taskStakeholders.taskId],
+    references: [tasks.id],
+  }),
+  contributor: one(contributors, {
+    fields: [taskStakeholders.contributorId],
     references: [contributors.id],
   }),
 }))
@@ -149,6 +171,10 @@ export const commentsRelations = relations(comments, ({ one }) => ({
     fields: [comments.authorId],
     references: [contributors.id],
   }),
+  stakeholder: one(contributors, {
+    fields: [comments.stakeholderId],
+    references: [contributors.id],
+  }),
 }))
 
 // ============================================================
@@ -164,5 +190,6 @@ export type NewTask = typeof tasks.$inferInsert
 export type Contributor = typeof contributors.$inferSelect
 export type NewContributor = typeof contributors.$inferInsert
 export type TaskAssignee = typeof taskAssignees.$inferSelect
+export type TaskStakeholder = typeof taskStakeholders.$inferSelect
 export type Comment = typeof comments.$inferSelect
 export type NewComment = typeof comments.$inferInsert

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { ContributorBadge } from "@/components/contributor-badge"
 import { AuthorSelect } from "./author-select"
+import { ContributorSelect } from "./contributor-select"
 import { useUpdateComment, useDeleteComment } from "@/hooks/use-task"
 import { toast } from "sonner"
 import type { ContributorColor } from "@/db/schema"
@@ -35,6 +36,11 @@ interface CommentItemProps {
       name: string
       color: ContributorColor
     }
+    stakeholder?: {
+      id: string
+      name: string
+      color: ContributorColor
+    } | null
   }
   taskId: string
   boardId: string
@@ -49,6 +55,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
   const [editAuthorId, setEditAuthorId] = useState(comment.author.id)
+  const [editStakeholderId, setEditStakeholderId] = useState<string | null>(comment.stakeholder?.id ?? null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Mutations
@@ -59,7 +66,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
     if (isRichTextEmpty(editContent)) return
 
     updateCommentMutation.mutate(
-      { commentId: comment.id, taskId, authorId: editAuthorId, content: editContent },
+      { commentId: comment.id, taskId, authorId: editAuthorId, content: editContent, stakeholderId: editStakeholderId },
       {
         onSuccess: () => {
           setIsEditing(false)
@@ -74,6 +81,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
   const handleCancel = () => {
     setEditContent(comment.content)
     setEditAuthorId(comment.author.id)
+    setEditStakeholderId(comment.stakeholder?.id ?? null)
     setIsEditing(false)
   }
 
@@ -113,6 +121,17 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
           />
         </div>
         <div className="space-y-2">
+          <label className="text-label">Stakeholder (optional)</label>
+          <ContributorSelect
+            boardId={boardId}
+            selectedContributorId={editStakeholderId}
+            onContributorChange={setEditStakeholderId}
+            contributors={contributors}
+            placeholder="Select stakeholder..."
+            allowNone={true}
+          />
+        </div>
+        <div className="space-y-2">
           <label className="text-label">Content</label>
           <RichTextEditor
             content={editContent}
@@ -145,11 +164,20 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
     <>
       <div className="group rounded-lg border border-border/50 bg-card p-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <ContributorBadge
               name={comment.author.name}
               color={comment.author.color}
             />
+            {comment.stakeholder && (
+              <>
+                <span className="text-xs text-muted-foreground">as</span>
+                <ContributorBadge
+                  name={comment.stakeholder.name}
+                  color={comment.stakeholder.color}
+                />
+              </>
+            )}
             <span
               className="text-xs text-muted-foreground"
               title={localTime}

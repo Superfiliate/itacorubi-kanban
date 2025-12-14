@@ -418,7 +418,7 @@ export function ContributorsDialog({
           </DialogTitle>
           <DialogDescription>
             Manage the contributors for this board. Contributors can be assigned
-            to tasks and make comments.
+            to tasks, added as stakeholders, and make comments.
           </DialogDescription>
         </DialogHeader>
 

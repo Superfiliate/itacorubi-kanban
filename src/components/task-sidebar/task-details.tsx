@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react"
 import { EditableText } from "@/components/editable-text"
 import { StatusSelect } from "./status-select"
 import { AssigneesSelect } from "./assignees-select"
+import { StakeholdersSelect } from "./stakeholders-select"
 import {
   Select,
   SelectContent,
@@ -43,6 +44,13 @@ interface TaskDetailsProps {
     boardId: string
     createdAt: Date | null
     assignees: Array<{
+      contributor: {
+        id: string
+        name: string
+        color: ContributorColor
+      }
+    }>
+    stakeholders?: Array<{
       contributor: {
         id: string
         name: string
@@ -157,6 +165,14 @@ export function TaskDetails({
         taskId={task.id}
         boardId={task.boardId}
         assignees={task.assignees}
+        contributors={contributors}
+      />
+
+      {/* Stakeholders */}
+      <StakeholdersSelect
+        taskId={task.id}
+        boardId={task.boardId}
+        stakeholders={task.stakeholders ?? []}
         contributors={contributors}
       />
 

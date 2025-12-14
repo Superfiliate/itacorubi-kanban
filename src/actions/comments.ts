@@ -12,13 +12,25 @@ export async function createComment(
   authorId: string,
   content: string,
   id?: string,
-  createdAt?: Date
+  createdAt?: Date,
+  stakeholderId?: string | null
 ) {
   await requireBoardAccess(boardId)
 
   const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
   if (!task || task.boardId !== boardId) {
     throw new Error("Task not found")
+  }
+
+  // Validate stakeholder if provided
+  if (stakeholderId) {
+    const { contributors } = await import("@/db/schema")
+    const stakeholder = await db.query.contributors.findFirst({
+      where: eq(contributors.id, stakeholderId)
+    })
+    if (!stakeholder || stakeholder.boardId !== boardId) {
+      throw new Error("Stakeholder not found or does not belong to board")
+    }
   }
 
   const commentId = id ?? crypto.randomUUID()
@@ -29,6 +41,7 @@ export async function createComment(
     boardId,
     authorId,
     content,
+    stakeholderId: stakeholderId ?? null,
     ...(createdAt ? { createdAt } : null),
   })
 
@@ -56,7 +69,8 @@ export async function updateComment(
   commentId: string,
   authorId: string,
   content: string,
-  boardId: string
+  boardId: string,
+  stakeholderId?: string | null
 ) {
   await requireBoardAccess(boardId)
 
@@ -65,8 +79,23 @@ export async function updateComment(
     throw new Error("Comment not found")
   }
 
+  // Validate stakeholder if provided
+  if (stakeholderId) {
+    const { contributors } = await import("@/db/schema")
+    const stakeholder = await db.query.contributors.findFirst({
+      where: eq(contributors.id, stakeholderId)
+    })
+    if (!stakeholder || stakeholder.boardId !== boardId) {
+      throw new Error("Stakeholder not found or does not belong to board")
+    }
+  }
+
   await db.update(comments)
-    .set({ authorId, content })
+    .set({
+      authorId,
+      content,
+      stakeholderId: stakeholderId ?? null,
+    })
     .where(eq(comments.id, commentId))
 
   revalidatePath(`/boards/${boardId}`)

@@ -54,10 +54,16 @@ export async function getTask(id: string) {
           contributor: true,
         },
       },
+      stakeholders: {
+        with: {
+          contributor: true,
+        },
+      },
       comments: {
         orderBy: (comments, { asc }) => [asc(comments.createdAt)],
         with: {
           author: true,
+          stakeholder: true,
         },
       },
     },
@@ -204,6 +210,10 @@ export async function deleteTask(id: string, boardId: string) {
 
   // Delete assignees first
   await db.delete(taskAssignees).where(eq(taskAssignees.taskId, id))
+
+  // Delete stakeholders
+  const { taskStakeholders } = await import("@/db/schema")
+  await db.delete(taskStakeholders).where(eq(taskStakeholders.taskId, id))
 
   // Delete comments before removing the task to honor restrict FKs
   await db.delete(comments).where(eq(comments.taskId, id))

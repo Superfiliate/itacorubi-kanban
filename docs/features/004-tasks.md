@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tasks are the individual work items that live within columns. Each task can have a title, multiple assignees, a creation date, and comments.
+Tasks are the individual work items that live within columns. Each task can have a title, multiple assignees, multiple stakeholders, a creation date, and comments.
 
 ## User Flows
 
@@ -30,6 +30,7 @@ Tasks are the individual work items that live within columns. Each task can have
   - **Priority**: Dropdown (No priority, Low, Medium, High, Urgent). Defaults to **No priority**
   - **Status**: Dropdown to move between columns
   - **Assignees**: Multi-select with ability to create new contributors
+  - **Stakeholders**: Multi-select with ability to create new contributors (reuses same contributor list)
   - **Created at**: Date picker to view/change creation date
 
 ### Move Task (Drag & Drop)

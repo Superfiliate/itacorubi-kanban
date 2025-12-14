@@ -23,6 +23,9 @@ import {
   deleteContributor,
   addAssignee,
   removeAssignee,
+  addStakeholder,
+  removeStakeholder,
+  createAndAddStakeholder,
 } from "@/actions/contributors"
 import { createComment, updateComment, deleteComment } from "@/actions/comments"
 import { useBoardStore, type OutboxItem } from "@/stores/board-store"
@@ -93,15 +96,32 @@ async function executeOutboxItem(item: OutboxItem): Promise<void> {
       return
     }
 
+    // Stakeholder operations
+    case "addStakeholder": {
+      const { taskId, contributorId } = item.payload
+      await addStakeholder(taskId, contributorId, item.boardId)
+      return
+    }
+    case "removeStakeholder": {
+      const { taskId, contributorId } = item.payload
+      await removeStakeholder(taskId, contributorId, item.boardId)
+      return
+    }
+    case "createAndAddStakeholder": {
+      const { taskId, contributorId, name, color } = item.payload
+      await createAndAddStakeholder(taskId, item.boardId, name, { id: contributorId, color })
+      return
+    }
+
     // Comment operations
     case "createComment": {
-      const { taskId, commentId, authorId, content, createdAt } = item.payload
-      await createComment(taskId, item.boardId, authorId, content, commentId, createdAt)
+      const { taskId, commentId, authorId, content, createdAt, stakeholderId } = item.payload
+      await createComment(taskId, item.boardId, authorId, content, commentId, createdAt, stakeholderId)
       return
     }
     case "updateComment": {
-      const { commentId, authorId, content } = item.payload
-      await updateComment(commentId, authorId, content, item.boardId)
+      const { commentId, authorId, content, stakeholderId } = item.payload
+      await updateComment(commentId, authorId, content, item.boardId, stakeholderId)
       return
     }
     case "deleteComment": {

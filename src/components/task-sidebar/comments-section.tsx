@@ -5,6 +5,7 @@ import { MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor"
 import { AuthorSelect, getRememberedAuthor } from "./author-select"
+import { ContributorSelect } from "./contributor-select"
 import { CommentItem } from "./comment-item"
 import { useCreateComment } from "@/hooks/use-task"
 import { toast } from "sonner"
@@ -22,6 +23,11 @@ interface CommentsSectionProps {
       name: string
       color: ContributorColor
     }
+    stakeholder?: {
+      id: string
+      name: string
+      color: ContributorColor
+    } | null
   }>
   contributors: Array<{
     id: string
@@ -37,6 +43,7 @@ export function CommentsSection({
   contributors,
 }: CommentsSectionProps) {
   const [newCommentContent, setNewCommentContent] = useState("")
+  const [selectedStakeholderId, setSelectedStakeholderId] = useState<string | null>(null)
 
   // Derive current author data from contributors (normalized source of truth)
   // This ensures comment badges reflect latest contributor name/color
@@ -44,9 +51,13 @@ export function CommentsSection({
     const contributorsById = new Map(contributors.map((c) => [c.id, c]))
     return comments.map((comment) => {
       const currentAuthor = contributorsById.get(comment.author.id)
+      const currentStakeholder = comment.stakeholder?.id
+        ? contributorsById.get(comment.stakeholder.id)
+        : null
       return {
         ...comment,
         author: currentAuthor ?? comment.author,
+        stakeholder: currentStakeholder ?? comment.stakeholder,
       }
     })
   }, [comments, contributors])
@@ -69,10 +80,11 @@ export function CommentsSection({
     if (isRichTextEmpty(newCommentContent) || !selectedAuthorId) return
 
     createCommentMutation.mutate(
-      { taskId, authorId: selectedAuthorId, content: newCommentContent },
+      { taskId, authorId: selectedAuthorId, content: newCommentContent, stakeholderId: selectedStakeholderId },
       {
         onSuccess: () => {
           setNewCommentContent("")
+          setSelectedStakeholderId(null)
           toast.success("Comment added")
         },
         onError: () => {
@@ -116,16 +128,31 @@ export function CommentsSection({
       {/* New comment form at the bottom */}
       <div className="glass-subtle rounded-lg border p-3 space-y-3 mt-6">
         <h4 className="text-xs font-medium text-muted-foreground">Add a comment</h4>
-        <div className="space-y-2">
-          <AuthorSelect
-            boardId={boardId}
-            selectedAuthorId={selectedAuthorId}
-            onAuthorChange={setSelectedAuthorId}
-            contributors={contributors}
-            placeholder="Who are you?"
-          />
+        <div className="flex flex-col md:flex-row md:gap-3 space-y-2 md:space-y-0">
+          <div className="flex-1 space-y-2">
+            <label className="text-label">Author</label>
+            <AuthorSelect
+              boardId={boardId}
+              selectedAuthorId={selectedAuthorId}
+              onAuthorChange={setSelectedAuthorId}
+              contributors={contributors}
+              placeholder="Who are you?"
+            />
+          </div>
+          <div className="flex-1 space-y-2">
+            <label className="text-label">Stakeholder (optional)</label>
+            <ContributorSelect
+              boardId={boardId}
+              selectedContributorId={selectedStakeholderId}
+              onContributorChange={setSelectedStakeholderId}
+              contributors={contributors}
+              placeholder="Select stakeholder..."
+              allowNone={true}
+            />
+          </div>
         </div>
         <div className="space-y-2">
+          <label className="text-label">Content</label>
           <RichTextEditor
             content={newCommentContent}
             onChange={setNewCommentContent}

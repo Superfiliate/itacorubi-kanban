@@ -11,7 +11,8 @@ A collaborative Kanban board application where users can create and manage multi
 - **Task**: UUID, board reference, column reference, title, priority, position, timestamps
 - **Contributor**: UUID, board reference, name, color
 - **TaskAssignee**: Many-to-many between tasks and contributors
-- **Comment**: UUID, task reference, board reference, author (contributor), content, timestamps
+- **TaskStakeholder**: Many-to-many between tasks and contributors (reuses contributors)
+- **Comment**: UUID, task reference, board reference, author (contributor), optional stakeholder (contributor), content, timestamps
 
 ## Visual Design
 
@@ -27,10 +28,11 @@ New boards, columns, and tasks are prefixed with a random emoji from a curated l
 
 Contributors are managed via a modal accessible from the board header (Users icon). Features:
 - View all contributors with usage stats (tasks assigned, comments made)
-- Add new contributors (also possible inline when assigning tasks)
+- Add new contributors (also possible inline when assigning tasks or adding stakeholders)
 - Edit contributor name and color
-- Delete contributors (only if they have no tasks or comments)
+- Delete contributors (only if they have no task assignments, stakeholder relationships, or comments)
 - Expandable stats showing task breakdown per column
+- Contributors can be used as assignees, stakeholders, and comment authors
 
 ### Icons
 

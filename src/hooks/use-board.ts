@@ -24,6 +24,13 @@ export interface BoardTask {
       color: ContributorColor
     }
   }>
+  stakeholders?: Array<{
+    contributor: {
+      id: string
+      name: string
+      color: ContributorColor
+    }
+  }>
   comments: Array<{
     id: string
     createdAt: Date | null

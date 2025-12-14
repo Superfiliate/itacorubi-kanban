@@ -19,6 +19,11 @@ export interface TaskComment {
     name: string
     color: ContributorColor
   }
+  stakeholder?: {
+    id: string
+    name: string
+    color: ContributorColor
+  } | null
 }
 
 export interface TaskWithComments {
@@ -33,6 +38,13 @@ export interface TaskWithComments {
     name: string
   }
   assignees: Array<{
+    contributor: {
+      id: string
+      name: string
+      color: ContributorColor
+    }
+  }>
+  stakeholders?: Array<{
     contributor: {
       id: string
       name: string
@@ -80,6 +92,7 @@ export function useCreateTask(boardId: string) {
         position: 0,
         createdAt: new Date(),
         assignees: [],
+        stakeholders: [],
         comments: [],
       }
 
@@ -575,6 +588,192 @@ export function useCreateAndAssignContributor(boardId: string) {
   })
 }
 
+// Hook to add stakeholder to task (local-first + outbox)
+export function useAddStakeholder(boardId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ taskId, contributorId }: { taskId: string; contributorId: string }) => {
+      // Find contributor info
+      const board = useBoardStore.getState().boardsById[boardId]
+      const contributorFromStore = board?.contributorsById[contributorId]
+      const contributorFromCache = queryClient
+        .getQueryData<BoardData>(boardKeys.detail(boardId))
+        ?.contributors.find((c) => c.id === contributorId)
+      const contributor = contributorFromStore ?? contributorFromCache
+      if (!contributor) return
+
+      const newStakeholder = {
+        contributor: {
+          id: contributor.id,
+          name: contributor.name,
+          color: contributor.color,
+        },
+      }
+
+      // 1) Update local store
+      useBoardStore.getState().addStakeholderLocal({ boardId, taskId, contributorId })
+
+      // 2) Update TanStack caches
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((task) =>
+              task.id === taskId
+                ? { ...task, stakeholders: [...(task.stakeholders ?? []), newStakeholder] }
+                : task
+            ),
+          })),
+        }
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return { ...old, stakeholders: [...(old.stakeholders ?? []), newStakeholder] }
+      })
+
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "addStakeholder",
+        boardId,
+        payload: { taskId, contributorId },
+      })
+      void flushBoardOutbox(boardId)
+    },
+  })
+}
+
+// Hook to remove stakeholder from task (local-first + outbox)
+export function useRemoveStakeholder(boardId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ taskId, contributorId }: { taskId: string; contributorId: string }) => {
+      // 1) Update local store
+      useBoardStore.getState().removeStakeholderLocal({ boardId, taskId, contributorId })
+
+      // 2) Update TanStack caches
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((task) =>
+              task.id === taskId
+                ? {
+                    ...task,
+                    stakeholders: (task.stakeholders ?? []).filter(
+                      (s) => s.contributor.id !== contributorId
+                    ),
+                  }
+                : task
+            ),
+          })),
+        }
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          stakeholders: (old.stakeholders ?? []).filter((s) => s.contributor.id !== contributorId),
+        }
+      })
+
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "removeStakeholder",
+        boardId,
+        payload: { taskId, contributorId },
+      })
+      void flushBoardOutbox(boardId)
+    },
+  })
+}
+
+// Hook to create and add a new stakeholder
+export function useCreateAndAddStakeholder(boardId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ taskId, name }: { taskId: string; name: string }) => {
+      // Local-first: pick stable values on the client
+      const contributorId = crypto.randomUUID()
+      const color = getRandomContributorColor()
+
+      // Update local store immediately (single source for contributor identity)
+      useBoardStore.getState().createContributorLocal({
+        boardId,
+        contributorId,
+        name,
+        color,
+      })
+      useBoardStore.getState().addStakeholderLocal({ boardId, taskId, contributorId })
+
+      // Update TanStack caches for current UI (board cards + sidebar task cache)
+      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
+
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        const optimisticContributor = { id: contributorId, name, color, boardId }
+        return {
+          ...old,
+          contributors: [...old.contributors, optimisticContributor],
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((t) => {
+              if (t.id !== taskId) return t
+              return {
+                ...t,
+                stakeholders: [
+                  ...(t.stakeholders ?? []),
+                  { contributor: { id: contributorId, name, color } },
+                ],
+              }
+            }),
+          })),
+        }
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          stakeholders: [
+            ...(old.stakeholders ?? []),
+            { contributor: { id: contributorId, name, color } },
+          ],
+        }
+      })
+
+      // Background sync via outbox (no placeholder color, no flicker)
+      useBoardStore.getState().enqueue({
+        type: "createAndAddStakeholder",
+        boardId,
+        payload: { taskId, contributorId, name, color },
+      })
+      void flushBoardOutbox(boardId)
+
+      return contributorId
+    },
+    onMutate: async () => {
+      // mutationFn performs local-first work; keep onMutate as a no-op placeholder
+      return {}
+    },
+    onSuccess: () => {
+      // No invalidation needed; server stores client-chosen id/color.
+    },
+    onError: () => {
+      // We optimize for good actors; errors are acceptable divergence.
+    },
+  })
+}
+
 // Hook to add a comment
 export function useCreateComment(boardId: string) {
   const queryClient = useQueryClient()
@@ -584,10 +783,12 @@ export function useCreateComment(boardId: string) {
       taskId,
       authorId,
       content,
+      stakeholderId,
     }: {
       taskId: string
       authorId: string
       content: string
+      stakeholderId?: string | null
     }) => {
       const board = useBoardStore.getState().boardsById[boardId]
       const authorFromStore = board?.contributorsById[authorId]
@@ -598,6 +799,14 @@ export function useCreateComment(boardId: string) {
       const author = authorFromStore ?? authorFromCache
       if (!author) throw new Error("Author not found")
 
+      const stakeholderFromStore = stakeholderId ? board?.contributorsById[stakeholderId] : null
+      const stakeholderFromCache = stakeholderId
+        ? queryClient
+            .getQueryData<BoardData>(boardKeys.detail(boardId))
+            ?.contributors.find((c) => c.id === stakeholderId)
+        : null
+      const stakeholder = stakeholderFromStore ?? stakeholderFromCache
+
       const commentId = crypto.randomUUID()
       const createdAt = new Date()
 
@@ -606,6 +815,7 @@ export function useCreateComment(boardId: string) {
         content,
         createdAt,
         author: { id: author.id, name: author.name, color: author.color },
+        stakeholder: stakeholder ? { id: stakeholder.id, name: stakeholder.name, color: stakeholder.color } : null,
       }
 
       // Local-first store (drives sidebar UI)
@@ -640,7 +850,7 @@ export function useCreateComment(boardId: string) {
       useBoardStore.getState().enqueue({
         type: "createComment",
         boardId,
-        payload: { taskId, commentId, authorId, content, createdAt },
+        payload: { taskId, commentId, authorId, content, createdAt, stakeholderId: stakeholderId ?? null },
       })
       void flushBoardOutbox(boardId)
 
@@ -659,11 +869,13 @@ export function useUpdateComment(boardId: string) {
       taskId,
       authorId,
       content,
+      stakeholderId,
     }: {
       commentId: string
       taskId: string
       authorId: string
       content: string
+      stakeholderId?: string | null
     }) => {
       const board = useBoardStore.getState().boardsById[boardId]
       const authorFromStore = board?.contributorsById[authorId]
@@ -672,11 +884,20 @@ export function useUpdateComment(boardId: string) {
         ?.contributors.find((c) => c.id === authorId)
       const author = authorFromStore ?? authorFromCache
 
+      const stakeholderFromStore = stakeholderId ? board?.contributorsById[stakeholderId] : null
+      const stakeholderFromCache = stakeholderId
+        ? queryClient
+            .getQueryData<BoardData>(boardKeys.detail(boardId))
+            ?.contributors.find((c) => c.id === stakeholderId)
+        : null
+      const stakeholder = stakeholderFromStore ?? stakeholderFromCache
+
       useBoardStore.getState().updateCommentLocal({
         boardId,
         taskId,
         commentId,
         author: author ? { id: author.id, name: author.name, color: author.color } : undefined,
+        stakeholder: stakeholder ? { id: stakeholder.id, name: stakeholder.name, color: stakeholder.color } : null,
         content,
       })
 
@@ -690,6 +911,7 @@ export function useUpdateComment(boardId: string) {
                   ...c,
                   content,
                   author: author ? { id: author.id, name: author.name, color: author.color } : c.author,
+                  stakeholder: stakeholder ? { id: stakeholder.id, name: stakeholder.name, color: stakeholder.color } : null,
                 }
               : c
           ),
@@ -699,7 +921,7 @@ export function useUpdateComment(boardId: string) {
       useBoardStore.getState().enqueue({
         type: "updateComment",
         boardId,
-        payload: { taskId, commentId, authorId, content },
+        payload: { taskId, commentId, authorId, content, stakeholderId: stakeholderId ?? null },
       })
       void flushBoardOutbox(boardId)
     },

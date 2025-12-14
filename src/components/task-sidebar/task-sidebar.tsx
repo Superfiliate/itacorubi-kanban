@@ -51,11 +51,17 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
     // Start with hydrated task details or server task as base
     const baseTask = hydratedTaskDetails ?? serverTask
 
-    // If we have a local task entity and board, derive assignees from normalized store
+    // If we have a local task entity and board, derive assignees and stakeholders from normalized store
     // This ensures contributor updates (name, color) are immediately reflected
     if (localTaskEntity && board) {
       const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
       const assignees = assigneeIds
+        .map((cid) => board.contributorsById[cid])
+        .filter(Boolean)
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+
+      const stakeholderIds = board.stakeholderIdsByTaskId[taskId] ?? []
+      const stakeholders = stakeholderIds
         .map((cid) => board.contributorsById[cid])
         .filter(Boolean)
         .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
@@ -69,11 +75,12 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
         createdAt: localTaskEntity.createdAt,
         column: { id: localTaskEntity.columnId, name: columns.find((c) => c.id === localTaskEntity.columnId)?.name ?? "" },
         assignees,
+        stakeholders,
         comments: baseTask?.comments ?? [],
       }
     }
 
-    // Fallback: if we have a base task but no local entity, still derive assignees from normalized store
+    // Fallback: if we have a base task but no local entity, still derive assignees and stakeholders from normalized store
     // when available to ensure contributor color updates are reflected
     if (baseTask && board) {
       const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? baseTask.assignees.map((a) => a.contributor.id)
@@ -82,9 +89,16 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
         .filter(Boolean)
         .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
 
+      const stakeholderIds = board.stakeholderIdsByTaskId[taskId] ?? (baseTask.stakeholders ?? []).map((s) => s.contributor.id)
+      const stakeholders = stakeholderIds
+        .map((cid) => board.contributorsById[cid])
+        .filter(Boolean)
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+
       return {
         ...baseTask,
         assignees,
+        stakeholders,
       }
     }
 
@@ -160,6 +174,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
                   boardId: boardId,
                   createdAt: taskForUI.createdAt,
                   assignees: taskForUI.assignees,
+                  stakeholders: taskForUI.stakeholders,
                 }}
                 columns={columns}
                 contributors={currentContributors}

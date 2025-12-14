@@ -77,6 +77,11 @@ export async function getBoard(id: string) {
                   contributor: true,
                 },
               },
+              stakeholders: {
+                with: {
+                  contributor: true,
+                },
+              },
               comments: {
                 orderBy: (comments, { desc }) => [desc(comments.createdAt)],
                 columns: {
