@@ -46,7 +46,7 @@ test.describe("Task Management", () => {
     const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..").locator("..")
     // No priority icon visible for "none"
     await expect(taskCard.locator("svg.lucide-flame")).not.toBeVisible()
-    await expect(taskCard.locator("svg.lucide-arrow-up")).not.toBeVisible()
+    await expect(taskCard.locator("svg.lucide-signal-high")).not.toBeVisible()
 
     // Re-open task and set to High
     await page.getByText(/new task/i).click()
@@ -57,10 +57,10 @@ test.describe("Task Management", () => {
     await page.getByRole("option", { name: /high/i }).click()
     await expect(prioritySelect).toHaveText(/high/i)
 
-    // Close and verify High styling (orange border + arrow-up icon)
+    // Close and verify High styling (orange border + signal-high icon)
     await page.keyboard.press("Escape")
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
-    await expect(taskCard.locator("svg.lucide-arrow-up")).toBeVisible()
+    await expect(taskCard.locator("svg.lucide-signal-high")).toBeVisible()
     await expect(taskCard).toHaveClass(/border-l-orange/)
 
     // Re-open and change to Urgent

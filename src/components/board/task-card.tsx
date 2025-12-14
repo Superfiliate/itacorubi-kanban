@@ -143,9 +143,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, comments }: 
       <div className="mt-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {/* Priority icon */}
-          {priority !== "none" && (
-            <PriorityIcon className={cn("h-3.5 w-3.5", iconClassName)} />
-          )}
+          <PriorityIcon className={cn("h-3.5 w-3.5", iconClassName)} />
 
           {/* Comment info */}
           {comments.length > 0 ? (
