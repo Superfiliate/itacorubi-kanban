@@ -311,6 +311,9 @@ export function useUpdateTaskColumn(boardId: string) {
         }
 
         if (!task || !oldColumnId) return old
+
+        // Skip if task is already in the correct position (handleDragOver already updated it)
+        if (oldColumnId === newColumnId && task.position === newPosition) return old
         if (oldColumnId === newColumnId && newPosition === undefined) return old
 
         // Calculate new position if not provided
@@ -322,14 +325,11 @@ export function useUpdateTaskColumn(boardId: string) {
           ...old,
           columns: old.columns.map((col) => {
             if (col.id === oldColumnId && col.id !== newColumnId) {
-              // Remove from old column
+              // Remove from old column and update positions
+              const filtered = col.tasks.filter((t) => t.id !== taskId)
               return {
                 ...col,
-                tasks: col.tasks
-                  .filter((t) => t.id !== taskId)
-                  .map((t) =>
-                    t.position > task!.position ? { ...t, position: t.position - 1 } : t
-                  ),
+                tasks: filtered.map((t, i) => ({ ...t, position: i })),
               }
             }
             if (col.id === newColumnId) {
@@ -339,11 +339,14 @@ export function useUpdateTaskColumn(boardId: string) {
                 ? col.tasks.filter((t) => t.id !== taskId)
                 : col.tasks
 
+              const newTasks = [...existingTasks.map((t) =>
+                t.position >= finalPosition ? { ...t, position: t.position + 1 } : t
+              ), movedTask].sort((a, b) => a.position - b.position)
+
+              // Normalize positions to be sequential (0, 1, 2, ...)
               return {
                 ...col,
-                tasks: [...existingTasks.map((t) =>
-                  t.position >= finalPosition ? { ...t, position: t.position + 1 } : t
-                ), movedTask].sort((a, b) => a.position - b.position),
+                tasks: newTasks.map((t, i) => ({ ...t, position: i })),
               }
             }
             return col

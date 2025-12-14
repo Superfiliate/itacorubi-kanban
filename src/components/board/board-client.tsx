@@ -17,6 +17,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable"
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Columns3 } from "lucide-react"
 import { Column } from "./column"
 import { AddColumnButton } from "./add-column-button"
@@ -24,7 +25,9 @@ import {
   useBoardQuery,
   useReorderColumns,
   useOptimisticColumnsUpdate,
+  boardKeys,
   type BoardColumn,
+  type BoardData,
 } from "@/hooks/use-board"
 import { useUpdateTaskColumn } from "@/hooks/use-task"
 import { useBoardPolling } from "@/hooks/use-board-polling"
@@ -36,6 +39,7 @@ interface BoardClientProps {
 
 export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
   useBoardPolling(boardId)
+  const queryClient = useQueryClient()
 
   // Use TanStack Query for columns data
   const { data: board } = useBoardQuery(boardId)
@@ -78,26 +82,55 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
     const activeTaskId = active.id as string
     const overId = over.id as string
 
-    // Find which column the task is currently in
-    const activeColumn = columns.find((c) => c.tasks.some((t) => t.id === activeTaskId))
-    if (!activeColumn) return
-
-    let overColumnId: string | undefined
-
-    if (overData?.type === "task") {
-      // Hovering over another task - find its column
-      const col = columns.find((c) => c.tasks.some((t) => t.id === overId))
-      overColumnId = col?.id
-    } else if (overData?.type === "column-drop") {
-      overColumnId = overData.columnId as string
-    } else if (overData?.type === "column") {
-      overColumnId = overId
-    }
-
-    if (!overColumnId || overColumnId === activeColumn.id) return
-
-    // Move task to the new column optimistically using TanStack Query cache
     setColumns((prev) => {
+      // Find which column the task is currently in (using prev for latest state)
+      const activeColumn = prev.find((c) => c.tasks.some((t) => t.id === activeTaskId))
+      if (!activeColumn) return prev
+
+      let overColumnId: string | undefined
+
+      if (overData?.type === "task") {
+        // Hovering over another task - find its column
+        const col = prev.find((c) => c.tasks.some((t) => t.id === overId))
+        overColumnId = col?.id
+      } else if (overData?.type === "column-drop") {
+        overColumnId = overData.columnId as string
+      } else if (overData?.type === "column") {
+        overColumnId = overId
+      }
+
+      if (!overColumnId) return prev
+
+      // Handle same-column reordering
+      if (overColumnId === activeColumn.id && overData?.type === "task" && overId !== activeTaskId) {
+        const colIndex = prev.findIndex((c) => c.id === activeColumn.id)
+        if (colIndex === -1) return prev
+
+        const taskIndex = prev[colIndex].tasks.findIndex((t) => t.id === activeTaskId)
+        const overTaskIndex = prev[colIndex].tasks.findIndex((t) => t.id === overId)
+
+        if (taskIndex === -1 || overTaskIndex === -1 || taskIndex === overTaskIndex) return prev
+
+        // Reorder within the same column using arrayMove, then update position fields
+        const newColumns = prev.map((col, idx) => {
+          if (idx === colIndex) {
+            const reorderedTasks = arrayMove([...col.tasks], taskIndex, overTaskIndex)
+            // Update position fields to match new array indices
+            return {
+              ...col,
+              tasks: reorderedTasks.map((task, i) => ({ ...task, position: i })),
+            }
+          }
+          return col
+        })
+
+        return newColumns
+      }
+
+      // Handle cross-column moves
+      if (overColumnId === activeColumn.id) return prev
+
+      // Move task to the new column optimistically
       const newColumns = prev.map((col) => ({
         ...col,
         tasks: [...col.tasks],
@@ -124,6 +157,10 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
         newColumns[targetColIndex].tasks.push({ ...task, columnId: overColumnId! })
       }
 
+      // Update position fields for both source and target columns
+      newColumns[sourceColIndex].tasks = newColumns[sourceColIndex].tasks.map((t, i) => ({ ...t, position: i }))
+      newColumns[targetColIndex].tasks = newColumns[targetColIndex].tasks.map((t, i) => ({ ...t, position: i }))
+
       return newColumns
     })
   }
@@ -140,52 +177,40 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
     const activeData = active.data.current
     const overData = over.data.current
 
+    // Get latest columns from query cache (after dragOver optimistic updates)
+    const boardData = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
+    const latestColumns = boardData?.columns ?? columns
+
     if (activeData?.type === "column" && overData?.type === "column") {
       // Reordering columns
       if (activeId !== overId) {
-        const oldIndex = columns.findIndex((c) => c.id === activeId)
-        const newIndex = columns.findIndex((c) => c.id === overId)
+        const oldIndex = latestColumns.findIndex((c) => c.id === activeId)
+        const newIndex = latestColumns.findIndex((c) => c.id === overId)
 
         if (oldIndex !== -1 && newIndex !== -1) {
           // Optimistic update via TanStack Query
           setColumns((prev) => arrayMove(prev, oldIndex, newIndex))
 
           // Server update
-          const overColumn = columns.find((c) => c.id === overId)
+          const overColumn = latestColumns.find((c) => c.id === overId)
           if (overColumn) {
             reorderColumnsMutation.mutate({ columnId: activeId, newPosition: overColumn.position })
           }
         }
       }
     } else if (activeData?.type === "task") {
-      // Find the task's current column (after dragOver updates)
-      const currentColumn = columns.find((c) => c.tasks.some((t) => t.id === activeId))
-      if (!currentColumn) return
+      // Get the latest position after dragOver optimistic updates
+      const finalBoardData = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
+      const finalColumns = finalBoardData?.columns ?? latestColumns
+      const finalColumn = finalColumns.find((c) => c.tasks.some((t) => t.id === activeId))
+      if (!finalColumn) return
 
-      // Handle reordering within the same column
-      if (overData?.type === "task" && overId !== activeId) {
-        const taskIndex = currentColumn.tasks.findIndex((t) => t.id === activeId)
-        const overTaskIndex = currentColumn.tasks.findIndex((t) => t.id === overId)
+      const targetPosition = finalColumn.tasks.findIndex((t) => t.id === activeId)
 
-        if (taskIndex !== -1 && overTaskIndex !== -1 && taskIndex !== overTaskIndex) {
-          // Optimistic update for within-column reorder via TanStack Query
-          setColumns((prev) =>
-            prev.map((col) => {
-              if (col.id !== currentColumn.id) return col
-              const newTasks = arrayMove(col.tasks, taskIndex, overTaskIndex)
-              return { ...col, tasks: newTasks }
-            })
-          )
-        }
-      }
-
-      // Get the position to save
-      const targetPosition = currentColumn.tasks.findIndex((t) => t.id === activeId)
-
-      // Server update via mutation
+      // Server update via mutation (dragOver already handled optimistic UI update)
       updateTaskColumnMutation.mutate({
         taskId: activeId,
-        newColumnId: currentColumn.id,
+        newColumnId: finalColumn.id,
         newPosition: targetPosition,
       })
     }
