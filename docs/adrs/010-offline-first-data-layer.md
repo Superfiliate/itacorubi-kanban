@@ -7,7 +7,7 @@ We treat the **client as the primary source of truth** for interactive UX using 
 - **Stable client-chosen values**: client generates UUIDs and (where applicable) chooses visual fields (e.g. contributor color) so the backend does not “surprise” the UI later
 - **Hydration**: server data is used to hydrate local state once; do not overwrite local edits while outbox is pending
 - **Conflict strategy**: last-write-wins; optimize for good actors and low concurrency
-- **Sync indicator**: driven by outbox in-flight / pending state (see `docs/features/009-sync-status.md`)
+- **Sync indicator**: driven by outbox in-flight / pending state via `selectOutboxStatus(boardId)` from the store (NOT TanStack Query's `useIsMutating`). See `docs/features/009-sync-status.md`
 
 TanStack Query may still be used for **one-time hydration**, **polling/revalidation**, and non-interactive fetches, but it is not the primary offline-first interaction layer.
 

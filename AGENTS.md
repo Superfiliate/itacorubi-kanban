@@ -15,6 +15,20 @@
 - Do NOT deviate from documented conventions
 - Do NOT make assumptions when docs exist
 
+## Refactoring Checklist
+
+When changing a component/function interface (adding required props, changing signatures):
+
+1. **Search for all usages** before committing changes (use grep/search tools)
+2. **Update all call sites** - don't assume you found them all from reading one file
+3. **Run tests** after changes to catch missed usages
+4. **Check feature docs** for "Usage Locations" sections that list where components are used
+
+When cleaning up imports:
+
+1. **Verify each import is unused** before removing - some may be used by other functions in the same file
+2. **Run linter/compiler** after cleanup to catch accidental removals
+
 ## Keep Docs Updated
 
 **Documentation updates are part of your work, not an afterthought. Read the relevant README before adding or changing files in that area.**
