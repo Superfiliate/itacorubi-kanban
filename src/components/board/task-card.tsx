@@ -127,7 +127,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, commentCount
           }
         }}
       />
-      <h4 className="text-sm font-medium text-foreground">
+      <h4 className="text-heading-sm text-foreground">
         {title}
       </h4>
 

@@ -218,8 +218,8 @@ export function BoardClient({ boardId }: BoardClientProps) {
         <div className="flex flex-col items-center gap-3 text-center">
           <Columns3 className="h-16 w-16 text-muted-foreground/50" />
           <div>
-            <h3 className="text-lg font-medium text-foreground">No columns yet</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="text-heading">No columns yet</h3>
+            <p className="mt-1 text-muted">
               Add your first column to start organizing tasks
             </p>
           </div>
@@ -256,12 +256,12 @@ export function BoardClient({ boardId }: BoardClientProps) {
       <DragOverlay>
         {activeColumn && (
           <div className="w-72 rounded-lg border border-border/50 bg-muted/50 p-3 shadow-lg">
-            <span className="text-sm font-medium">{activeColumn.name}</span>
+            <span className="text-heading-sm">{activeColumn.name}</span>
           </div>
         )}
         {activeTask && (
           <div className="w-64 rounded-lg border border-border/50 bg-card p-3 shadow-lg">
-            <span className="text-sm font-medium">{activeTask.title}</span>
+            <span className="text-heading-sm">{activeTask.title}</span>
           </div>
         )}
       </DragOverlay>

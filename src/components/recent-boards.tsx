@@ -23,7 +23,7 @@ export function RecentBoards() {
                 href={`/boards/${board.id}`}
                 className="group flex items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-white/60 dark:hover:bg-white/10"
               >
-                <span className="text-sm font-medium text-foreground group-hover:text-foreground">
+                <span className="text-heading-sm text-foreground group-hover:text-foreground">
                   {board.title}
                 </span>
                 <code className="text-xs text-muted-foreground/80">

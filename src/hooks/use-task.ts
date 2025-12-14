@@ -1,21 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  createTask,
-  getTask,
-  updateTaskTitle,
-  updateTaskPriority,
-  updateTaskCreatedAt,
-  updateTaskColumn,
-  deleteTask,
-} from "@/actions/tasks"
-import {
-  addAssignee,
-  removeAssignee,
-  createAndAssignContributor,
-} from "@/actions/contributors"
-import { createComment, updateComment, deleteComment } from "@/actions/comments"
+import { createTask, getTask, deleteTask } from "@/actions/tasks"
 import { getRandomEmoji } from "@/lib/emojis"
 import { boardKeys, type BoardData, type BoardTask } from "./use-board"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
@@ -146,24 +132,16 @@ export function useCreateTask(boardId: string) {
   })
 }
 
-// Hook to update task title
+// Hook to update task title (local-first + outbox)
 export function useUpdateTaskTitle(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, title }: { taskId: string; title: string }) =>
-      updateTaskTitle(taskId, title, boardId),
-    onMutate: async ({ taskId, title }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
-
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-
-      // Update local store (for sidebar)
+    mutationFn: async ({ taskId, title }: { taskId: string; title: string }) => {
+      // 1) Update local store
       useBoardStore.getState().updateTaskTitleLocal({ boardId, taskId, title })
 
-      // Update board cache
+      // 2) Update TanStack caches
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
@@ -177,43 +155,32 @@ export function useUpdateTaskTitle(boardId: string) {
         }
       })
 
-      // Update task cache
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return { ...old, title }
       })
 
-      return { previousBoard, previousTask }
-    },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "updateTaskTitle",
+        boardId,
+        payload: { taskId, title },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
-// Hook to update task priority
+// Hook to update task priority (local-first + outbox)
 export function useUpdateTaskPriority(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, priority }: { taskId: string; priority: TaskPriority }) =>
-      updateTaskPriority(taskId, priority, boardId),
-    onMutate: async ({ taskId, priority }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
-
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-
-      // Update local store (for sidebar)
+    mutationFn: async ({ taskId, priority }: { taskId: string; priority: TaskPriority }) => {
+      // 1) Update local store
       useBoardStore.getState().updateTaskPriorityLocal({ boardId, taskId, priority })
 
-      // Update board cache (cards)
+      // 2) Update TanStack caches
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
@@ -227,58 +194,55 @@ export function useUpdateTaskPriority(boardId: string) {
         }
       })
 
-      // Update task cache (sidebar)
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return { ...old, priority }
       })
 
-      return { previousBoard, previousTask }
-    },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "updateTaskPriority",
+        boardId,
+        payload: { taskId, priority },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
-// Hook to update task created at
+// Hook to update task created at (local-first + outbox)
 export function useUpdateTaskCreatedAt(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, createdAt }: { taskId: string; createdAt: Date }) =>
-      updateTaskCreatedAt(taskId, createdAt, boardId),
-    onMutate: async ({ taskId, createdAt }) => {
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
+    mutationFn: async ({ taskId, createdAt }: { taskId: string; createdAt: Date }) => {
+      // 1) Update local store
+      useBoardStore.getState().updateTaskCreatedAtLocal({ boardId, taskId, createdAt })
 
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-
+      // 2) Update TanStack cache
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return { ...old, createdAt }
       })
 
-      return { previousTask }
-    },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "updateTaskCreatedAt",
+        boardId,
+        payload: { taskId, createdAt },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
-// Hook to move task to another column
+// Hook to move task to another column (local-first + outbox)
+// Note: Local store update (moveTaskLocal) is already done in board-client.tsx handleDragOver
 export function useUpdateTaskColumn(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       taskId,
       newColumnId,
       newPosition,
@@ -286,14 +250,8 @@ export function useUpdateTaskColumn(boardId: string) {
       taskId: string
       newColumnId: string
       newPosition?: number
-    }) => updateTaskColumn(taskId, newColumnId, boardId, newPosition),
-    onMutate: async ({ taskId, newColumnId, newPosition }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
-
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-
+    }) => {
+      // 1) Update TanStack cache (local store already updated by handleDragOver)
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
 
@@ -312,7 +270,7 @@ export function useUpdateTaskColumn(boardId: string) {
 
         if (!task || !oldColumnId) return old
 
-        // Skip if task is already in the correct position (handleDragOver already updated it)
+        // Skip if task is already in the correct position
         if (oldColumnId === newColumnId && task.position === newPosition) return old
         if (oldColumnId === newColumnId && newPosition === undefined) return old
 
@@ -366,31 +324,30 @@ export function useUpdateTaskColumn(boardId: string) {
         }
       })
 
-      return { previousBoard, previousTask }
-    },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
+      // 2) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "updateTaskColumn",
+        boardId,
+        payload: { taskId, columnId: newColumnId, position: newPosition },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
 // Hook to delete a task
+// Note: Delete uses server action directly because it needs to delete comments first.
+// We can't use pure local-first for delete since it has server-side cascade logic.
 export function useDeleteTask(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (taskId: string) => deleteTask(taskId, boardId),
-    onMutate: async (taskId) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
+    onSuccess: (_result, taskId) => {
+      // Update local store
+      useBoardStore.getState().deleteTaskLocal({ boardId, taskId })
 
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-
+      // Update TanStack cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
 
@@ -426,36 +383,26 @@ export function useDeleteTask(boardId: string) {
         }
       })
 
-      // Remove task from cache
+      // Remove task from TanStack cache
       queryClient.removeQueries({ queryKey: taskKeys.detail(taskId) })
-
-      return { previousBoard }
-    },
-    onError: (_err, _, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
     },
   })
 }
 
-// Hook to add assignee to task
+// Hook to add assignee to task (local-first + outbox)
 export function useAddAssignee(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, contributorId }: { taskId: string; contributorId: string }) =>
-      addAssignee(taskId, contributorId, boardId),
-    onMutate: async ({ taskId, contributorId }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
-
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-
+    mutationFn: async ({ taskId, contributorId }: { taskId: string; contributorId: string }) => {
       // Find contributor info
-      const contributor = previousBoard?.contributors.find((c) => c.id === contributorId)
-      if (!contributor) return { previousBoard, previousTask }
+      const board = useBoardStore.getState().boardsById[boardId]
+      const contributorFromStore = board?.contributorsById[contributorId]
+      const contributorFromCache = queryClient
+        .getQueryData<BoardData>(boardKeys.detail(boardId))
+        ?.contributors.find((c) => c.id === contributorId)
+      const contributor = contributorFromStore ?? contributorFromCache
+      if (!contributor) return
 
       const newAssignee = {
         contributor: {
@@ -465,10 +412,10 @@ export function useAddAssignee(boardId: string) {
         },
       }
 
-      // Update local store (for sidebar)
+      // 1) Update local store
       useBoardStore.getState().addAssigneeLocal({ boardId, taskId, contributorId })
 
-      // Update board cache
+      // 2) Update TanStack caches
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
@@ -484,43 +431,32 @@ export function useAddAssignee(boardId: string) {
         }
       })
 
-      // Update task cache
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return { ...old, assignees: [...old.assignees, newAssignee] }
       })
 
-      return { previousBoard, previousTask }
-    },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "addAssignee",
+        boardId,
+        payload: { taskId, contributorId },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
-// Hook to remove assignee from task
+// Hook to remove assignee from task (local-first + outbox)
 export function useRemoveAssignee(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, contributorId }: { taskId: string; contributorId: string }) =>
-      removeAssignee(taskId, contributorId, boardId),
-    onMutate: async ({ taskId, contributorId }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
-      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
-
-      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
-
-      // Update local store (for sidebar)
+    mutationFn: async ({ taskId, contributorId }: { taskId: string; contributorId: string }) => {
+      // 1) Update local store
       useBoardStore.getState().removeAssigneeLocal({ boardId, taskId, contributorId })
 
-      // Update board cache
+      // 2) Update TanStack caches
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
@@ -541,7 +477,6 @@ export function useRemoveAssignee(boardId: string) {
         }
       })
 
-      // Update task cache
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return {
@@ -550,15 +485,13 @@ export function useRemoveAssignee(boardId: string) {
         }
       })
 
-      return { previousBoard, previousTask }
-    },
-    onError: (_err, { taskId }, context) => {
-      if (context?.previousBoard) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
-      }
-      if (context?.previousTask) {
-        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "removeAssignee",
+        boardId,
+        payload: { taskId, contributorId },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }

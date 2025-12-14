@@ -79,7 +79,7 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
         <div className="space-y-6">
           {/* Share with Password Section */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Share with Password</h3>
+            <h3 className="text-heading-sm">Share with Password</h3>
 
             {/* Board URL */}
             <div className="space-y-1">
@@ -140,8 +140,8 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
 
           {/* Public Link Section */}
           <div className="space-y-3 border-t border-border pt-6">
-            <h3 className="text-sm font-medium">Public Link</h3>
-            <p className="text-xs text-muted-foreground">
+            <h3 className="text-heading-sm">Public Link</h3>
+            <p className="text-label">
               Anyone with this link will have the password prefilled, but still needs to click unlock.
             </p>
 

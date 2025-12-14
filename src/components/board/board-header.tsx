@@ -36,7 +36,7 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
         inputClassName="text-heading-lg"
       />
       <div className="ml-auto flex items-center gap-2">
-        <SyncIndicator />
+        <SyncIndicator boardId={boardId} />
         <Button
           variant="ghost"
           size="icon"

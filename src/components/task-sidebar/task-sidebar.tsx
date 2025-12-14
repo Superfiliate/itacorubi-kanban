@@ -149,7 +149,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
                   <ChevronLeft className="h-4 w-4" />
                   <span className="text-sm">Back</span>
                 </Button>
-                <SyncIndicator />
+                <SyncIndicator boardId={boardId} />
               </div>
               <TaskDetails
                 task={{

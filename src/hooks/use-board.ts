@@ -1,15 +1,11 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { getBoard, updateBoardTitle } from "@/actions/boards"
-import {
-  createColumn,
-  updateColumnName,
-  toggleColumnCollapsed,
-  deleteColumn,
-  reorderColumns,
-} from "@/actions/columns"
+import { getBoard } from "@/actions/boards"
+import { deleteColumn } from "@/actions/columns"
 import { getRandomEmoji } from "@/lib/emojis"
+import { useBoardStore } from "@/stores/board-store"
+import { flushBoardOutbox } from "@/lib/outbox/flush"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
 
 // Types matching what getBoard returns
@@ -75,49 +71,45 @@ export function useBoardQuery(boardId: string, initialData?: BoardData) {
   })
 }
 
-// Hook to update board title
+// Hook to update board title (local-first + outbox)
 export function useUpdateBoardTitle(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (title: string) => updateBoardTitle(boardId, title),
-    onMutate: async (title) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+    mutationFn: async (title: string) => {
+      // 1) Update local store
+      useBoardStore.getState().updateBoardTitleLocal({ boardId, title })
 
-      // Snapshot previous value
-      const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-
-      // Optimistically update
+      // 2) Update TanStack cache (for board header display)
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return { ...old, title }
       })
 
-      return { previous }
-    },
-    onError: (_err, _title, context) => {
-      // Rollback on error
-      if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previous)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "updateBoardTitle",
+        boardId,
+        payload: { title },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
-// Hook to create a column
+// Hook to create a column (local-first + outbox)
 export function useCreateColumn(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id }: { id: string }) => createColumn(boardId, id),
-    onMutate: async ({ id }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
-
-      const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const optimisticId = id
+    mutationFn: async ({ id }: { id: string }) => {
       const emoji = getRandomEmoji()
+      const name = `${emoji} New column`
 
+      // 1) Update local store
+      useBoardStore.getState().createColumnLocal({ boardId, columnId: id, name })
+
+      // 2) Update TanStack cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         const maxPosition = old.columns.length > 0
@@ -125,9 +117,9 @@ export function useCreateColumn(boardId: string) {
           : -1
 
         const newColumn: BoardColumn = {
-          id: optimisticId,
+          id,
           boardId,
-          name: `${emoji} New column`,
+          name,
           position: maxPosition + 1,
           isCollapsed: false,
           tasks: [],
@@ -136,28 +128,29 @@ export function useCreateColumn(boardId: string) {
         return { ...old, columns: [...old.columns, newColumn] }
       })
 
-      return { previous, optimisticId }
-    },
-    onError: (_err, _, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previous)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "createColumn",
+        boardId,
+        payload: { columnId: id },
+      })
+      void flushBoardOutbox(boardId)
+
+      return id
     },
   })
 }
 
-// Hook to update column name
+// Hook to update column name (local-first + outbox)
 export function useUpdateColumnName(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ columnId, name }: { columnId: string; name: string }) =>
-      updateColumnName(columnId, name, boardId),
-    onMutate: async ({ columnId, name }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+    mutationFn: async ({ columnId, name }: { columnId: string; name: string }) => {
+      // 1) Update local store
+      useBoardStore.getState().updateColumnNameLocal({ boardId, columnId, name })
 
-      const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-
+      // 2) Update TanStack cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
@@ -168,27 +161,27 @@ export function useUpdateColumnName(boardId: string) {
         }
       })
 
-      return { previous }
-    },
-    onError: (_err, _, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previous)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "updateColumnName",
+        boardId,
+        payload: { columnId, name },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
-// Hook to toggle column collapsed state
+// Hook to toggle column collapsed state (local-first + outbox)
 export function useToggleColumnCollapsed(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (columnId: string) => toggleColumnCollapsed(columnId, boardId),
-    onMutate: async (columnId) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+    mutationFn: async (columnId: string) => {
+      // 1) Update local store
+      useBoardStore.getState().toggleColumnCollapsedLocal({ boardId, columnId })
 
-      const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-
+      // 2) Update TanStack cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
@@ -199,27 +192,30 @@ export function useToggleColumnCollapsed(boardId: string) {
         }
       })
 
-      return { previous }
-    },
-    onError: (_err, _, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previous)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "toggleColumnCollapsed",
+        boardId,
+        payload: { columnId },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }
 
 // Hook to delete a column
+// Note: Delete uses server action directly because it has a "restrict" check for tasks.
+// We can't use local-first for delete since we need server validation.
 export function useDeleteColumn(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (columnId: string) => deleteColumn(columnId, boardId),
-    onMutate: async (columnId) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+    onSuccess: (_result, columnId) => {
+      // Update local store
+      useBoardStore.getState().deleteColumnLocal({ boardId, columnId })
 
-      const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-
+      // Update TanStack cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         const deletedCol = old.columns.find((c) => c.id === columnId)
@@ -236,29 +232,20 @@ export function useDeleteColumn(boardId: string) {
             ),
         }
       })
-
-      return { previous }
-    },
-    onError: (_err, _, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previous)
-      }
     },
   })
 }
 
-// Hook to reorder columns
+// Hook to reorder columns (local-first + outbox)
 export function useReorderColumns(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ columnId, newPosition }: { columnId: string; newPosition: number }) =>
-      reorderColumns(boardId, columnId, newPosition),
-    onMutate: async ({ columnId, newPosition }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+    mutationFn: async ({ columnId, newPosition }: { columnId: string; newPosition: number }) => {
+      // 1) Update local store (already done in board-client.tsx via reorderColumnsLocal)
+      // The store update happens in handleDragEnd, so we just need to enqueue
 
-      const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-
+      // 2) Update TanStack cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
 
@@ -292,12 +279,13 @@ export function useReorderColumns(boardId: string) {
         return { ...old, columns: updatedColumns }
       })
 
-      return { previous }
-    },
-    onError: (_err, _, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previous)
-      }
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "reorderColumns",
+        boardId,
+        payload: { columnId, newPosition },
+      })
+      void flushBoardOutbox(boardId)
     },
   })
 }

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useIsMutating } from "@tanstack/react-query"
 import { Check, Cloud, CloudOff, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useBoardStore, selectOutboxStatus } from "@/stores/board-store"
+import { useShallow } from "zustand/react/shallow"
 
 type SyncStatus = "synced" | "syncing" | "pending" | "error"
 
@@ -12,11 +13,12 @@ const MIN_DISPLAY_TIME = 1000
 const SAVED_DISPLAY_TIME = 2000
 
 interface SyncIndicatorProps {
+  boardId: string
   className?: string
 }
 
-export function SyncIndicator({ className }: SyncIndicatorProps) {
-  const isMutating = useIsMutating()
+export function SyncIndicator({ boardId, className }: SyncIndicatorProps) {
+  const outboxStatus = useBoardStore(useShallow(selectOutboxStatus(boardId)))
 
   // The status we're actually displaying (with debouncing)
   const [displayStatus, setDisplayStatus] = useState<SyncStatus | null>(null)
@@ -26,8 +28,8 @@ export function SyncIndicator({ className }: SyncIndicatorProps) {
   const pendingStatusRef = useRef<SyncStatus | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Calculate actual status from mutation count
-  const actualStatus: SyncStatus = isMutating > 0 ? "syncing" : "synced"
+  // Calculate actual status from outbox state
+  const actualStatus: SyncStatus = outboxStatus.pending || outboxStatus.isFlushing ? "syncing" : "synced"
 
   useEffect(() => {
     const now = Date.now()

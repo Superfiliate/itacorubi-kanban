@@ -3,8 +3,7 @@
 Use a local-first, **in-memory normalized store** for interactive UI state, with an **outbox** that syncs changes to server actions in the background.
 
 - Avoids clunky UX caused by waiting on backend-generated values (IDs/colors) before updating UI
-- Prevents “update N places” bugs by storing entities once and referencing them by ID
-- Supports future persistence (IndexedDB/localStorage) behind a small adapter boundary
+- Prevents "update N places" bugs by storing entities once and referencing them by ID
 
 ## Normalized model (conceptual)
 
@@ -47,7 +46,7 @@ If a data structure like `taskDetailsById` stores nested entity references for c
 Local writes enqueue an outbox item describing the server mutation to perform.
 
 - Outbox flush is **sequential** (simpler ordering, matches last-write-wins)
-- We optimize for good actors; if authorization fails (wrong password), the UI may diverge and that’s acceptable
+- We optimize for good actors; if authorization fails (wrong password), the UI may diverge and that's acceptable
 
 ### Reconcile rules
 

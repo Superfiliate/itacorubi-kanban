@@ -117,6 +117,7 @@ export function AuthorSelect({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          asInput
           role="combobox"
           aria-expanded={open}
           aria-label={placeholder}

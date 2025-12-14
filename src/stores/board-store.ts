@@ -93,6 +93,101 @@ export type OutboxItem =
       payload: { contributorId: string }
       createdAt: number
     }
+  // Board operations
+  | {
+      id: string
+      type: "updateBoardTitle"
+      boardId: string
+      payload: { title: string }
+      createdAt: number
+    }
+  // Column operations
+  | {
+      id: string
+      type: "createColumn"
+      boardId: string
+      payload: { columnId: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "updateColumnName"
+      boardId: string
+      payload: { columnId: string; name: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "toggleColumnCollapsed"
+      boardId: string
+      payload: { columnId: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "deleteColumn"
+      boardId: string
+      payload: { columnId: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "reorderColumns"
+      boardId: string
+      payload: { columnId: string; newPosition: number }
+      createdAt: number
+    }
+  // Task operations
+  | {
+      id: string
+      type: "updateTaskTitle"
+      boardId: string
+      payload: { taskId: string; title: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "updateTaskPriority"
+      boardId: string
+      payload: { taskId: string; priority: TaskPriority }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "updateTaskCreatedAt"
+      boardId: string
+      payload: { taskId: string; createdAt: Date }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "updateTaskColumn"
+      boardId: string
+      payload: { taskId: string; columnId: string; position?: number }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "deleteTask"
+      boardId: string
+      payload: { taskId: string }
+      createdAt: number
+    }
+  // Assignee operations
+  | {
+      id: string
+      type: "addAssignee"
+      boardId: string
+      payload: { taskId: string; contributorId: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "removeAssignee"
+      boardId: string
+      payload: { taskId: string; contributorId: string }
+      createdAt: number
+    }
 
 export type NormalizedBoardState = {
   boardId: string
@@ -129,7 +224,17 @@ type BoardStoreState = {
 
   touch: (boardId: string) => void
 
-  // Local-first mutations
+  // Local-first mutations - Board
+  updateBoardTitleLocal: (args: { boardId: string; title: string }) => void
+
+  // Local-first mutations - Column
+  createColumnLocal: (args: { boardId: string; columnId: string; name: string }) => void
+  updateColumnNameLocal: (args: { boardId: string; columnId: string; name: string }) => void
+  toggleColumnCollapsedLocal: (args: { boardId: string; columnId: string }) => void
+  deleteColumnLocal: (args: { boardId: string; columnId: string }) => void
+  reorderColumnsLocal: (args: { boardId: string; columnId: string; toIndex: number }) => void
+
+  // Local-first mutations - Task
   createTaskLocal: (args: {
     boardId: string
     taskId: string
@@ -138,47 +243,37 @@ type BoardStoreState = {
     priority?: TaskPriority
     createdAt: Date | null
   }) => void
-
-  updateContributorLocal: (args: {
-    boardId: string
-    contributorId: string
-    name?: string
-    color?: ContributorColor
-  }) => void
-
-  createContributorLocal: (args: {
-    boardId: string
-    contributorId: string
-    name: string
-    color: ContributorColor
-  }) => void
-
-  deleteContributorLocal: (args: { boardId: string; contributorId: string }) => void
-
-  addAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
-  removeAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
-
-  // Task title update (for sidebar consistency)
   updateTaskTitleLocal: (args: { boardId: string; taskId: string; title: string }) => void
-
-  // Task priority update (for sidebar consistency)
   updateTaskPriorityLocal: (args: { boardId: string; taskId: string; priority: TaskPriority }) => void
-
-  // DnD mutations
+  updateTaskCreatedAtLocal: (args: { boardId: string; taskId: string; createdAt: Date }) => void
   moveTaskLocal: (args: {
     boardId: string
     taskId: string
     toColumnId: string
     toIndex: number
   }) => void
+  deleteTaskLocal: (args: { boardId: string; taskId: string }) => void
 
-  reorderColumnsLocal: (args: {
+  // Local-first mutations - Contributor
+  createContributorLocal: (args: {
     boardId: string
-    columnId: string
-    toIndex: number
+    contributorId: string
+    name: string
+    color: ContributorColor
   }) => void
+  updateContributorLocal: (args: {
+    boardId: string
+    contributorId: string
+    name?: string
+    color?: ContributorColor
+  }) => void
+  deleteContributorLocal: (args: { boardId: string; contributorId: string }) => void
 
-  // Comments (local-first)
+  // Local-first mutations - Assignee
+  addAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
+  removeAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
+
+  // Local-first mutations - Comment
   createCommentLocal: (args: { boardId: string; taskId: string; comment: TaskComment }) => void
   updateCommentLocal: (args: {
     boardId: string
@@ -358,6 +453,110 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
     })
   },
 
+  // Board mutations
+  updateBoardTitleLocal: ({ boardId, title }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: { ...board, lastLocalActivityAt: Date.now() },
+        },
+      }
+    })
+    // Note: Board title is not stored in the normalized state since the board
+    // data comes from TanStack Query cache. The store only handles entity data.
+  },
+
+  // Column mutations
+  createColumnLocal: ({ boardId, columnId, name }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const position = board.columnOrder.length
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            columnsById: {
+              ...board.columnsById,
+              [columnId]: { id: columnId, name, position, isCollapsed: false },
+            },
+            columnOrder: [...board.columnOrder, columnId],
+            tasksByColumnId: { ...board.tasksByColumnId, [columnId]: [] },
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  updateColumnNameLocal: ({ boardId, columnId, name }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const column = board.columnsById[columnId]
+      if (!column) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            columnsById: {
+              ...board.columnsById,
+              [columnId]: { ...column, name },
+            },
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  toggleColumnCollapsedLocal: ({ boardId, columnId }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const column = board.columnsById[columnId]
+      if (!column) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            columnsById: {
+              ...board.columnsById,
+              [columnId]: { ...column, isCollapsed: !column.isCollapsed },
+            },
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  deleteColumnLocal: ({ boardId, columnId }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      if (!board.columnsById[columnId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      const { [columnId]: _deleted, ...restColumns } = board.columnsById
+      const { [columnId]: _deletedTasks, ...restTasksByColumn } = board.tasksByColumnId
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            columnsById: restColumns,
+            columnOrder: board.columnOrder.filter((id) => id !== columnId),
+            tasksByColumnId: restTasksByColumn,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  // Task mutations
   createTaskLocal: ({ boardId, taskId, columnId, title, priority, createdAt }) => {
     set((s) => {
       const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
@@ -557,6 +756,69 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
     })
   },
 
+  updateTaskCreatedAtLocal: ({ boardId, taskId, createdAt }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const task = board.tasksById[taskId]
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      // Also update taskDetailsById if it exists
+      let updatedTaskDetails = board.taskDetailsById
+      const existingDetails = board.taskDetailsById[taskId]
+      if (existingDetails) {
+        updatedTaskDetails = {
+          ...board.taskDetailsById,
+          [taskId]: { ...existingDetails, createdAt },
+        }
+      }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tasksById: { ...board.tasksById, [taskId]: { ...task, createdAt } },
+            taskDetailsById: updatedTaskDetails,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  deleteTaskLocal: ({ boardId, taskId }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const task = board.tasksById[taskId]
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      const { [taskId]: _deletedTask, ...restTasks } = board.tasksById
+      const { [taskId]: _deletedAssignees, ...restAssignees } = board.assigneeIdsByTaskId
+      const { [taskId]: _deletedMeta, ...restMeta } = board.commentMetaByTaskId
+      const { [taskId]: _deletedDetails, ...restDetails } = board.taskDetailsById
+
+      // Remove from column
+      const tasksByColumnId = { ...board.tasksByColumnId }
+      const columnTasks = tasksByColumnId[task.columnId] ?? []
+      tasksByColumnId[task.columnId] = columnTasks.filter((id) => id !== taskId)
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tasksById: restTasks,
+            tasksByColumnId,
+            assigneeIdsByTaskId: restAssignees,
+            commentMetaByTaskId: restMeta,
+            taskDetailsById: restDetails,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
   moveTaskLocal: ({ boardId, taskId, toColumnId, toIndex }) => {
     set((s) => {
       const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
@@ -682,11 +944,25 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
         lastCreatedAt: comment.createdAt ?? prevMeta.lastCreatedAt,
       }
 
+      // Move task to top of its column (Feature 006: adding a comment moves task to top)
+      const task = board.tasksById[taskId]
+      let tasksByColumnId = board.tasksByColumnId
+      if (task) {
+        const columnTasks = board.tasksByColumnId[task.columnId] ?? []
+        const taskIndex = columnTasks.indexOf(taskId)
+        if (taskIndex > 0) {
+          // Only move if not already at top
+          const newColumnTasks = [taskId, ...columnTasks.filter((id) => id !== taskId)]
+          tasksByColumnId = { ...board.tasksByColumnId, [task.columnId]: newColumnTasks }
+        }
+      }
+
       return {
         boardsById: {
           ...s.boardsById,
           [boardId]: {
             ...board,
+            tasksByColumnId,
             taskDetailsById: { ...board.taskDetailsById, [taskId]: { ...existing, comments } },
             commentMetaByTaskId: { ...board.commentMetaByTaskId, [taskId]: nextMeta },
             lastLocalActivityAt: Date.now(),

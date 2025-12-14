@@ -243,8 +243,8 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           <EditableText
             value={name}
             onSave={handleNameSave}
-            className="flex-1 text-sm font-medium"
-            inputClassName="text-sm font-medium"
+            className="flex-1 text-heading-sm"
+            inputClassName="text-heading-sm"
           />
           {tasks.length === 0 && (
             <Button
