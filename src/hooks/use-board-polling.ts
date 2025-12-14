@@ -7,18 +7,21 @@ import { boardKeys, type BoardData } from "@/hooks/use-board"
 import { selectOutboxStatus, useBoardStore } from "@/stores/board-store"
 import { useShallow } from "zustand/react/shallow"
 
+/**
+ * Backoff steps optimized for active-user experience while protecting Vercel limits.
+ *
+ * Active users (within ACTIVE_THRESHOLD_MS): stay at fast polling (first few steps)
+ * Idle users: gradually back off to 10 minutes
+ * Hidden/unfocused: jump to >= 60s immediately
+ *
+ * Steps: 1s, 1s, 2s, 2s, 3s, 3s, 5s, 10s, 30s, 60s, 120s, 300s, 600s
+ */
 const BACKOFF_STEPS_MS = [
-  1000,
-  2000,
-  4000,
-  8000,
-  16000,
-  32000,
-  60000,
-  120000,
-  300000,
-  600000,
+  1000, 1000, 2000, 2000, 3000, 3000, 5000, 10000, 30000, 60000, 120000, 300000, 600000,
 ] as const
+
+/** How long after last activity we consider the user "active" and keep fast polling */
+const ACTIVE_THRESHOLD_MS = 60_000
 
 function nextBackoff(current: number) {
   const idx = BACKOFF_STEPS_MS.findIndex((v) => v === current)
@@ -29,8 +32,8 @@ function nextBackoff(current: number) {
 /**
  * Poll board data with an activity/visibility-aware exponential backoff.
  *
- * - Active + visible: 1s
- * - Idle: exponential backoff up to 10 minutes
+ * - Active + visible (within 60s of activity): 1-3s polling
+ * - Idle: gradual backoff up to 10 minutes
  * - Hidden/unfocused: jump quickly to >= 1 minute and keep backing off
  *
  * Remote snapshots are only applied when the local-first store is clean
@@ -98,7 +101,7 @@ export function useBoardPolling(boardId: string) {
     const schedule = () => {
       timerRef.current = window.setTimeout(async () => {
         const now = Date.now()
-        const recentlyActive = now - lastActivityAt < 15_000
+        const recentlyActive = now - lastActivityAt < ACTIVE_THRESHOLD_MS
 
         const currentlyVisible =
           typeof document === "undefined" ? true : document.visibilityState === "visible"
