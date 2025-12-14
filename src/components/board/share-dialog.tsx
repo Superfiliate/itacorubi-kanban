@@ -83,7 +83,7 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
 
             {/* Board URL */}
             <div className="space-y-1">
-              <label htmlFor="board-url-input" className="text-xs text-muted-foreground">Board URL</label>
+              <label htmlFor="board-url-input" className="text-label">Board URL</label>
               <div className="flex gap-2">
                 <Input
                   id="board-url-input"
@@ -110,7 +110,7 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
 
             {/* Password */}
             <div className="space-y-1">
-              <label htmlFor="board-password-input" className="text-xs text-muted-foreground">Password</label>
+              <label htmlFor="board-password-input" className="text-label">Password</label>
               <div className="flex gap-2">
                 <PasswordInput
                   id="board-password-input"
@@ -146,7 +146,7 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
             </p>
 
             <div className="space-y-1">
-              <label htmlFor="public-url-input" className="text-xs text-muted-foreground">Public URL</label>
+              <label htmlFor="public-url-input" className="text-label">Public URL</label>
               <div className="flex gap-2">
                 <Input
                   id="public-url-input"

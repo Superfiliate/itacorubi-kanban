@@ -104,7 +104,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
     return (
       <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-3">
         <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">Author</label>
+          <label className="text-label">Author</label>
           <AuthorSelect
             boardId={boardId}
             selectedAuthorId={editAuthorId}
@@ -113,7 +113,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
           />
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">Content</label>
+          <label className="text-label">Content</label>
           <RichTextEditor
             content={editContent}
             onChange={setEditContent}

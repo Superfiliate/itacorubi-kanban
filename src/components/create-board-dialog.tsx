@@ -147,9 +147,7 @@ export function CreateBoardDialog({ open, onOpenChange }: CreateBoardDialogProps
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">
-                Title
-              </label>
+              <label htmlFor="title" className="text-label">Title</label>
               <Input
                 id="title"
                 type="text"
@@ -161,9 +159,7 @@ export function CreateBoardDialog({ open, onOpenChange }: CreateBoardDialogProps
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
+              <label htmlFor="password" className="text-label">Password</label>
               <PasswordInput
                 id="password"
                 value={password}

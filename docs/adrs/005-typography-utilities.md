@@ -14,9 +14,10 @@ Cheatsheet:
 - `text-body`: default body (`text-sm`)
 - `text-body-lg`: larger body (`text-base`)
 - `text-muted`: secondary info (`text-sm text-muted-foreground`)
-- `text-heading`: section/page headings (`text-lg font-semibold`)
+- `text-heading`: section/page headings (`text-lg font-semibold tracking-tight`)
+- `text-heading-lg`: large headings (`text-xl font-semibold tracking-tight`)
 - `text-heading-sm`: small section titles (`text-sm font-medium`)
-- `text-label`: form labels (`text-sm font-medium`)
+- `text-label`: form field labels (`text-xs text-muted-foreground`)
 - Button as input trigger:
   ```tsx
   <Button variant="outline" asInput>
