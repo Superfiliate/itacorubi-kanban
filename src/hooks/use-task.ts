@@ -5,6 +5,7 @@ import {
   createTask,
   getTask,
   updateTaskTitle,
+  updateTaskPriority,
   updateTaskCreatedAt,
   updateTaskColumn,
   deleteTask,
@@ -17,7 +18,7 @@ import {
 import { createComment, updateComment, deleteComment } from "@/actions/comments"
 import { getRandomEmoji } from "@/lib/emojis"
 import { boardKeys, type BoardData, type BoardTask } from "./use-board"
-import type { ContributorColor } from "@/db/schema"
+import type { ContributorColor, TaskPriority } from "@/db/schema"
 import { CONTRIBUTOR_COLORS } from "@/db/schema"
 import { useBoardStore } from "@/stores/board-store"
 import { flushBoardOutbox } from "@/lib/outbox/flush"
@@ -37,6 +38,7 @@ export interface TaskComment {
 export interface TaskWithComments {
   id: string
   title: string
+  priority: TaskPriority
   columnId: string
   boardId: string
   createdAt: Date | null
@@ -88,6 +90,7 @@ export function useCreateTask(boardId: string) {
         boardId,
         columnId,
         title,
+        priority: "none",
         position: 0,
         createdAt: new Date(),
         assignees: [],
@@ -178,6 +181,56 @@ export function useUpdateTaskTitle(boardId: string) {
       queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
         if (!old) return old
         return { ...old, title }
+      })
+
+      return { previousBoard, previousTask }
+    },
+    onError: (_err, { taskId }, context) => {
+      if (context?.previousBoard) {
+        queryClient.setQueryData(boardKeys.detail(boardId), context.previousBoard)
+      }
+      if (context?.previousTask) {
+        queryClient.setQueryData(taskKeys.detail(taskId), context.previousTask)
+      }
+    },
+  })
+}
+
+// Hook to update task priority
+export function useUpdateTaskPriority(boardId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ taskId, priority }: { taskId: string; priority: TaskPriority }) =>
+      updateTaskPriority(taskId, priority, boardId),
+    onMutate: async ({ taskId, priority }) => {
+      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
+
+      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
+      const previousTask = queryClient.getQueryData<TaskWithComments>(taskKeys.detail(taskId))
+
+      // Update local store (for sidebar)
+      useBoardStore.getState().updateTaskPriorityLocal({ boardId, taskId, priority })
+
+      // Update board cache (cards)
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((task) =>
+              task.id === taskId ? { ...task, priority } : task
+            ),
+          })),
+        }
+      })
+
+      // Update task cache (sidebar)
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return { ...old, priority }
       })
 
       return { previousBoard, previousTask }

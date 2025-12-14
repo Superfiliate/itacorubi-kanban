@@ -10,12 +10,13 @@ import {
   reorderColumns,
 } from "@/actions/columns"
 import { getRandomEmoji } from "@/lib/emojis"
-import type { ContributorColor } from "@/db/schema"
+import type { ContributorColor, TaskPriority } from "@/db/schema"
 
 // Types matching what getBoard returns
 export interface BoardTask {
   id: string
   title: string
+  priority: TaskPriority
   position: number
   boardId: string
   columnId: string

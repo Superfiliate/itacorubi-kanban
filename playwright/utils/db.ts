@@ -26,7 +26,7 @@ export function resetTestDb() {
 
   // Run database migrations to create fresh schema
   try {
-    execSync("pnpm db:push", {
+    execSync("pnpm db:migrate", {
       env: {
         ...process.env,
         TURSO_DATABASE_URL: "file:test.db",

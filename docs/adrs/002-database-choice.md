@@ -28,7 +28,6 @@ We use **Drizzle Kit migrations** (not push) for schema changes:
 1. Modify `src/db/schema.ts`
 2. Run `pnpm db:generate --name=descriptive-name` to create migration
 3. Review the generated SQL in `drizzle/`
-4. Commit the migration files with your schema changes
 
 ## Examples
 

@@ -59,6 +59,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
       return {
         id: localTaskEntity.id,
         title: localTaskEntity.title,
+        priority: localTaskEntity.priority,
         columnId: localTaskEntity.columnId,
         boardId,
         createdAt: localTaskEntity.createdAt,
@@ -135,6 +136,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
                 task={{
                   id: taskForUI.id,
                   title: taskForUI.title,
+                  priority: taskForUI.priority,
                   columnId: taskForUI.columnId,
                   boardId: boardId,
                   createdAt: taskForUI.createdAt,

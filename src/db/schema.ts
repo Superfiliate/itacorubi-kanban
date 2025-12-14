@@ -5,6 +5,9 @@ import { relations } from "drizzle-orm"
 // TABLE DEFINITIONS
 // ============================================================
 
+export const TASK_PRIORITIES = ["none", "low", "medium", "high", "urgent"] as const
+export type TaskPriority = typeof TASK_PRIORITIES[number]
+
 // Boards - identified by UUID
 export const boards = sqliteTable("boards", {
   id: text("id").primaryKey(), // UUID
@@ -28,6 +31,7 @@ export const tasks = sqliteTable("tasks", {
   boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
   columnId: text("column_id").notNull().references(() => columns.id, { onDelete: "restrict" }),
   title: text("title").notNull(),
+  priority: text("priority").notNull().default("none").$type<TaskPriority>(),
   position: integer("position").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })

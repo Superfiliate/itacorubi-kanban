@@ -22,6 +22,60 @@ test.describe("Task Management", () => {
     await expect(sidebar.getByText(/new task/i).first()).toBeVisible()
   })
 
+  test("should set and show task priority with icon and border styling", async ({ page }) => {
+    const boardId = await createTestBoard(page, "Priority Test Board", "testpass123")
+    await waitForBoardLoad(page)
+
+    // Create a task
+    await page.getByRole("button", { name: /add task/i }).first().click()
+    await page.waitForURL(/task=/)
+
+    const sidebar = page.getByRole("dialog")
+    await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
+
+    // Default priority should be "No priority"
+    const priorityLabel = sidebar.getByText("Priority")
+    const prioritySelect = priorityLabel.locator("..").getByRole("combobox")
+    await expect(prioritySelect).toBeVisible()
+    await expect(prioritySelect).toHaveText(/no priority/i)
+
+    // Close sidebar - card should have no priority border or icon
+    await page.keyboard.press("Escape")
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+
+    const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..").locator("..")
+    // No priority icon visible for "none"
+    await expect(taskCard.locator("svg.lucide-flame")).not.toBeVisible()
+    await expect(taskCard.locator("svg.lucide-arrow-up")).not.toBeVisible()
+
+    // Re-open task and set to High
+    await page.getByText(/new task/i).click()
+    await page.waitForURL(/task=/)
+    await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
+
+    await prioritySelect.click()
+    await page.getByRole("option", { name: /high/i }).click()
+    await expect(prioritySelect).toHaveText(/high/i)
+
+    // Close and verify High styling (orange border + arrow-up icon)
+    await page.keyboard.press("Escape")
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await expect(taskCard.locator("svg.lucide-arrow-up")).toBeVisible()
+    await expect(taskCard).toHaveClass(/border-l-orange/)
+
+    // Re-open and change to Urgent
+    await page.getByText(/new task/i).click()
+    await page.waitForURL(/task=/)
+    await prioritySelect.click()
+    await page.getByRole("option", { name: /urgent/i }).click()
+
+    // Close and verify Urgent styling (red border + flame icon)
+    await page.keyboard.press("Escape")
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await expect(taskCard.locator("svg.lucide-flame")).toBeVisible()
+    await expect(taskCard).toHaveClass(/border-l-red/)
+  })
+
   test("should reflect contributor rename on task cards without refresh (and keep color stable)", async ({ page }) => {
     const boardId = await createTestBoard(page, "Contributor Sync Test", "testpass123")
     await waitForBoardLoad(page)
@@ -54,7 +108,7 @@ test.describe("Task Management", () => {
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Card should show contributor immediately
-    const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..")
+    const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..").locator("..")
     await expect(taskCard.getByText("Alice")).toBeVisible()
 
     // Open contributors dialog and rename Alice -> Alicia
@@ -160,7 +214,7 @@ test.describe("Task Management", () => {
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     // Find the task card
-    const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..")
+    const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..").locator("..")
 
     // Drag to the "Doing" column root (sortable container)
     const targetColumn = page

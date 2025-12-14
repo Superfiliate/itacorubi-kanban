@@ -1,5 +1,4 @@
 import { defineConfig, devices } from "@playwright/test"
-import { execSync } from "child_process"
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -7,7 +6,6 @@ import { execSync } from "child_process"
 export default defineConfig({
   testDir: "./",
   testMatch: /.*\.spec\.ts$/,
-  globalSetup: require.resolve("./global-setup.ts"),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /**
@@ -53,7 +51,10 @@ export default defineConfig({
 
   /* Build and run production server before starting the tests */
   webServer: {
-    command: "pnpm build && pnpm start",
+    // Run from repo root (config file lives in /playwright).
+    cwd: "..",
+    // Use a clean test DB (and let the package scripts run migrations/build/start).
+    command: "rm -f test.db test.db-journal && pnpm build && pnpm start",
     url: "http://localhost:5800",
     reuseExistingServer: false,
     timeout: 120 * 1000,

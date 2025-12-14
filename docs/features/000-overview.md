@@ -8,7 +8,7 @@ A collaborative Kanban board application where users can create and manage multi
 
 - **Board**: UUID, title, timestamps
 - **Column**: UUID, board reference, name, position, collapsed state
-- **Task**: UUID, board reference, column reference, title, position, timestamps
+- **Task**: UUID, board reference, column reference, title, priority, position, timestamps
 - **Contributor**: UUID, board reference, name, color
 - **TaskAssignee**: Many-to-many between tasks and contributors
 - **Comment**: UUID, task reference, board reference, author (contributor), content, timestamps

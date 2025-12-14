@@ -31,7 +31,7 @@ import { boardKeys, type BoardData, type BoardTask } from "@/hooks/use-board"
 import { useBoardStore } from "@/stores/board-store"
 import { flushBoardOutbox } from "@/lib/outbox/flush"
 
-import type { ContributorColor } from "@/db/schema"
+import type { ContributorColor, TaskPriority } from "@/db/schema"
 
 interface ColumnProps {
   id: string
@@ -41,6 +41,7 @@ interface ColumnProps {
   tasks: Array<{
     id: string
     title: string
+    priority: TaskPriority
     assignees: Array<{
       contributor: {
         id: string
@@ -134,6 +135,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           boardId,
           columnId: id,
           title,
+          priority: "none",
           position: 0,
           createdAt,
           assignees: [],
@@ -297,6 +299,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
                   id={task.id}
                   boardId={boardId}
                   title={task.title}
+                  priority={task.priority}
                   assignees={task.assignees}
                   comments={task.comments}
                 />

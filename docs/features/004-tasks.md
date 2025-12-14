@@ -27,6 +27,7 @@ Tasks are the individual work items that live within columns. Each task can have
 - Open task sidebar (click on task card)
 - Editable fields (right panel):
   - **Title**: Click to edit, auto-saves after 1 second or on Enter/blur
+  - **Priority**: Dropdown (No priority, Low, Medium, High, Urgent). Defaults to **No priority**
   - **Status**: Dropdown to move between columns
   - **Assignees**: Multi-select with ability to create new contributors
   - **Created at**: Date picker to view/change creation date
@@ -54,6 +55,7 @@ Tasks are the individual work items that live within columns. Each task can have
 
 - Tasks can be dropped into collapsed columns
 - Task position within a column is determined by drop location
+- Priority is **visual only** and does **not** affect task ordering within a column
 - Task cards show comment count and days since last comment
 - Comment age indicator uses color coding (green → yellow → red)
 - Adding a comment moves the task to the top of its column

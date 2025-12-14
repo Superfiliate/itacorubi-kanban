@@ -5,6 +5,13 @@ import { Trash2 } from "lucide-react"
 import { EditableText } from "@/components/editable-text"
 import { StatusSelect } from "./status-select"
 import { AssigneesSelect } from "./assignees-select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,15 +26,19 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
   useUpdateTaskTitle,
+  useUpdateTaskPriority,
   useUpdateTaskCreatedAt,
   useDeleteTask,
 } from "@/hooks/use-task"
-import type { ContributorColor } from "@/db/schema"
+import type { ContributorColor, TaskPriority } from "@/db/schema"
+import { TASK_PRIORITY_OPTIONS, TASK_PRIORITY_META } from "@/lib/task-priority"
+import { cn } from "@/lib/utils"
 
 interface TaskDetailsProps {
   task: {
     id: string
     title: string
+    priority: TaskPriority
     columnId: string
     boardId: string
     createdAt: Date | null
@@ -62,6 +73,7 @@ export function TaskDetails({
 
   // Mutations
   const updateTitleMutation = useUpdateTaskTitle(task.boardId)
+  const updatePriorityMutation = useUpdateTaskPriority(task.boardId)
   const updateCreatedAtMutation = useUpdateTaskCreatedAt(task.boardId)
   const deleteTaskMutation = useDeleteTask(task.boardId)
 
@@ -73,6 +85,10 @@ export function TaskDetails({
     if (date) {
       updateCreatedAtMutation.mutate({ taskId: task.id, createdAt: date })
     }
+  }
+
+  const handlePriorityChange = (priority: string) => {
+    updatePriorityMutation.mutate({ taskId: task.id, priority: priority as TaskPriority })
   }
 
   const handleDelete = () => {
@@ -112,6 +128,29 @@ export function TaskDetails({
         currentColumnId={task.columnId}
         columns={columns}
       />
+
+      {/* Priority */}
+      <div className="space-y-2">
+        <label htmlFor="priority-select" className="text-label">Priority</label>
+        <Select value={task.priority} onValueChange={handlePriorityChange}>
+          <SelectTrigger id="priority-select" className="w-full" aria-label="Priority">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TASK_PRIORITY_OPTIONS.map((opt) => {
+              const { Icon, iconClassName } = TASK_PRIORITY_META[opt.value]
+              return (
+                <SelectItem key={opt.value} value={opt.value}>
+                  <span className="flex items-center gap-2">
+                    <Icon className={cn("h-4 w-4", iconClassName)} />
+                    <span>{opt.label}</span>
+                  </span>
+                </SelectItem>
+              )
+            })}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Assignees */}
       <AssigneesSelect

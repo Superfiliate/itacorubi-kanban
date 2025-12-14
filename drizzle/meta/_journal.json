@@ -15,6 +15,13 @@
       "when": 1765667928454,
       "tag": "0001_add-password-hash",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1765733025186,
+      "tag": "0002_add-task-priority",
+      "breakpoints": true
     }
   ]
 }

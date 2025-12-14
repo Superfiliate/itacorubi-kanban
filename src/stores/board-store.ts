@@ -1,7 +1,7 @@
 "use client"
 
 import { create } from "zustand"
-import type { ContributorColor } from "@/db/schema"
+import type { ContributorColor, TaskPriority } from "@/db/schema"
 import type { BoardData, BoardTask, BoardColumn } from "@/hooks/use-board"
 import type { TaskComment, TaskWithComments } from "@/hooks/use-task"
 
@@ -15,6 +15,7 @@ export type ColumnEntity = {
 export type TaskEntity = {
   id: string
   title: string
+  priority: TaskPriority
   columnId: string
   createdAt: Date | null
 }
@@ -134,6 +135,7 @@ type BoardStoreState = {
     taskId: string
     columnId: string
     title: string
+    priority?: TaskPriority
     createdAt: Date | null
   }) => void
 
@@ -158,6 +160,9 @@ type BoardStoreState = {
 
   // Task title update (for sidebar consistency)
   updateTaskTitleLocal: (args: { boardId: string; taskId: string; title: string }) => void
+
+  // Task priority update (for sidebar consistency)
+  updateTaskPriorityLocal: (args: { boardId: string; taskId: string; priority: TaskPriority }) => void
 
   // Comments (local-first)
   createCommentLocal: (args: { boardId: string; taskId: string; comment: TaskComment }) => void
@@ -222,6 +227,7 @@ function normalizeBoard(boardId: string, board: BoardData): NormalizedBoardState
       state.tasksById[t.id] = {
         id: t.id,
         title: t.title,
+        priority: t.priority ?? "none",
         columnId: col.id,
         createdAt: t.createdAt,
       }
@@ -268,6 +274,7 @@ function buildTaskDetails(board: NormalizedBoardState, taskId: string): TaskWith
   return {
     id: task.id,
     title: task.title,
+    priority: task.priority,
     columnId: task.columnId,
     boardId: board.boardId,
     createdAt: task.createdAt,
@@ -337,7 +344,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
     })
   },
 
-  createTaskLocal: ({ boardId, taskId, columnId, title, createdAt }) => {
+  createTaskLocal: ({ boardId, taskId, columnId, title, priority, createdAt }) => {
     set((s) => {
       const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
       const tasksByColumn = { ...board.tasksByColumnId }
@@ -352,7 +359,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             ...board,
             tasksById: {
               ...board.tasksById,
-              [taskId]: { id: taskId, title, columnId, createdAt },
+              [taskId]: { id: taskId, title, priority: priority ?? "none", columnId, createdAt },
             },
             tasksByColumnId: tasksByColumn,
             assigneeIdsByTaskId: { ...board.assigneeIdsByTaskId, [taskId]: board.assigneeIdsByTaskId[taskId] ?? [] },
@@ -498,6 +505,36 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
           [boardId]: {
             ...board,
             tasksById: { ...board.tasksById, [taskId]: { ...task, title } },
+            taskDetailsById: updatedTaskDetails,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  updateTaskPriorityLocal: ({ boardId, taskId, priority }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const task = board.tasksById[taskId]
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      // Also update taskDetailsById if it exists (so sidebar shows updated priority)
+      let updatedTaskDetails = board.taskDetailsById
+      const existingDetails = board.taskDetailsById[taskId]
+      if (existingDetails) {
+        updatedTaskDetails = {
+          ...board.taskDetailsById,
+          [taskId]: { ...existingDetails, priority },
+        }
+      }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tasksById: { ...board.tasksById, [taskId]: { ...task, priority } },
             taskDetailsById: updatedTaskDetails,
             lastLocalActivityAt: Date.now(),
           },
@@ -686,6 +723,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
 export type TaskCardVM = {
   id: string
   title: string
+  priority: TaskPriority
   assignees: Array<{ id: string; name: string; color: ContributorColor }>
   commentCount: number
   lastCommentCreatedAt: Date | null
@@ -724,6 +762,7 @@ export function selectColumnsVM(boardId: string) {
           return {
             id: task.id,
             title: task.title,
+            priority: task.priority,
             assignees,
             commentCount: meta.count,
             lastCommentCreatedAt: meta.lastCreatedAt,

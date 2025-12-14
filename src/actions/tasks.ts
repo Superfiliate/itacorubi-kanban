@@ -5,6 +5,7 @@ import { columns, tasks, taskAssignees, comments } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
+import { TASK_PRIORITIES, type TaskPriority } from "@/db/schema"
 
 export async function createTask(
   boardId: string,
@@ -93,6 +94,22 @@ export async function updateTaskCreatedAt(id: string, createdAt: Date, boardId: 
   }
 
   await db.update(tasks).set({ createdAt }).where(eq(tasks.id, id))
+  revalidatePath(`/boards/${boardId}`)
+}
+
+export async function updateTaskPriority(id: string, priority: TaskPriority, boardId: string) {
+  await requireBoardAccess(boardId)
+
+  if (!TASK_PRIORITIES.includes(priority)) {
+    throw new Error("Invalid priority")
+  }
+
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, id) })
+  if (!task || task.boardId !== boardId) {
+    throw new Error("Task not found")
+  }
+
+  await db.update(tasks).set({ priority }).where(eq(tasks.id, id))
   revalidatePath(`/boards/${boardId}`)
 }
 

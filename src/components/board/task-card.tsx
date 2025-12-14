@@ -6,12 +6,14 @@ import Link from "next/link"
 import { MessageSquare, User } from "lucide-react"
 import { ContributorBadge } from "@/components/contributor-badge"
 import { cn } from "@/lib/utils"
-import type { ContributorColor } from "@/db/schema"
+import type { ContributorColor, TaskPriority } from "@/db/schema"
+import { TASK_PRIORITY_META } from "@/lib/task-priority"
 
 interface TaskCardProps {
   id: string
   boardId: string
   title: string
+  priority: TaskPriority
   assignees: Array<{
     contributor: {
       id: string
@@ -81,7 +83,7 @@ function getDaysSinceLastComment(comments: Array<{ createdAt: Date | null }>): n
   return diffDays
 }
 
-export function TaskCard({ id, boardId, title, assignees, comments }: TaskCardProps) {
+export function TaskCard({ id, boardId, title, priority, assignees, comments }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -109,13 +111,16 @@ export function TaskCard({ id, boardId, title, assignees, comments }: TaskCardPr
         : `${daysSinceLastComment} days ago`
     : null
 
+  const { cardClassName, Icon: PriorityIcon, iconClassName } = TASK_PRIORITY_META[priority]
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
         "group relative glass rounded-lg p-3 transition-all hover:shadow-lg hover:scale-[1.02]",
-        isDragging && "opacity-50 shadow-xl scale-105"
+        isDragging && "opacity-50 shadow-xl scale-105",
+        cardClassName
       )}
       {...attributes}
       {...listeners}
@@ -134,23 +139,30 @@ export function TaskCard({ id, boardId, title, assignees, comments }: TaskCardPr
         {title}
       </h4>
 
-      {/* Comments and Assignees row */}
+      {/* Priority, Comments and Assignees row */}
       <div className="mt-2 flex items-center justify-between gap-2">
-        {/* Comment info */}
-        {comments.length > 0 ? (
-          <div className={cn("flex items-center gap-1 text-xs", commentAgeColor)}>
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>{comments.length}</span>
-            {commentAgeText && (
-              <span className="opacity-80">· {commentAgeText}</span>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground/50">
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>0</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Priority icon */}
+          {priority !== "none" && (
+            <PriorityIcon className={cn("h-3.5 w-3.5", iconClassName)} />
+          )}
+
+          {/* Comment info */}
+          {comments.length > 0 ? (
+            <div className={cn("flex items-center gap-1 text-xs", commentAgeColor)}>
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>{comments.length}</span>
+              {commentAgeText && (
+                <span className="opacity-80">· {commentAgeText}</span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground/50">
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>0</span>
+            </div>
+          )}
+        </div>
 
         {/* Assignees */}
         {assignees.length > 0 ? (
