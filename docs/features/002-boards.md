@@ -55,3 +55,20 @@ Boards are the top-level container for organizing work. Each board has its own c
 - Edit inline
 - Auto-saves after 1 second or on Enter/blur
 - Title is saved in plaintext
+
+### Change Board Password
+
+- Click "Share" button in board header
+- Click "Change Password" button in the share dialog
+- Warning dialog appears explaining consequences:
+  - Anyone with the old password will lose access
+  - They will need to enter the new password to unlock the board
+  - This action cannot be undone
+- Enter new password and confirm password
+- Submit the form
+- Success toast confirms password update
+- Person changing password remains logged in automatically
+- Users with old password:
+  - Will be redirected to unlock page when accessing board
+  - Old password will show "Invalid password" error
+  - Must enter new password to unlock board

@@ -107,4 +107,83 @@ test.describe("Board Unlock", () => {
     const copyButtons = page.locator('button[title*="Copy"]').or(page.locator('button').filter({ hasText: /copy/i }))
     await expect(copyButtons.first()).toBeVisible()
   })
+
+  test("should change password from share dialog", async ({ page }) => {
+    const boardId = await createTestBoard(page, "Change Password Test", "oldpass123")
+
+    // Open share dialog
+    const shareButton = page.locator('button').filter({ hasText: /share/i }).or(page.getByRole("button", { name: /share/i })).first()
+    await shareButton.click()
+
+    // Wait for share dialog to open
+    await expect(page.getByRole("dialog", { name: /share board/i })).toBeVisible()
+
+    // Click "Change Password" button
+    await page.getByRole("button", { name: /change password/i }).click()
+
+    // Wait for change password dialog to open
+    const changePasswordDialog = page.getByRole("dialog", { name: /change board password/i })
+    await expect(changePasswordDialog).toBeVisible()
+
+    // Verify warning message is displayed
+    await expect(changePasswordDialog.getByText(/anyone who had access with the old password will lose access/i)).toBeVisible()
+
+    // Fill in new password and confirm password
+    await changePasswordDialog.getByLabel(/new password/i).fill("newpass123")
+    await changePasswordDialog.getByLabel(/confirm password/i).fill("newpass123")
+
+    // Submit the form
+    await changePasswordDialog.getByRole("button", { name: /change password/i }).click()
+
+    // Verify success toast appears
+    await expect(page.getByText(/password updated successfully/i)).toBeVisible()
+
+    // Verify change password dialog closes
+    await expect(changePasswordDialog).not.toBeVisible()
+
+    // Verify person changing password remains logged in (board still accessible)
+    await waitForBoardLoad(page)
+    await expect(page.getByRole("heading", { name: /change password test/i })).toBeVisible()
+  })
+
+  test("should invalidate old password after change", async ({ page, context }) => {
+    const boardId = await createTestBoard(page, "Password Invalidation Test", "oldpass123")
+
+    // Change password via share dialog
+    const shareButton = page.locator('button').filter({ hasText: /share/i }).or(page.getByRole("button", { name: /share/i })).first()
+    await shareButton.click()
+
+    await expect(page.getByRole("dialog", { name: /share board/i })).toBeVisible()
+    await page.getByRole("button", { name: /change password/i }).click()
+
+    const changePasswordDialog = page.getByRole("dialog", { name: /change board password/i })
+    await expect(changePasswordDialog).toBeVisible()
+
+    await changePasswordDialog.getByLabel(/new password/i).fill("newpass123")
+    await changePasswordDialog.getByLabel(/confirm password/i).fill("newpass123")
+    await changePasswordDialog.getByRole("button", { name: /change password/i }).click()
+
+    // Wait for success toast
+    await expect(page.getByText(/password updated successfully/i)).toBeVisible()
+
+    // Clear cookies to simulate user with old password
+    await context.clearCookies()
+
+    // Try to unlock with old password
+    await page.goto(`/boards/${boardId}/unlock`)
+    await page.getByPlaceholder(/enter password/i).fill("oldpass123")
+    await page.getByRole("button", { name: /unlock board/i }).click()
+
+    // Verify "Invalid password" error
+    await expect(page.getByText(/invalid password/i)).toBeVisible()
+    expect(page.url()).toContain("/unlock")
+
+    // Unlock with new password
+    await page.getByPlaceholder(/enter password/i).fill("newpass123")
+    await page.getByRole("button", { name: /unlock board/i }).click()
+
+    // Verify success
+    await page.waitForURL(`/boards/${boardId}`)
+    await waitForBoardLoad(page)
+  })
 })

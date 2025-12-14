@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Share2, Copy, Check } from "lucide-react"
+import { Share2, Copy, Check, KeyRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
+import { ChangePasswordDialog } from "./change-password-dialog"
 
 interface ShareDialogProps {
   boardId: string
@@ -23,6 +24,7 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
   const [password, setPassword] = useState<string | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
 
   useEffect(() => {
     if (open && !password) {
@@ -173,8 +175,34 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
               </div>
             </div>
           </div>
+
+          {/* Change Password Section */}
+          <div className="space-y-3 border-t border-border pt-6">
+            <h3 className="text-heading-sm">Change Password</h3>
+            <p className="text-label">
+              Change the board password. Anyone with the old password will need to enter the new password to access the board.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false)
+                setIsChangePasswordOpen(true)
+              }}
+              className="w-full"
+            >
+              <KeyRound className="mr-2 h-4 w-4" />
+              Change Password
+            </Button>
+          </div>
         </div>
       </DialogContent>
+
+      <ChangePasswordDialog
+        boardId={boardId}
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+      />
     </Dialog>
   )
 }

@@ -111,3 +111,11 @@ export async function updateBoardTitle(id: string, title: string) {
   await db.update(boards).set({ title }).where(eq(boards.id, id))
   revalidatePath(`/boards/${id}`)
 }
+
+export async function updateBoardPassword(boardId: string, newPassword: string) {
+  await requireBoardAccess(boardId)
+  const passwordHash = hashPassword(newPassword)
+  await db.update(boards).set({ passwordHash }).where(eq(boards.id, boardId))
+  await setBoardPassword(boardId, newPassword)
+  revalidatePath(`/boards/${boardId}`)
+}

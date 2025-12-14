@@ -115,6 +115,36 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 - Do not increase timeouts as a workaround
 - Common fixes: add proper waits, optimize slow queries, fix race conditions, ensure proper loading states
 
+## Test Balance: Reliability vs Speed
+
+**Goal:** Maintain high reliability while keeping test suite fast enough for rapid feedback.
+
+### Principles
+
+1. **Test critical paths, not every edge case** - Focus on user-facing workflows that would cause real problems if broken
+2. **Avoid overlapping test scenarios** - If Test A covers scenario X, don't create Test B that also covers X with minor variations
+3. **Prefer integration over unit** - E2E tests should cover complete flows, not individual form validations
+4. **Form validation is implicit** - If a form works in the happy path, validation is likely working; don't test every validation rule separately
+5. **One test per unique outcome** - If multiple tests verify the same outcome, consolidate them
+
+### When Adding Tests
+
+Before adding a new test, ask:
+- **Does this test a unique user flow?** If yes, add it. If it's a variation of existing flow, skip it.
+- **Would this catch a real bug users would hit?** If yes, add it. If it's a theoretical edge case, skip it.
+- **Does this overlap with existing tests?** If yes, consolidate or skip it.
+- **Is this testing implementation details?** If yes, skip it - focus on user-visible behavior.
+
+### Example: Password Change Feature
+
+**Good (2 tests):**
+- Test 1: Change password happy path (covers: dialog, warning, success, stays logged in)
+- Test 2: Old password invalid after change (covers: old password fails, new password works)
+
+**Avoid (8+ tests):**
+- Separate tests for cancel, empty password validation, mismatched passwords, redirect scenarios, etc.
+- These overlap with the core flows and slow down the suite without adding meaningful coverage
+
 ## Best Practices
 
 1. **Use semantic selectors** - Prefer `getByRole`, `getByLabel`, `getByText` over CSS selectors
@@ -124,6 +154,7 @@ The Playwright config (`playwright/playwright.config.ts`) includes:
 5. **Use test steps** - Use `test.step()` for better test organization and reporting
 6. **No explicit timeouts** - Always use global timeout configuration
 7. **Parallel execution** - Tests run in parallel for faster feedback
+8. **Balance coverage and speed** - Prefer fewer, focused tests over many overlapping scenarios
 
 ## Gotchas (Lessons Learned)
 
