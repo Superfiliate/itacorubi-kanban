@@ -107,24 +107,15 @@ function ContributorRow({
   const displayColor = localContributor?.color ?? contributor.color
 
   const handleNameSave = async (name: string) => {
-    // Local-first
+    // Update normalized store (board view derives names from contributorsById)
     useBoardStore.getState().updateContributorLocal({ boardId, contributorId: contributor.id, name })
 
-    // Keep TanStack board cache consistent for current UI (task cards use nested contributor objects)
+    // Also update TanStack Query cache for contributors list
     queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
       if (!old) return old
       return {
         ...old,
         contributors: old.contributors.map((c) => (c.id === contributor.id ? { ...c, name } : c)),
-        columns: old.columns.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) => ({
-            ...t,
-            assignees: t.assignees.map((a) =>
-              a.contributor.id === contributor.id ? { contributor: { ...a.contributor, name } } : a
-            ),
-          })),
-        })),
       }
     })
 
@@ -139,22 +130,15 @@ function ContributorRow({
   }
 
   const handleColorChange = async (color: ContributorColor) => {
+    // Update normalized store (board view derives assignees from contributorsById)
     useBoardStore.getState().updateContributorLocal({ boardId, contributorId: contributor.id, color })
 
+    // Also update TanStack Query cache for contributors list
     queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
       if (!old) return old
       return {
         ...old,
         contributors: old.contributors.map((c) => (c.id === contributor.id ? { ...c, color } : c)),
-        columns: old.columns.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) => ({
-            ...t,
-            assignees: t.assignees.map((a) =>
-              a.contributor.id === contributor.id ? { contributor: { ...a.contributor, color } } : a
-            ),
-          })),
-        })),
       }
     })
 
@@ -171,20 +155,15 @@ function ContributorRow({
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
+      // Update normalized store (also removes from assigneeIdsByTaskId)
       useBoardStore.getState().deleteContributorLocal({ boardId, contributorId: contributor.id })
 
+      // Also update TanStack Query cache for contributors list
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
         return {
           ...old,
           contributors: old.contributors.filter((c) => c.id !== contributor.id),
-          columns: old.columns.map((col) => ({
-            ...col,
-            tasks: col.tasks.map((t) => ({
-              ...t,
-              assignees: t.assignees.filter((a) => a.contributor.id !== contributor.id),
-            })),
-          })),
         }
       })
 

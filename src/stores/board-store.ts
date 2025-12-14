@@ -164,6 +164,20 @@ type BoardStoreState = {
   // Task priority update (for sidebar consistency)
   updateTaskPriorityLocal: (args: { boardId: string; taskId: string; priority: TaskPriority }) => void
 
+  // DnD mutations
+  moveTaskLocal: (args: {
+    boardId: string
+    taskId: string
+    toColumnId: string
+    toIndex: number
+  }) => void
+
+  reorderColumnsLocal: (args: {
+    boardId: string
+    columnId: string
+    toIndex: number
+  }) => void
+
   // Comments (local-first)
   createCommentLocal: (args: { boardId: string; taskId: string; comment: TaskComment }) => void
   updateCommentLocal: (args: {
@@ -536,6 +550,75 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             ...board,
             tasksById: { ...board.tasksById, [taskId]: { ...task, priority } },
             taskDetailsById: updatedTaskDetails,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  moveTaskLocal: ({ boardId, taskId, toColumnId, toIndex }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const task = board.tasksById[taskId]
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      const fromColumnId = task.columnId
+      const tasksByColumnId = { ...board.tasksByColumnId }
+
+      // Remove from source column
+      const sourceIds = [...(tasksByColumnId[fromColumnId] ?? [])]
+      const sourceIndex = sourceIds.indexOf(taskId)
+      if (sourceIndex !== -1) {
+        sourceIds.splice(sourceIndex, 1)
+      }
+      tasksByColumnId[fromColumnId] = sourceIds
+
+      // Add to target column at specified index
+      const targetIds = [...(tasksByColumnId[toColumnId] ?? [])]
+      // If moving within same column and target index is after source, adjust
+      if (fromColumnId === toColumnId && sourceIndex < toIndex) {
+        targetIds.splice(toIndex, 0, taskId)
+      } else {
+        targetIds.splice(toIndex, 0, taskId)
+      }
+      tasksByColumnId[toColumnId] = targetIds
+
+      // Update task's columnId
+      const updatedTask = { ...task, columnId: toColumnId }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tasksById: { ...board.tasksById, [taskId]: updatedTask },
+            tasksByColumnId,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  reorderColumnsLocal: ({ boardId, columnId, toIndex }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const columnOrder = [...board.columnOrder]
+
+      const fromIndex = columnOrder.indexOf(columnId)
+      if (fromIndex === -1) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      // Remove from current position and insert at new position
+      columnOrder.splice(fromIndex, 1)
+      columnOrder.splice(toIndex, 0, columnId)
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            columnOrder,
             lastLocalActivityAt: Date.now(),
           },
         },

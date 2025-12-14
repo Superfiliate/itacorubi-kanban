@@ -93,7 +93,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
       <TrackBoardVisit boardId={board.id} title={board.title} />
       <BoardHeader boardId={board.id} title={board.title} contributors={contributorsWithStats} />
       <main className="relative flex-1 overflow-hidden">
-        <BoardClient boardId={board.id} initialColumns={board.columns} />
+        <BoardClient boardId={board.id} />
       </main>
       <TaskSidebarHost
         boardId={board.id}

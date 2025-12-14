@@ -38,6 +38,19 @@ export function CommentsSection({
 }: CommentsSectionProps) {
   const [newCommentContent, setNewCommentContent] = useState("")
 
+  // Derive current author data from contributors (normalized source of truth)
+  // This ensures comment badges reflect latest contributor name/color
+  const enrichedComments = useMemo(() => {
+    const contributorsById = new Map(contributors.map((c) => [c.id, c]))
+    return comments.map((comment) => {
+      const currentAuthor = contributorsById.get(comment.author.id)
+      return {
+        ...comment,
+        author: currentAuthor ?? comment.author,
+      }
+    })
+  }, [comments, contributors])
+
   // Get initial author from localStorage - memoized to only run once per board
   const initialAuthorId = useMemo(() => {
     const rememberedAuthor = getRememberedAuthor(boardId)
@@ -78,7 +91,7 @@ export function CommentsSection({
     <div className="space-y-3 p-6">
       <h3 className="text-heading-sm">Comments</h3>
 
-      {comments.length === 0 ? (
+      {enrichedComments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 text-sm text-muted-foreground">
@@ -89,7 +102,7 @@ export function CommentsSection({
           </p>
         </div>
       ) : (
-        comments.map((comment) => (
+        enrichedComments.map((comment) => (
           <CommentItem
             key={comment.id}
             comment={comment}

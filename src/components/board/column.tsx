@@ -37,29 +37,25 @@ interface ColumnProps {
   id: string
   boardId: string
   name: string
-  isCollapsed: boolean | null
+  isCollapsed: boolean
   tasks: Array<{
     id: string
     title: string
     priority: TaskPriority
     assignees: Array<{
-      contributor: {
-        id: string
-        name: string
-        color: ContributorColor
-      }
-    }>
-    comments: Array<{
       id: string
-      createdAt: Date | null
+      name: string
+      color: ContributorColor
     }>
+    commentCount: number
+    lastCommentCreatedAt: Date | null
   }>
 }
 
 export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const collapsed = isCollapsed ?? false
+  const collapsed = isCollapsed
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Mutations
@@ -301,7 +297,8 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
                   title={task.title}
                   priority={task.priority}
                   assignees={task.assignees}
-                  comments={task.comments}
+                  commentCount={task.commentCount}
+                  lastCommentCreatedAt={task.lastCommentCreatedAt}
                 />
               ))}
             </SortableContext>

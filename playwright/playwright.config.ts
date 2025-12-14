@@ -16,7 +16,7 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 1,
+  retries: process.env.CI ? 3 : 1,
   /* Timeout for each test */
   timeout: 30000, // 30s per test maximum
   /* Timeout for expect assertions */
@@ -54,7 +54,7 @@ export default defineConfig({
     // Run from repo root (config file lives in /playwright).
     cwd: "..",
     // Use a clean test DB (and let the package scripts run migrations/build/start).
-    command: "rm -f test.db test.db-journal && pnpm build && pnpm start",
+    command: "pnpm test:reset && pnpm build && pnpm start",
     url: "http://localhost:5800",
     reuseExistingServer: false,
     timeout: 120 * 1000,

@@ -14,36 +14,60 @@ import {
 import {
   SortableContext,
   horizontalListSortingStrategy,
-  arrayMove,
 } from "@dnd-kit/sortable"
-import { useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useState, useMemo } from "react"
 import { Columns3 } from "lucide-react"
 import { Column } from "./column"
 import { AddColumnButton } from "./add-column-button"
-import {
-  useBoardQuery,
-  useReorderColumns,
-  useOptimisticColumnsUpdate,
-  boardKeys,
-  type BoardColumn,
-  type BoardData,
-} from "@/hooks/use-board"
+import { useReorderColumns } from "@/hooks/use-board"
 import { useUpdateTaskColumn } from "@/hooks/use-task"
 import { useBoardPolling } from "@/hooks/use-board-polling"
+import { useBoardStore, selectBoard, type ColumnVM } from "@/stores/board-store"
+import { Loader2 } from "lucide-react"
 
 interface BoardClientProps {
   boardId: string
-  initialColumns: BoardColumn[]
 }
 
-export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
+export function BoardClient({ boardId }: BoardClientProps) {
   useBoardPolling(boardId)
-  const queryClient = useQueryClient()
 
-  // Use TanStack Query for columns data
-  const { data: board } = useBoardQuery(boardId)
-  const columns = board?.columns ?? initialColumns
+  // Use Zustand store for board data
+  const board = useBoardStore(selectBoard(boardId))
+
+  // Derive columns from the normalized board data
+  // Using useMemo to avoid creating new objects on every render (prevents "getSnapshot should be cached" error)
+  const columns = useMemo((): ColumnVM[] => {
+    if (!board) return []
+
+    return board.columnOrder.map((colId) => {
+      const col = board.columnsById[colId]
+      const taskIds = board.tasksByColumnId[colId] ?? []
+      const tasks = taskIds
+        .map((taskId) => {
+          const task = board.tasksById[taskId]
+          if (!task) return null
+          const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
+          const assignees = assigneeIds
+            .map((cid) => board.contributorsById[cid])
+            .filter(Boolean)
+            .map((c) => ({ id: c.id, name: c.name, color: c.color }))
+
+          const meta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null }
+          return {
+            id: task.id,
+            title: task.title,
+            priority: task.priority,
+            assignees,
+            commentCount: meta.count,
+            lastCommentCreatedAt: meta.lastCreatedAt,
+          }
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null)
+
+      return { id: colId, name: col?.name ?? "", isCollapsed: col?.isCollapsed ?? false, tasks }
+    })
+  }, [board])
 
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeType, setActiveType] = useState<"column" | "task" | null>(null)
@@ -51,8 +75,8 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
   // Mutations
   const reorderColumnsMutation = useReorderColumns(boardId)
   const updateTaskColumnMutation = useUpdateTaskColumn(boardId)
-  const { setColumns } = useOptimisticColumnsUpdate(boardId)
 
+  // DnD sensors - must be called unconditionally (rules of hooks)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -60,6 +84,15 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
       },
     })
   )
+
+  // Show loading state while waiting for HydrateBoard to populate the store
+  if (!board) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   const columnIds = columns.map((c) => c.id)
 
@@ -82,86 +115,46 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
     const activeTaskId = active.id as string
     const overId = over.id as string
 
-    setColumns((prev) => {
-      // Find which column the task is currently in (using prev for latest state)
-      const activeColumn = prev.find((c) => c.tasks.some((t) => t.id === activeTaskId))
-      if (!activeColumn) return prev
+    // Find which column the task is currently in
+    const activeColumn = columns.find((c) => c.tasks.some((t) => t.id === activeTaskId))
+    if (!activeColumn) return
 
-      let overColumnId: string | undefined
+    let overColumnId: string | undefined
 
-      if (overData?.type === "task") {
-        // Hovering over another task - find its column
-        const col = prev.find((c) => c.tasks.some((t) => t.id === overId))
-        overColumnId = col?.id
-      } else if (overData?.type === "column-drop") {
-        overColumnId = overData.columnId as string
-      } else if (overData?.type === "column") {
-        overColumnId = overId
-      }
+    if (overData?.type === "task") {
+      // Hovering over another task - find its column
+      const col = columns.find((c) => c.tasks.some((t) => t.id === overId))
+      overColumnId = col?.id
+    } else if (overData?.type === "column-drop") {
+      overColumnId = overData.columnId as string
+    } else if (overData?.type === "column") {
+      overColumnId = overId
+    }
 
-      if (!overColumnId) return prev
+    if (!overColumnId) return
 
-      // Handle same-column reordering
-      if (overColumnId === activeColumn.id && overData?.type === "task" && overId !== activeTaskId) {
-        const colIndex = prev.findIndex((c) => c.id === activeColumn.id)
-        if (colIndex === -1) return prev
+    const targetColumn = columns.find((c) => c.id === overColumnId)
+    if (!targetColumn) return
 
-        const taskIndex = prev[colIndex].tasks.findIndex((t) => t.id === activeTaskId)
-        const overTaskIndex = prev[colIndex].tasks.findIndex((t) => t.id === overId)
+    // Calculate target index
+    let toIndex: number
+    if (overData?.type === "task") {
+      toIndex = targetColumn.tasks.findIndex((t) => t.id === overId)
+      if (toIndex === -1) toIndex = targetColumn.tasks.length
+    } else {
+      toIndex = targetColumn.tasks.length
+    }
 
-        if (taskIndex === -1 || overTaskIndex === -1 || taskIndex === overTaskIndex) return prev
+    // Check if actually moving
+    const currentIndex = activeColumn.tasks.findIndex((t) => t.id === activeTaskId)
+    if (activeColumn.id === overColumnId && currentIndex === toIndex) return
 
-        // Reorder within the same column using arrayMove, then update position fields
-        const newColumns = prev.map((col, idx) => {
-          if (idx === colIndex) {
-            const reorderedTasks = arrayMove([...col.tasks], taskIndex, overTaskIndex)
-            // Update position fields to match new array indices
-            return {
-              ...col,
-              tasks: reorderedTasks.map((task, i) => ({ ...task, position: i })),
-            }
-          }
-          return col
-        })
-
-        return newColumns
-      }
-
-      // Handle cross-column moves
-      if (overColumnId === activeColumn.id) return prev
-
-      // Move task to the new column optimistically
-      const newColumns = prev.map((col) => ({
-        ...col,
-        tasks: [...col.tasks],
-      }))
-
-      const sourceColIndex = newColumns.findIndex((c) => c.id === activeColumn.id)
-      const targetColIndex = newColumns.findIndex((c) => c.id === overColumnId)
-
-      if (sourceColIndex === -1 || targetColIndex === -1) return prev
-
-      // Find and remove task from source
-      const taskIndex = newColumns[sourceColIndex].tasks.findIndex((t) => t.id === activeTaskId)
-      if (taskIndex === -1) return prev
-
-      const [task] = newColumns[sourceColIndex].tasks.splice(taskIndex, 1)
-
-      // Add to target column
-      if (overData?.type === "task") {
-        // Insert at the position of the hovered task
-        const overTaskIndex = newColumns[targetColIndex].tasks.findIndex((t) => t.id === overId)
-        newColumns[targetColIndex].tasks.splice(overTaskIndex, 0, { ...task, columnId: overColumnId! })
-      } else {
-        // Add to end of column
-        newColumns[targetColIndex].tasks.push({ ...task, columnId: overColumnId! })
-      }
-
-      // Update position fields for both source and target columns
-      newColumns[sourceColIndex].tasks = newColumns[sourceColIndex].tasks.map((t, i) => ({ ...t, position: i }))
-      newColumns[targetColIndex].tasks = newColumns[targetColIndex].tasks.map((t, i) => ({ ...t, position: i }))
-
-      return newColumns
+    // Update local store immediately
+    useBoardStore.getState().moveTaskLocal({
+      boardId,
+      taskId: activeTaskId,
+      toColumnId: overColumnId,
+      toIndex,
     })
   }
 
@@ -172,44 +165,42 @@ export function BoardClient({ boardId, initialColumns }: BoardClientProps) {
 
     if (!over) return
 
-    const activeId = active.id as string
+    const draggedId = active.id as string
     const overId = over.id as string
     const activeData = active.data.current
     const overData = over.data.current
 
-    // Get latest columns from query cache (after dragOver optimistic updates)
-    const boardData = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-    const latestColumns = boardData?.columns ?? columns
-
     if (activeData?.type === "column" && overData?.type === "column") {
       // Reordering columns
-      if (activeId !== overId) {
-        const oldIndex = latestColumns.findIndex((c) => c.id === activeId)
-        const newIndex = latestColumns.findIndex((c) => c.id === overId)
+      if (draggedId !== overId) {
+        const oldIndex = columns.findIndex((c) => c.id === draggedId)
+        const newIndex = columns.findIndex((c) => c.id === overId)
 
         if (oldIndex !== -1 && newIndex !== -1) {
-          // Optimistic update via TanStack Query
-          setColumns((prev) => arrayMove(prev, oldIndex, newIndex))
+          // Update local store
+          useBoardStore.getState().reorderColumnsLocal({
+            boardId,
+            columnId: draggedId,
+            toIndex: newIndex,
+          })
 
           // Server update
-          const overColumn = latestColumns.find((c) => c.id === overId)
+          const overColumn = columns.find((c) => c.id === overId)
           if (overColumn) {
-            reorderColumnsMutation.mutate({ columnId: activeId, newPosition: overColumn.position })
+            reorderColumnsMutation.mutate({ columnId: draggedId, newPosition: newIndex })
           }
         }
       }
     } else if (activeData?.type === "task") {
-      // Get the latest position after dragOver optimistic updates
-      const finalBoardData = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId))
-      const finalColumns = finalBoardData?.columns ?? latestColumns
-      const finalColumn = finalColumns.find((c) => c.tasks.some((t) => t.id === activeId))
+      // Find where the task ended up (after dragOver updates)
+      const finalColumn = columns.find((c) => c.tasks.some((t) => t.id === draggedId))
       if (!finalColumn) return
 
-      const targetPosition = finalColumn.tasks.findIndex((t) => t.id === activeId)
+      const targetPosition = finalColumn.tasks.findIndex((t) => t.id === draggedId)
 
       // Server update via mutation (dragOver already handled optimistic UI update)
       updateTaskColumnMutation.mutate({
-        taskId: activeId,
+        taskId: draggedId,
         newColumnId: finalColumn.id,
         newPosition: targetPosition,
       })

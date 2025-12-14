@@ -15,16 +15,12 @@ interface TaskCardProps {
   title: string
   priority: TaskPriority
   assignees: Array<{
-    contributor: {
-      id: string
-      name: string
-      color: ContributorColor
-    }
-  }>
-  comments: Array<{
     id: string
-    createdAt: Date | null
+    name: string
+    color: ContributorColor
   }>
+  commentCount: number
+  lastCommentCreatedAt: Date | null
 }
 
 function getCommentAgeColor(daysSinceLastComment: number): string {
@@ -68,22 +64,18 @@ function getCommentAgeColor(daysSinceLastComment: number): string {
   return "text-red-600"
 }
 
-function getDaysSinceLastComment(comments: Array<{ createdAt: Date | null }>): number | null {
-  if (comments.length === 0) return null
-
-  // Comments are already ordered by createdAt DESC from getBoard
-  const lastComment = comments[0]
-  if (!lastComment.createdAt) return null
+function getDaysSinceLastComment(lastCommentCreatedAt: Date | null): number | null {
+  if (!lastCommentCreatedAt) return null
 
   const now = new Date()
-  const lastCommentDate = new Date(lastComment.createdAt)
+  const lastCommentDate = new Date(lastCommentCreatedAt)
   const diffTime = now.getTime() - lastCommentDate.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
   return diffDays
 }
 
-export function TaskCard({ id, boardId, title, priority, assignees, comments }: TaskCardProps) {
+export function TaskCard({ id, boardId, title, priority, assignees, commentCount, lastCommentCreatedAt }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -98,7 +90,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, comments }: 
     transition,
   }
 
-  const daysSinceLastComment = getDaysSinceLastComment(comments)
+  const daysSinceLastComment = getDaysSinceLastComment(lastCommentCreatedAt)
   const commentAgeColor = daysSinceLastComment !== null
     ? getCommentAgeColor(daysSinceLastComment)
     : "text-muted-foreground"
@@ -146,10 +138,10 @@ export function TaskCard({ id, boardId, title, priority, assignees, comments }: 
           <PriorityIcon className={cn("h-3.5 w-3.5", iconClassName)} />
 
           {/* Comment info */}
-          {comments.length > 0 ? (
+          {commentCount > 0 ? (
             <div className={cn("flex items-center gap-1 text-xs", commentAgeColor)}>
               <MessageSquare className="h-3.5 w-3.5" />
-              <span>{comments.length}</span>
+              <span>{commentCount}</span>
               {commentAgeText && (
                 <span className="opacity-80">· {commentAgeText}</span>
               )}
@@ -165,11 +157,11 @@ export function TaskCard({ id, boardId, title, priority, assignees, comments }: 
         {/* Assignees */}
         {assignees.length > 0 ? (
           <div className="flex flex-wrap gap-1 justify-end">
-            {assignees.map(({ contributor }) => (
+            {assignees.map((assignee) => (
               <ContributorBadge
-                key={contributor.id}
-                name={contributor.name}
-                color={contributor.color}
+                key={assignee.id}
+                name={assignee.name}
+                color={assignee.color}
               />
             ))}
           </div>
