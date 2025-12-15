@@ -81,7 +81,8 @@ function getDaysSinceLastComment(lastCommentCreatedAt: Date | null): number | nu
   return diffDays
 }
 
-export function TaskCard({ id, boardId, title, priority, assignees, tags = [], commentCount, lastCommentCreatedAt }: TaskCardProps) {
+export function TaskCard({ id, boardId, title, priority, assignees, tags, commentCount, lastCommentCreatedAt }: TaskCardProps) {
+  const displayTags = tags ?? []
   const {
     attributes,
     listeners,
@@ -160,9 +161,9 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags = [], c
       {/* Assignees and Tags row (separate so wrapping doesn't misalign meta) */}
       <div className="mt-1.5 flex items-start justify-end gap-1.5">
         {/* Tags */}
-        {tags.length > 0 && (
+        {displayTags.length > 0 && (
           <div className="flex flex-wrap justify-end gap-1">
-            {tags.map((tag) => (
+            {displayTags.map((tag) => (
               <TagBadge
                 key={tag.id}
                 name={tag.name}

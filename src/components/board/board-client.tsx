@@ -22,7 +22,7 @@ import { AddColumnButton } from "./add-column-button"
 import { useReorderColumns } from "@/hooks/use-board"
 import { useUpdateTaskColumn } from "@/hooks/use-task"
 import { useBoardPolling } from "@/hooks/use-board-polling"
-import { useBoardStore, selectBoard, type ColumnVM } from "@/stores/board-store"
+import { useBoardStore, selectBoard, type ColumnVM, type TagEntity } from "@/stores/board-store"
 import { Loader2 } from "lucide-react"
 
 interface BoardClientProps {
@@ -56,7 +56,7 @@ export function BoardClient({ boardId }: BoardClientProps) {
           const tagIds = board.tagIdsByTaskId[taskId] ?? []
           const tags = tagIds
             .map((tid) => board.tagsById[tid])
-            .filter(Boolean)
+            .filter((t): t is TagEntity => Boolean(t))
             .map((t) => ({ id: t.id, name: t.name, color: t.color }))
 
           const meta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null }
