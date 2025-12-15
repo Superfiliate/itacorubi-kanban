@@ -83,10 +83,13 @@ test.describe("Task Management", () => {
 
     // Create a task
     await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/)
 
+    // Wait for sidebar to open (more reliable than waiting for URL)
     const sidebar = page.getByRole("dialog")
     await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
+
+    // Verify URL updated
+    await page.waitForURL(/task=/)
 
     // Create & assign a new contributor from Assignees select
     const assigneesCombobox = sidebar.getByRole("combobox", { name: /assignees/i })
