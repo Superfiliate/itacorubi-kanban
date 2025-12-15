@@ -233,6 +233,33 @@ test.describe("Tags", () => {
     await expect(deleteButton).toHaveAttribute("title", /cannot delete/i)
   })
 
+  test("should show tag badges on task cards", async ({ page }) => {
+    const boardId = await createTestBoard(page, "Tag Badge Test Board", "testpass123")
+    await waitForBoardLoad(page)
+
+    // Create a task
+    const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
+    await addTaskButton.click()
+    await page.waitForURL(/task=/)
+
+    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+
+    // Add a tag
+    const tagsSelect = sidebar.getByRole("combobox", { name: /tags/i })
+    await tagsSelect.click()
+    const input = page.getByPlaceholder(/search or create/i)
+    await input.fill("Card Tag")
+    await page.getByRole("option", { name: /create.*card tag/i }).click()
+
+    // Close sidebar
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+
+    // Verify tag badge appears on task card
+    const taskCard = page.getByText(/new task/i).locator("..").locator("..")
+    await expect(taskCard.getByText(/card tag/i)).toBeVisible()
+  })
+
   test("should persist tags after background polling (local-first)", async ({ page }) => {
     const boardId = await createTestBoard(page, "Persist Tag Test", "testpass123")
     await waitForBoardLoad(page)

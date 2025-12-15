@@ -53,12 +53,19 @@ export function BoardClient({ boardId }: BoardClientProps) {
             .filter(Boolean)
             .map((c) => ({ id: c.id, name: c.name, color: c.color }))
 
+          const tagIds = board.tagIdsByTaskId[taskId] ?? []
+          const tags = tagIds
+            .map((tid) => board.tagsById[tid])
+            .filter(Boolean)
+            .map((t) => ({ id: t.id, name: t.name, color: t.color }))
+
           const meta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null }
           return {
             id: task.id,
             title: task.title,
             priority: task.priority,
             assignees,
+            tags,
             commentCount: meta.count,
             lastCommentCreatedAt: meta.lastCreatedAt,
           }

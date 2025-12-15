@@ -47,6 +47,11 @@ interface ColumnProps {
       name: string
       color: ContributorColor
     }>
+    tags?: Array<{
+      id: string
+      name: string
+      color: ContributorColor
+    }>
     commentCount: number
     lastCommentCreatedAt: Date | null
   }>
@@ -297,6 +302,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
                   title={task.title}
                   priority={task.priority}
                   assignees={task.assignees}
+                  tags={task.tags}
                   commentCount={task.commentCount}
                   lastCommentCreatedAt={task.lastCommentCreatedAt}
                 />

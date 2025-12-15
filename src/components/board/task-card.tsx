@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities"
 import Link from "next/link"
 import { MessageSquare, User } from "lucide-react"
 import { ContributorBadge } from "@/components/contributor-badge"
+import { TagBadge } from "@/components/tag-badge"
 import { cn } from "@/lib/utils"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
 import { TASK_PRIORITY_META } from "@/lib/task-priority"
@@ -15,6 +16,11 @@ interface TaskCardProps {
   title: string
   priority: TaskPriority
   assignees: Array<{
+    id: string
+    name: string
+    color: ContributorColor
+  }>
+  tags?: Array<{
     id: string
     name: string
     color: ContributorColor
@@ -75,7 +81,7 @@ function getDaysSinceLastComment(lastCommentCreatedAt: Date | null): number | nu
   return diffDays
 }
 
-export function TaskCard({ id, boardId, title, priority, assignees, commentCount, lastCommentCreatedAt }: TaskCardProps) {
+export function TaskCard({ id, boardId, title, priority, assignees, tags = [], commentCount, lastCommentCreatedAt }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -151,8 +157,22 @@ export function TaskCard({ id, boardId, title, priority, assignees, commentCount
         )}
       </div>
 
-      {/* Assignees row (separate so wrapping doesn't misalign meta) */}
-      <div className="mt-1.5 flex items-start justify-end">
+      {/* Assignees and Tags row (separate so wrapping doesn't misalign meta) */}
+      <div className="mt-1.5 flex items-start justify-end gap-1.5">
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div className="flex flex-wrap justify-end gap-1">
+            {tags.map((tag) => (
+              <TagBadge
+                key={tag.id}
+                name={tag.name}
+                color={tag.color}
+                variant="compact"
+              />
+            ))}
+          </div>
+        )}
+        {/* Assignees */}
         {assignees.length > 0 ? (
           <div className="flex flex-wrap justify-end gap-1">
             {assignees.map((assignee) => (
