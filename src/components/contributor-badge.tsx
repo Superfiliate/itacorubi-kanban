@@ -16,10 +16,8 @@ export function ContributorBadge({ name, color, variant = "default", className, 
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 items-center gap-1 rounded-md font-medium",
-        variant === "compact"
-          ? "px-1.5 py-0 text-[11px] leading-4"
-          : "px-2 py-0.5 text-[11px] leading-4",
+        "inline-flex min-w-0 items-center gap-1 rounded-md text-xs font-medium",
+        variant === "compact" ? "px-1.5 py-0" : "px-2 py-0.5",
         contributorColorStyles[color],
         className
       )}

@@ -136,7 +136,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, commentCount
         <PriorityIcon className={cn("h-3 w-3 shrink-0", iconClassName)} />
 
         {commentCount > 0 ? (
-          <div className={cn("flex min-w-0 items-center gap-1 text-[11px] leading-4", commentAgeColor)}>
+          <div className={cn("flex min-w-0 items-center gap-1 text-xs", commentAgeColor)}>
             <MessageSquare className="h-3 w-3 shrink-0" />
             <span className="shrink-0">{commentCount}</span>
             {commentAgeText && (
@@ -144,7 +144,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, commentCount
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-[11px] leading-4 text-muted-foreground/50">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground/50">
             <MessageSquare className="h-3 w-3 shrink-0" />
             <span>0</span>
           </div>
