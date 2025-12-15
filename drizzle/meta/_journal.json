@@ -26,15 +26,22 @@
     {
       "idx": 3,
       "version": "6",
-      "when": 1734220800000,
+      "when": 1765750651000,
       "tag": "0003_add-task-stakeholders",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "6",
-      "when": 1734307200000,
+      "when": 1765809218000,
       "tag": "0004_fix-task-stakeholders",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1765812000000,
+      "tag": "0005_ensure-task-stakeholders",
       "breakpoints": true
     }
   ]
