@@ -110,8 +110,8 @@ export function TaskCard({ id, boardId, title, priority, assignees, commentCount
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative glass rounded-lg p-3 transition-all hover:shadow-lg hover:scale-[1.02]",
-        isDragging && "opacity-50 shadow-xl scale-105",
+        "group relative glass rounded-lg px-3 py-2 transition-all hover:shadow-lg hover:scale-[1.01]",
+        isDragging && "opacity-50 shadow-xl scale-[1.03]",
         cardClassName
       )}
       {...attributes}
@@ -127,41 +127,40 @@ export function TaskCard({ id, boardId, title, priority, assignees, commentCount
           }
         }}
       />
-      <h4 className="text-heading-sm text-foreground">
+      <h4 className="text-heading-sm text-foreground leading-snug">
         {title}
       </h4>
 
-      {/* Priority, Comments and Assignees row */}
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          {/* Priority icon */}
-          <PriorityIcon className={cn("h-3.5 w-3.5", iconClassName)} />
+      {/* Priority + comments meta row */}
+      <div className="mt-1.5 flex items-center gap-2">
+        <PriorityIcon className={cn("h-3 w-3 shrink-0", iconClassName)} />
 
-          {/* Comment info */}
-          {commentCount > 0 ? (
-            <div className={cn("flex items-center gap-1 text-xs", commentAgeColor)}>
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span>{commentCount}</span>
-              {commentAgeText && (
-                <span className="opacity-80">· {commentAgeText}</span>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground/50">
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span>0</span>
-            </div>
-          )}
-        </div>
+        {commentCount > 0 ? (
+          <div className={cn("flex min-w-0 items-center gap-1 text-[11px] leading-4", commentAgeColor)}>
+            <MessageSquare className="h-3 w-3 shrink-0" />
+            <span className="shrink-0">{commentCount}</span>
+            {commentAgeText && (
+              <span className="truncate opacity-80">· {commentAgeText}</span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-[11px] leading-4 text-muted-foreground/50">
+            <MessageSquare className="h-3 w-3 shrink-0" />
+            <span>0</span>
+          </div>
+        )}
+      </div>
 
-        {/* Assignees */}
+      {/* Assignees row (separate so wrapping doesn't misalign meta) */}
+      <div className="mt-1.5 flex items-start justify-end">
         {assignees.length > 0 ? (
-          <div className="flex flex-wrap gap-1 justify-end">
+          <div className="flex flex-wrap justify-end gap-1">
             {assignees.map((assignee) => (
               <ContributorBadge
                 key={assignee.id}
                 name={assignee.name}
                 color={assignee.color}
+                variant="compact"
               />
             ))}
           </div>

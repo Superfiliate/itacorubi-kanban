@@ -7,20 +7,25 @@ import type { ContributorColor } from "@/db/schema"
 interface ContributorBadgeProps {
   name: string
   color: ContributorColor
+  variant?: "default" | "compact"
   className?: string
   onRemove?: () => void
 }
 
-export function ContributorBadge({ name, color, className, onRemove }: ContributorBadgeProps) {
+export function ContributorBadge({ name, color, variant = "default", className, onRemove }: ContributorBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex min-w-0 items-center gap-1 rounded-md font-medium",
+        variant === "compact"
+          ? "px-1.5 py-0 text-[11px] leading-4"
+          : "px-2 py-0.5 text-[11px] leading-4",
         contributorColorStyles[color],
         className
       )}
+      title={name}
     >
-      {name}
+      <span className={cn("truncate", variant === "compact" && "max-w-[8.5rem]")}>{name}</span>
       {onRemove && (
         <button
           onClick={onRemove}

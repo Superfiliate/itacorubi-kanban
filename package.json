@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm db:migrate && next dev -p 5800",
+    "dev": "pnpm kill && pnpm db:migrate && next dev -p 5800",
     "kill": "kill -9 $(lsof -ti :5800) || true",
     "build": "pnpm db:migrate && next build",
     "start": "next start -p 5800",
@@ -27,6 +27,7 @@
     "@libsql/client": "0.15.15",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-dropdown-menu": "2.1.16",
+    "@radix-ui/react-label": "2.1.4",
     "@radix-ui/react-popover": "1.1.15",
     "@radix-ui/react-scroll-area": "1.2.10",
     "@radix-ui/react-select": "2.2.6",
