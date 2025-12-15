@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { columns, tasks, taskAssignees, comments } from "@/db/schema"
+import { columns, tasks, taskAssignees, taskTags, comments } from "@/db/schema"
 import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
@@ -57,6 +57,11 @@ export async function getTask(id: string) {
       stakeholders: {
         with: {
           contributor: true,
+        },
+      },
+      tags: {
+        with: {
+          tag: true,
         },
       },
       comments: {
@@ -214,6 +219,9 @@ export async function deleteTask(id: string, boardId: string) {
   // Delete stakeholders
   const { taskStakeholders } = await import("@/db/schema")
   await db.delete(taskStakeholders).where(eq(taskStakeholders.taskId, id))
+
+  // Delete tags
+  await db.delete(taskTags).where(eq(taskTags.taskId, id))
 
   // Delete comments before removing the task to honor restrict FKs
   await db.delete(comments).where(eq(comments.taskId, id))

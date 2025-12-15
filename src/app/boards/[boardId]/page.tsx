@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { getBoard } from "@/actions/boards"
 import { getTask } from "@/actions/tasks"
 import { getContributorsWithStats } from "@/actions/contributors"
+import { getTagsWithStats } from "@/actions/tags"
 import { BoardHeader } from "@/components/board/board-header"
 import { BoardClient } from "@/components/board/board-client"
 import { TrackBoardVisit } from "@/components/board/track-board-visit"
@@ -72,6 +73,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   }
 
   const contributorsWithStats = await getContributorsWithStats(boardId)
+  const tagsWithStats = await getTagsWithStats(boardId)
 
   // Fetch task if taskId is provided
   let task = null
@@ -91,7 +93,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
     <div className="flex h-screen flex-col overflow-hidden gradient-mesh">
       <HydrateBoard boardId={board.id} boardData={boardData} taskData={taskData} />
       <TrackBoardVisit boardId={board.id} title={board.title} />
-      <BoardHeader boardId={board.id} title={board.title} contributors={contributorsWithStats} />
+      <BoardHeader boardId={board.id} title={board.title} contributors={contributorsWithStats} tags={tagsWithStats} />
       <main className="relative flex-1 overflow-hidden">
         <BoardClient boardId={board.id} />
       </main>
@@ -99,6 +101,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
         boardId={board.id}
         columns={board.columns.map((c) => ({ id: c.id, name: c.name }))}
         contributors={board.contributors}
+        tags={board.tags ?? []}
       />
     </div>
   )

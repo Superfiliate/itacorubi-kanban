@@ -81,6 +81,21 @@ export const taskStakeholders = sqliteTable("task_stakeholders", {
   contributorId: text("contributor_id").notNull().references(() => contributors.id, { onDelete: "restrict" }),
 }, (t) => [primaryKey({ columns: [t.taskId, t.contributorId] })])
 
+// Tags - belong to a board
+export const tags = sqliteTable("tags", {
+  id: text("id").primaryKey(), // UUID
+  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  color: text("color").notNull().$type<ContributorColor>(),
+})
+
+// Task tags - many-to-many
+// Note: Using "restrict" to force intentional deletion of tag assignments before removing tasks/tags
+export const taskTags = sqliteTable("task_tags", {
+  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  tagId: text("tag_id").notNull().references(() => tags.id, { onDelete: "restrict" }),
+}, (t) => [primaryKey({ columns: [t.taskId, t.tagId] })])
+
 // Comments - belong to a task and have an author (contributor) and optional stakeholder
 export const comments = sqliteTable("comments", {
   id: text("id").primaryKey(), // UUID
@@ -100,6 +115,7 @@ export const boardsRelations = relations(boards, ({ many }) => ({
   columns: many(columns),
   tasks: many(tasks),
   contributors: many(contributors),
+  tags: many(tags),
   comments: many(comments),
 }))
 
@@ -122,6 +138,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   }),
   assignees: many(taskAssignees),
   stakeholders: many(taskStakeholders),
+  tags: many(taskTags),
   comments: many(comments),
 }))
 
@@ -158,6 +175,25 @@ export const taskStakeholdersRelations = relations(taskStakeholders, ({ one }) =
   }),
 }))
 
+export const tagsRelations = relations(tags, ({ one, many }) => ({
+  board: one(boards, {
+    fields: [tags.boardId],
+    references: [boards.id],
+  }),
+  taskTags: many(taskTags),
+}))
+
+export const taskTagsRelations = relations(taskTags, ({ one }) => ({
+  task: one(tasks, {
+    fields: [taskTags.taskId],
+    references: [tasks.id],
+  }),
+  tag: one(tags, {
+    fields: [taskTags.tagId],
+    references: [tags.id],
+  }),
+}))
+
 export const commentsRelations = relations(comments, ({ one }) => ({
   task: one(tasks, {
     fields: [comments.taskId],
@@ -191,5 +227,8 @@ export type Contributor = typeof contributors.$inferSelect
 export type NewContributor = typeof contributors.$inferInsert
 export type TaskAssignee = typeof taskAssignees.$inferSelect
 export type TaskStakeholder = typeof taskStakeholders.$inferSelect
+export type Tag = typeof tags.$inferSelect
+export type NewTag = typeof tags.$inferInsert
+export type TaskTag = typeof taskTags.$inferSelect
 export type Comment = typeof comments.$inferSelect
 export type NewComment = typeof comments.$inferInsert

@@ -6,6 +6,7 @@ import { EditableText } from "@/components/editable-text"
 import { StatusSelect } from "./status-select"
 import { AssigneesSelect } from "./assignees-select"
 import { StakeholdersSelect } from "./stakeholders-select"
+import { TagsSelect } from "./tags-select"
 import {
   Select,
   SelectContent,
@@ -57,12 +58,24 @@ interface TaskDetailsProps {
         color: ContributorColor
       }
     }>
+    tags?: Array<{
+      tag: {
+        id: string
+        name: string
+        color: ContributorColor
+      }
+    }>
   }
   columns: Array<{
     id: string
     name: string
   }>
   contributors: Array<{
+    id: string
+    name: string
+    color: ContributorColor
+  }>
+  tags: Array<{
     id: string
     name: string
     color: ContributorColor
@@ -74,6 +87,7 @@ export function TaskDetails({
   task,
   columns,
   contributors,
+  tags,
   onClose,
 }: TaskDetailsProps) {
   const router = useRouter()
@@ -174,6 +188,14 @@ export function TaskDetails({
         boardId={task.boardId}
         stakeholders={task.stakeholders ?? []}
         contributors={contributors}
+      />
+
+      {/* Tags */}
+      <TagsSelect
+        taskId={task.id}
+        boardId={task.boardId}
+        tags={task.tags ?? []}
+        allTags={tags}
       />
 
       {/* Created At */}

@@ -24,9 +24,14 @@ interface TaskSidebarProps {
     name: string
     color: ContributorColor
   }>
+  tags: Array<{
+    id: string
+    name: string
+    color: ContributorColor
+  }>
 }
 
-export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSidebarProps) {
+export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: TaskSidebarProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(true)
 
@@ -66,6 +71,12 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
         .filter(Boolean)
         .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
 
+      const tagIds = board.tagIdsByTaskId[taskId] ?? []
+      const tags = tagIds
+        .map((tid) => board.tagsById[tid])
+        .filter(Boolean)
+        .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }))
+
       return {
         id: localTaskEntity.id,
         title: localTaskEntity.title,
@@ -76,6 +87,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
         column: { id: localTaskEntity.columnId, name: columns.find((c) => c.id === localTaskEntity.columnId)?.name ?? "" },
         assignees,
         stakeholders,
+        tags,
         comments: baseTask?.comments ?? [],
       }
     }
@@ -95,10 +107,17 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
         .filter(Boolean)
         .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
 
+      const tagIds = board.tagIdsByTaskId[taskId] ?? (baseTask.tags ?? []).map((t) => t.tag.id)
+      const tags = tagIds
+        .map((tid) => board.tagsById[tid])
+        .filter(Boolean)
+        .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }))
+
       return {
         ...baseTask,
         assignees,
         stakeholders,
+        tags,
       }
     }
 
@@ -114,6 +133,16 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
     }
     return contributors
   }, [board, contributors])
+
+  const currentTags = useMemo(() => {
+    if (board) {
+      return board.tagOrder
+        .map((id) => board.tagsById[id])
+        .filter(Boolean)
+        .map((t) => ({ id: t.id, name: t.name, color: t.color }))
+    }
+    return tags
+  }, [board, tags])
 
   const handleClose = () => {
     setIsOpen(false)
@@ -175,9 +204,11 @@ export function TaskSidebar({ taskId, boardId, columns, contributors }: TaskSide
                   createdAt: taskForUI.createdAt,
                   assignees: taskForUI.assignees,
                   stakeholders: taskForUI.stakeholders,
+                  tags: taskForUI.tags,
                 }}
                 columns={columns}
                 contributors={currentContributors}
+                tags={currentTags}
                 onClose={handleClose}
               />
             </div>
@@ -202,9 +233,10 @@ interface TaskSidebarHostProps {
   boardId: string
   columns: Array<{ id: string; name: string }>
   contributors: Array<{ id: string; name: string; color: ContributorColor }>
+  tags: Array<{ id: string; name: string; color: ContributorColor }>
 }
 
-export function TaskSidebarHost({ boardId, columns, contributors }: TaskSidebarHostProps) {
+export function TaskSidebarHost({ boardId, columns, contributors, tags }: TaskSidebarHostProps) {
   const searchParams = useSearchParams()
   const taskId = searchParams.get("task")
 
@@ -216,6 +248,7 @@ export function TaskSidebarHost({ boardId, columns, contributors }: TaskSidebarH
       boardId={boardId}
       columns={columns}
       contributors={contributors}
+      tags={tags}
     />
   )
 }

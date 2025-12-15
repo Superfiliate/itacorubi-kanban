@@ -31,6 +31,13 @@ export interface BoardTask {
       color: ContributorColor
     }
   }>
+  tags?: Array<{
+    tag: {
+      id: string
+      name: string
+      color: ContributorColor
+    }
+  }>
   comments: Array<{
     id: string
     createdAt: Date | null
@@ -53,12 +60,20 @@ export interface BoardContributor {
   boardId: string
 }
 
+export interface BoardTag {
+  id: string
+  name: string
+  color: ContributorColor
+  boardId: string
+}
+
 export interface BoardData {
   id: string
   title: string
   createdAt: Date | null
   columns: BoardColumn[]
   contributors: BoardContributor[]
+  tags: BoardTag[]
 }
 
 // Query keys

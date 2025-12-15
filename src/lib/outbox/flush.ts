@@ -27,6 +27,14 @@ import {
   removeStakeholder,
   createAndAddStakeholder,
 } from "@/actions/contributors"
+import {
+  createTag,
+  updateTag,
+  deleteTag,
+  addTagToTask,
+  removeTagFromTask,
+  createAndAddTag,
+} from "@/actions/tags"
 import { createComment, updateComment, deleteComment } from "@/actions/comments"
 import { useBoardStore, type OutboxItem } from "@/stores/board-store"
 
@@ -110,6 +118,37 @@ async function executeOutboxItem(item: OutboxItem): Promise<void> {
     case "createAndAddStakeholder": {
       const { taskId, contributorId, name, color } = item.payload
       await createAndAddStakeholder(taskId, item.boardId, name, { id: contributorId, color })
+      return
+    }
+
+    // Tag operations
+    case "createTag": {
+      const { tagId, name, color } = item.payload
+      await createTag(item.boardId, name, { id: tagId, color })
+      return
+    }
+    case "updateTag": {
+      const { tagId, name, color } = item.payload
+      await updateTag(tagId, item.boardId, { name, color })
+      return
+    }
+    case "deleteTag": {
+      await deleteTag(item.payload.tagId, item.boardId)
+      return
+    }
+    case "addTag": {
+      const { taskId, tagId } = item.payload
+      await addTagToTask(taskId, tagId, item.boardId)
+      return
+    }
+    case "removeTag": {
+      const { taskId, tagId } = item.payload
+      await removeTagFromTask(taskId, tagId, item.boardId)
+      return
+    }
+    case "createAndAddTag": {
+      const { taskId, tagId, name, color } = item.payload
+      await createAndAddTag(taskId, item.boardId, name, { id: tagId, color })
       return
     }
 

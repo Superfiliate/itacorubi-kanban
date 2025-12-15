@@ -6,6 +6,7 @@ import { getRandomEmoji } from "@/lib/emojis"
 import { boardKeys, type BoardData, type BoardTask } from "./use-board"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
 import { getRandomContributorColor } from "@/lib/contributor-colors"
+import { getRandomTagColor } from "@/lib/tag-colors"
 import { useBoardStore } from "@/stores/board-store"
 import { flushBoardOutbox } from "@/lib/outbox/flush"
 
@@ -46,6 +47,13 @@ export interface TaskWithComments {
   }>
   stakeholders?: Array<{
     contributor: {
+      id: string
+      name: string
+      color: ContributorColor
+    }
+  }>
+  tags?: Array<{
+    tag: {
       id: string
       name: string
       color: ContributorColor
@@ -760,6 +768,190 @@ export function useCreateAndAddStakeholder(boardId: string) {
       void flushBoardOutbox(boardId)
 
       return contributorId
+    },
+    onMutate: async () => {
+      // mutationFn performs local-first work; keep onMutate as a no-op placeholder
+      return {}
+    },
+    onSuccess: () => {
+      // No invalidation needed; server stores client-chosen id/color.
+    },
+    onError: () => {
+      // We optimize for good actors; errors are acceptable divergence.
+    },
+  })
+}
+
+// Hook to add tag to task (local-first + outbox)
+export function useAddTag(boardId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ taskId, tagId }: { taskId: string; tagId: string }) => {
+      // Find tag info
+      const board = useBoardStore.getState().boardsById[boardId]
+      const tagFromStore = board?.tagsById[tagId]
+      const tagFromCache = queryClient
+        .getQueryData<BoardData>(boardKeys.detail(boardId))
+        ?.tags.find((t) => t.id === tagId)
+      const tag = tagFromStore ?? tagFromCache
+      if (!tag) return
+
+      const newTag = {
+        tag: {
+          id: tag.id,
+          name: tag.name,
+          color: tag.color,
+        },
+      }
+
+      // 1) Update local store
+      useBoardStore.getState().addTagLocal({ boardId, taskId, tagId })
+
+      // 2) Update TanStack caches
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((task) =>
+              task.id === taskId
+                ? { ...task, tags: [...(task.tags ?? []), newTag] }
+                : task
+            ),
+          })),
+        }
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return { ...old, tags: [...(old.tags ?? []), newTag] }
+      })
+
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "addTag",
+        boardId,
+        payload: { taskId, tagId },
+      })
+      void flushBoardOutbox(boardId)
+    },
+  })
+}
+
+// Hook to remove tag from task (local-first + outbox)
+export function useRemoveTag(boardId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ taskId, tagId }: { taskId: string; tagId: string }) => {
+      // 1) Update local store
+      useBoardStore.getState().removeTagLocal({ boardId, taskId, tagId })
+
+      // 2) Update TanStack caches
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((task) =>
+              task.id === taskId
+                ? {
+                    ...task,
+                    tags: (task.tags ?? []).filter((t) => t.tag.id !== tagId),
+                  }
+                : task
+            ),
+          })),
+        }
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          tags: (old.tags ?? []).filter((t) => t.tag.id !== tagId),
+        }
+      })
+
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "removeTag",
+        boardId,
+        payload: { taskId, tagId },
+      })
+      void flushBoardOutbox(boardId)
+    },
+  })
+}
+
+// Hook to create and add a new tag
+export function useCreateAndAddTag(boardId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ taskId, name }: { taskId: string; name: string }) => {
+      // Local-first: pick stable values on the client
+      const tagId = crypto.randomUUID()
+      const color = getRandomTagColor()
+
+      // Update local store immediately (single source for tag identity)
+      useBoardStore.getState().createTagLocal({
+        boardId,
+        tagId,
+        name,
+        color,
+      })
+      useBoardStore.getState().addTagLocal({ boardId, taskId, tagId })
+
+      // Update TanStack caches for current UI (board cards + sidebar task cache)
+      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) })
+      await queryClient.cancelQueries({ queryKey: taskKeys.detail(taskId) })
+
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old
+        const optimisticTag = { id: tagId, name, color, boardId }
+        return {
+          ...old,
+          tags: [...old.tags, optimisticTag],
+          columns: old.columns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((t) => {
+              if (t.id !== taskId) return t
+              return {
+                ...t,
+                tags: [
+                  ...(t.tags ?? []),
+                  { tag: { id: tagId, name, color } },
+                ],
+              }
+            }),
+          })),
+        }
+      })
+
+      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          tags: [
+            ...(old.tags ?? []),
+            { tag: { id: tagId, name, color } },
+          ],
+        }
+      })
+
+      // Background sync via outbox (no placeholder color, no flicker)
+      useBoardStore.getState().enqueue({
+        type: "createAndAddTag",
+        boardId,
+        payload: { taskId, tagId, name, color },
+      })
+      void flushBoardOutbox(boardId)
+
+      return tagId
     },
     onMutate: async () => {
       // mutationFn performs local-first work; keep onMutate as a no-op placeholder

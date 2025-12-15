@@ -82,6 +82,11 @@ export async function getBoard(id: string) {
                   contributor: true,
                 },
               },
+              tags: {
+                with: {
+                  tag: true,
+                },
+              },
               comments: {
                 orderBy: (comments, { desc }) => [desc(comments.createdAt)],
                 columns: {
@@ -94,6 +99,7 @@ export async function getBoard(id: string) {
         },
       },
       contributors: true,
+      tags: true,
     },
   })
 

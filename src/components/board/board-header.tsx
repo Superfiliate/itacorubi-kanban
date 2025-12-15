@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Users, Share2 } from "lucide-react"
+import { Users, Share2, Tag } from "lucide-react"
 import { EditableText } from "@/components/editable-text"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { SyncIndicator } from "@/components/sync-indicator"
 import { ContributorsDialog, type ContributorWithStats } from "@/components/board/contributors-dialog"
+import { TagsDialog, type TagWithStats } from "@/components/board/tags-dialog"
 import { ShareDialog } from "@/components/board/share-dialog"
 import { useUpdateBoardTitle } from "@/hooks/use-board"
 
@@ -14,10 +15,12 @@ interface BoardHeaderProps {
   boardId: string
   title: string
   contributors: ContributorWithStats[]
+  tags: TagWithStats[]
 }
 
-export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) {
+export function BoardHeader({ boardId, title, contributors, tags }: BoardHeaderProps) {
   const [isContributorsOpen, setIsContributorsOpen] = useState(false)
+  const [isTagsOpen, setIsTagsOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
 
   const updateTitleMutation = useUpdateBoardTitle(boardId)
@@ -57,6 +60,16 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
         >
           <Users className="h-4 w-4" />
         </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => setIsTagsOpen(true)}
+          title="Manage tags"
+          aria-label="Manage tags"
+        >
+          <Tag className="h-4 w-4" />
+        </Button>
         <ThemeToggle />
       </div>
 
@@ -70,6 +83,12 @@ export function BoardHeader({ boardId, title, contributors }: BoardHeaderProps) 
         contributors={contributors}
         open={isContributorsOpen}
         onOpenChange={setIsContributorsOpen}
+      />
+      <TagsDialog
+        boardId={boardId}
+        tags={tags}
+        open={isTagsOpen}
+        onOpenChange={setIsTagsOpen}
       />
     </header>
   )

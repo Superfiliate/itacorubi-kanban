@@ -26,6 +26,12 @@ export type ContributorEntity = {
   color: ContributorColor
 }
 
+export type TagEntity = {
+  id: string
+  name: string
+  color: ContributorColor
+}
+
 export type CommentMeta = {
   count: number
   lastCreatedAt: Date | null
@@ -215,6 +221,54 @@ export type OutboxItem =
       }
       createdAt: number
     }
+  // Tag operations
+  | {
+      id: string
+      type: "createTag"
+      boardId: string
+      payload: { tagId: string; name: string; color: ContributorColor }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "updateTag"
+      boardId: string
+      payload: { tagId: string; name?: string; color?: ContributorColor }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "deleteTag"
+      boardId: string
+      payload: { tagId: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "addTag"
+      boardId: string
+      payload: { taskId: string; tagId: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "removeTag"
+      boardId: string
+      payload: { taskId: string; tagId: string }
+      createdAt: number
+    }
+  | {
+      id: string
+      type: "createAndAddTag"
+      boardId: string
+      payload: {
+        taskId: string
+        tagId: string
+        name: string
+        color: ContributorColor
+      }
+      createdAt: number
+    }
 
 export type NormalizedBoardState = {
   boardId: string
@@ -228,8 +282,12 @@ export type NormalizedBoardState = {
   contributorsById: Record<string, ContributorEntity>
   contributorOrder: string[]
 
+  tagsById: Record<string, TagEntity>
+  tagOrder: string[]
+
   assigneeIdsByTaskId: Record<string, string[]>
   stakeholderIdsByTaskId: Record<string, string[]>
+  tagIdsByTaskId: Record<string, string[]>
   commentMetaByTaskId: Record<string, CommentMeta>
   taskDetailsById: Record<string, TaskWithComments>
 
@@ -297,6 +355,21 @@ type BoardStoreState = {
   }) => void
   deleteContributorLocal: (args: { boardId: string; contributorId: string }) => void
 
+  // Local-first mutations - Tag
+  createTagLocal: (args: {
+    boardId: string
+    tagId: string
+    name: string
+    color: ContributorColor
+  }) => void
+  updateTagLocal: (args: {
+    boardId: string
+    tagId: string
+    name?: string
+    color?: ContributorColor
+  }) => void
+  deleteTagLocal: (args: { boardId: string; tagId: string }) => void
+
   // Local-first mutations - Assignee
   addAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
   removeAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
@@ -304,6 +377,10 @@ type BoardStoreState = {
   // Local-first mutations - Stakeholder
   addStakeholderLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
   removeStakeholderLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
+
+  // Local-first mutations - Tag assignment
+  addTagLocal: (args: { boardId: string; taskId: string; tagId: string }) => void
+  removeTagLocal: (args: { boardId: string; taskId: string; tagId: string }) => void
 
   // Local-first mutations - Comment
   createCommentLocal: (args: { boardId: string; taskId: string; comment: TaskComment }) => void
@@ -333,8 +410,11 @@ function makeEmptyBoard(boardId: string): NormalizedBoardState {
     tasksByColumnId: {},
     contributorsById: {},
     contributorOrder: [],
+    tagsById: {},
+    tagOrder: [],
     assigneeIdsByTaskId: {},
     stakeholderIdsByTaskId: {},
+    tagIdsByTaskId: {},
     commentMetaByTaskId: {},
     taskDetailsById: {},
     outbox: [],
@@ -352,6 +432,12 @@ function normalizeBoard(boardId: string, board: BoardData): NormalizedBoardState
   for (const c of board.contributors) {
     state.contributorsById[c.id] = { id: c.id, name: c.name, color: c.color }
     state.contributorOrder.push(c.id)
+  }
+
+  // Tags
+  for (const t of board.tags ?? []) {
+    state.tagsById[t.id] = { id: t.id, name: t.name, color: t.color }
+    state.tagOrder.push(t.id)
   }
 
   // Columns + tasks
@@ -381,6 +467,9 @@ function normalizeBoard(boardId: string, board: BoardData): NormalizedBoardState
 
       // Stakeholders
       state.stakeholderIdsByTaskId[t.id] = (t.stakeholders ?? []).map((s) => s.contributor.id)
+
+      // Tags
+      state.tagIdsByTaskId[t.id] = (t.tags ?? []).map((tag) => tag.tag.id)
 
       // Comment meta for cards
       const count = t.comments.length
@@ -423,6 +512,12 @@ function buildTaskDetails(board: NormalizedBoardState, taskId: string): TaskWith
     .filter(Boolean)
     .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
 
+  const tagIds = board.tagIdsByTaskId[taskId] ?? []
+  const tags = tagIds
+    .map((tid) => board.tagsById[tid])
+    .filter(Boolean)
+    .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }))
+
   return {
     id: task.id,
     title: task.title,
@@ -433,6 +528,7 @@ function buildTaskDetails(board: NormalizedBoardState, taskId: string): TaskWith
     column: { id: task.columnId, name: col?.name ?? "" },
     assignees,
     stakeholders,
+    tags,
     comments: [],
   }
 }
@@ -474,6 +570,8 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
       }
       // Update stakeholder IDs in normalized store
       const stakeholderIds = (task.stakeholders ?? []).map((s) => s.contributor.id)
+      // Update tag IDs in normalized store
+      const tagIds = (task.tags ?? []).map((t) => t.tag.id)
       return {
         boardsById: {
           ...s.boardsById,
@@ -482,6 +580,10 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             stakeholderIdsByTaskId: {
               ...board.stakeholderIdsByTaskId,
               [task.id]: stakeholderIds,
+            },
+            tagIdsByTaskId: {
+              ...board.tagIdsByTaskId,
+              [task.id]: tagIds,
             },
             taskDetailsById: { ...board.taskDetailsById, [task.id]: task },
             lastRemoteHydrateAt: Date.now(),
@@ -626,6 +728,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             },
             tasksByColumnId: tasksByColumn,
             assigneeIdsByTaskId: { ...board.assigneeIdsByTaskId, [taskId]: board.assigneeIdsByTaskId[taskId] ?? [] },
+            tagIdsByTaskId: { ...board.tagIdsByTaskId, [taskId]: board.tagIdsByTaskId[taskId] ?? [] },
             commentMetaByTaskId: { ...board.commentMetaByTaskId, [taskId]: { count: 0, lastCreatedAt: null } },
             lastLocalActivityAt: Date.now(),
           },
@@ -699,6 +802,78 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             contributorsById: rest,
             contributorOrder: board.contributorOrder.filter((id) => id !== contributorId),
             assigneeIdsByTaskId,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  createTagLocal: ({ boardId, tagId, name, color }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      if (board.tagsById[tagId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tagsById: {
+              ...board.tagsById,
+              [tagId]: { id: tagId, name, color },
+            },
+            tagOrder: [...board.tagOrder, tagId],
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  updateTagLocal: ({ boardId, tagId, name, color }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const existing = board.tagsById[tagId]
+      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tagsById: {
+              ...board.tagsById,
+              [tagId]: {
+                ...existing,
+                ...(name !== undefined ? { name } : null),
+                ...(color !== undefined ? { color } : null),
+              },
+            },
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  deleteTagLocal: ({ boardId, tagId }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      if (!board.tagsById[tagId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+
+      const { [tagId]: _deleted, ...rest } = board.tagsById
+      const tagIdsByTaskId: Record<string, string[]> = {}
+      for (const [taskId, ids] of Object.entries(board.tagIdsByTaskId)) {
+        tagIdsByTaskId[taskId] = ids.filter((id) => id !== tagId)
+      }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tagsById: rest,
+            tagOrder: board.tagOrder.filter((id) => id !== tagId),
+            tagIdsByTaskId,
             lastLocalActivityAt: Date.now(),
           },
         },
@@ -845,6 +1020,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
       const { [taskId]: _deletedTask, ...restTasks } = board.tasksById
       const { [taskId]: _deletedAssignees, ...restAssignees } = board.assigneeIdsByTaskId
       const { [taskId]: _deletedStakeholders, ...restStakeholders } = board.stakeholderIdsByTaskId
+      const { [taskId]: _deletedTags, ...restTags } = board.tagIdsByTaskId
       const { [taskId]: _deletedMeta, ...restMeta } = board.commentMetaByTaskId
       const { [taskId]: _deletedDetails, ...restDetails } = board.taskDetailsById
 
@@ -862,6 +1038,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             tasksByColumnId,
             assigneeIdsByTaskId: restAssignees,
             stakeholderIdsByTaskId: restStakeholders,
+            tagIdsByTaskId: restTags,
             commentMetaByTaskId: restMeta,
             taskDetailsById: restDetails,
             lastLocalActivityAt: Date.now(),
@@ -1047,6 +1224,84 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             stakeholderIdsByTaskId: {
               ...board.stakeholderIdsByTaskId,
               [taskId]: current.filter((id) => id !== contributorId),
+            },
+            taskDetailsById: updatedTaskDetails,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  addTagLocal: ({ boardId, taskId, tagId }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const current = board.tagIdsByTaskId[taskId] ?? []
+      if (current.includes(tagId)) {
+        return { boardsById: { ...s.boardsById, [boardId]: board } }
+      }
+      const tag = board.tagsById[tagId]
+
+      // Also update taskDetailsById if it exists (so sidebar shows new tag)
+      let updatedTaskDetails = board.taskDetailsById
+      const existingDetails = board.taskDetailsById[taskId]
+      if (existingDetails && tag) {
+        const newTag = { tag: { id: tag.id, name: tag.name, color: tag.color } }
+        updatedTaskDetails = {
+          ...board.taskDetailsById,
+          [taskId]: {
+            ...existingDetails,
+            tags: [...(existingDetails.tags ?? []), newTag],
+          },
+        }
+      }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tagIdsByTaskId: {
+              ...board.tagIdsByTaskId,
+              [taskId]: [...current, tagId],
+            },
+            taskDetailsById: updatedTaskDetails,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  removeTagLocal: ({ boardId, taskId, tagId }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const current = board.tagIdsByTaskId[taskId] ?? []
+      if (!current.includes(tagId)) {
+        return { boardsById: { ...s.boardsById, [boardId]: board } }
+      }
+
+      // Also update taskDetailsById if it exists (so sidebar reflects removal)
+      let updatedTaskDetails = board.taskDetailsById
+      const existingDetails = board.taskDetailsById[taskId]
+      if (existingDetails) {
+        updatedTaskDetails = {
+          ...board.taskDetailsById,
+          [taskId]: {
+            ...existingDetails,
+            tags: (existingDetails.tags ?? []).filter((t) => t.tag.id !== tagId),
+          },
+        }
+      }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
+            tagIdsByTaskId: {
+              ...board.tagIdsByTaskId,
+              [taskId]: current.filter((id) => id !== tagId),
             },
             taskDetailsById: updatedTaskDetails,
             lastLocalActivityAt: Date.now(),

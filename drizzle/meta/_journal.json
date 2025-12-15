@@ -43,6 +43,13 @@
       "when": 1765812000000,
       "tag": "0005_ensure-task-stakeholders",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1766000000000,
+      "tag": "0006_add-tags",
+      "breakpoints": true
     }
   ]
 }
