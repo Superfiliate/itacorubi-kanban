@@ -7,6 +7,7 @@ import { boardKeys, type BoardData, type BoardTask } from "./use-board"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
 import { getRandomContributorColor } from "@/lib/contributor-colors"
 import { getRandomTagColor } from "@/lib/tag-colors"
+import { ensureTagHasHash } from "@/lib/tag-utils"
 import { useBoardStore } from "@/stores/board-store"
 import { flushBoardOutbox } from "@/lib/outbox/flush"
 
@@ -897,11 +898,14 @@ export function useCreateAndAddTag(boardId: string) {
       const tagId = crypto.randomUUID()
       const color = getRandomTagColor()
 
+      // Ensure tag name starts with "#"
+      const normalizedName = ensureTagHasHash(name)
+
       // Update local store immediately (single source for tag identity)
       useBoardStore.getState().createTagLocal({
         boardId,
         tagId,
-        name,
+        name: normalizedName,
         color,
       })
       useBoardStore.getState().addTagLocal({ boardId, taskId, tagId })
@@ -912,7 +916,7 @@ export function useCreateAndAddTag(boardId: string) {
 
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old
-        const optimisticTag = { id: tagId, name, color, boardId }
+        const optimisticTag = { id: tagId, name: normalizedName, color, boardId }
         return {
           ...old,
           tags: [...old.tags, optimisticTag],
@@ -924,7 +928,7 @@ export function useCreateAndAddTag(boardId: string) {
                 ...t,
                 tags: [
                   ...(t.tags ?? []),
-                  { tag: { id: tagId, name, color } },
+                  { tag: { id: tagId, name: normalizedName, color } },
                 ],
               }
             }),
@@ -938,7 +942,7 @@ export function useCreateAndAddTag(boardId: string) {
           ...old,
           tags: [
             ...(old.tags ?? []),
-            { tag: { id: tagId, name, color } },
+            { tag: { id: tagId, name: normalizedName, color } },
           ],
         }
       })
@@ -947,7 +951,7 @@ export function useCreateAndAddTag(boardId: string) {
       useBoardStore.getState().enqueue({
         type: "createAndAddTag",
         boardId,
-        payload: { taskId, tagId, name, color },
+        payload: { taskId, tagId, name: normalizedName, color },
       })
       void flushBoardOutbox(boardId)
 

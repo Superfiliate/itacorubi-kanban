@@ -34,6 +34,7 @@ import {
   tagColorSwatches,
   getRandomTagColor,
 } from "@/lib/tag-colors"
+import { ensureTagHasHash } from "@/lib/tag-utils"
 
 interface TagsDialogProps {
   boardId: string
@@ -107,22 +108,24 @@ function TagRow({
   const displayColor = localTag?.color ?? tag.color
 
   const handleNameSave = async (name: string) => {
+    // Ensure tag name starts with "#"
+    const normalizedName = ensureTagHasHash(name)
     // Update normalized store
-    useBoardStore.getState().updateTagLocal({ boardId, tagId: tag.id, name })
+    useBoardStore.getState().updateTagLocal({ boardId, tagId: tag.id, name: normalizedName })
 
     // Also update TanStack Query cache for tags list
     queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
       if (!old) return old
       return {
         ...old,
-        tags: old.tags.map((t) => (t.id === tag.id ? { ...t, name } : t)),
+        tags: old.tags.map((t) => (t.id === tag.id ? { ...t, name: normalizedName } : t)),
       }
     })
 
     useBoardStore.getState().enqueue({
       type: "updateTag",
       boardId,
-      payload: { tagId: tag.id, name },
+      payload: { tagId: tag.id, name: normalizedName },
     })
     void flushBoardOutbox(boardId)
 
@@ -315,10 +318,13 @@ function AddTagForm({ boardId }: { boardId: string }) {
       const tagId = crypto.randomUUID()
       const color = getRandomTagColor()
 
+      // Ensure tag name starts with "#"
+      const normalizedName = ensureTagHasHash(trimmedName)
+
       useBoardStore.getState().createTagLocal({
         boardId,
         tagId,
-        name: trimmedName,
+        name: normalizedName,
         color,
       })
 
@@ -326,14 +332,14 @@ function AddTagForm({ boardId }: { boardId: string }) {
         if (!old) return old
         return {
           ...old,
-          tags: [...old.tags, { id: tagId, boardId, name: trimmedName, color }],
+          tags: [...old.tags, { id: tagId, boardId, name: normalizedName, color }],
         }
       })
 
       useBoardStore.getState().enqueue({
         type: "createTag",
         boardId,
-        payload: { tagId, name: trimmedName, color },
+        payload: { tagId, name: normalizedName, color },
       })
       void flushBoardOutbox(boardId)
 

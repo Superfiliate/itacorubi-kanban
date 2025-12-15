@@ -24,6 +24,7 @@ import {
   useCreateAndAddTag,
 } from "@/hooks/use-task"
 import type { ContributorColor } from "@/db/schema"
+import { ensureTagHasHash } from "@/lib/tag-utils"
 
 interface TagsSelectProps {
   taskId: string
@@ -72,7 +73,9 @@ export function TagsSelect({
   const handleCreateNew = () => {
     const name = inputValue.trim()
     if (name) {
-      createAndAddMutation.mutate({ taskId, name })
+      // Ensure tag name starts with "#" (the hook will also ensure this, but we do it here for consistency)
+      const normalizedName = ensureTagHasHash(name)
+      createAndAddMutation.mutate({ taskId, name: normalizedName })
       setInputValue("")
       setOpen(false)
     }

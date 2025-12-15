@@ -158,22 +158,8 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
         )}
       </div>
 
-      {/* Assignees and Tags row (separate so wrapping doesn't misalign meta) */}
-      <div className="mt-1.5 flex items-start justify-end gap-1.5">
-        {/* Tags */}
-        {displayTags.length > 0 && (
-          <div className="flex flex-wrap justify-end gap-1">
-            {displayTags.map((tag) => (
-              <TagBadge
-                key={tag.id}
-                name={tag.name}
-                color={tag.color}
-                variant="compact"
-              />
-            ))}
-          </div>
-        )}
-        {/* Assignees */}
+      {/* Assignees row */}
+      <div className="mt-1.5 flex items-start justify-end">
         {assignees.length > 0 ? (
           <div className="flex flex-wrap justify-end gap-1">
             {assignees.map((assignee) => (
@@ -191,6 +177,22 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
           </span>
         )}
       </div>
+
+      {/* Tags row */}
+      {displayTags.length > 0 && (
+        <div className="mt-1 flex items-start justify-end">
+          <div className="flex flex-wrap justify-end gap-1">
+            {displayTags.map((tag) => (
+              <TagBadge
+                key={tag.id}
+                name={tag.name}
+                color={tag.color}
+                variant="compact"
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

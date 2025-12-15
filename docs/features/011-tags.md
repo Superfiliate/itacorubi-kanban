@@ -44,6 +44,7 @@ Tags are labels that can be assigned to tasks within a board. Each tag has a nam
 ## Notes
 
 - Tags are scoped to a board — each board has its own tag list
+- **Tag names always start with "#"** — the system automatically prepends "#" if missing when creating or editing tags
 - Colors are randomly assigned from a palette of 17 colors (same as contributors)
 - Colors help visually scan tasks by category
 - Tag names should be unique within a board
@@ -57,3 +58,7 @@ Color utilities are centralized in `src/lib/tag-colors.ts`:
 - `tagColorSwatches` — solid swatches for the color picker (reuses contributor colors)
 
 The palette itself is defined in `src/db/schema.ts` as `CONTRIBUTOR_COLORS` (shared with contributors).
+
+Tag name normalization is handled by `src/lib/tag-utils.ts`:
+- `ensureTagHasHash(name)` — ensures tag name starts with "#" (used in all create/update operations)
+- `removeTagHash(name)` — helper to remove "#" prefix if needed

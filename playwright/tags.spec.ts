@@ -24,8 +24,8 @@ test.describe("Tags", () => {
     // Click create option
     await page.getByRole("option", { name: /create.*new tag/i }).click()
 
-    // Tag should be created and added
-    await expect(sidebar.getByText(/new tag/i)).toBeVisible()
+    // Tag should be created and added (with "#" prefix)
+    await expect(sidebar.getByText(/#new tag/i)).toBeVisible()
   })
 
   test("should assign existing tag to task", async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe("Tags", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Existing Tag")
     await page.getByRole("option", { name: /create.*existing tag/i }).click()
-    await expect(sidebar.getByText(/existing tag/i)).toBeVisible()
+    await expect(sidebar.getByText(/#existing tag/i)).toBeVisible()
 
     // Close sidebar by clicking back
     await sidebar.getByRole("button", { name: /back/i }).click()
@@ -64,8 +64,8 @@ test.describe("Tags", () => {
     // Select existing tag
     await page.getByRole("option", { name: /existing tag/i }).click()
 
-    // Tag should be added
-    await expect(sidebar2.getByText(/existing tag/i)).toBeVisible()
+    // Tag should be added (with "#" prefix)
+    await expect(sidebar2.getByText(/#existing tag/i)).toBeVisible()
   })
 
   test("should remove tag from task", async ({ page }) => {
@@ -85,14 +85,14 @@ test.describe("Tags", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("To Remove Tag")
     await page.getByRole("option", { name: /create.*to remove tag/i }).click()
-    await expect(sidebar.getByText(/to remove tag/i)).toBeVisible()
+    await expect(sidebar.getByText(/#to remove tag/i)).toBeVisible()
 
     // Remove by clicking X on badge
-    const badge = sidebar.getByText(/to remove tag/i).locator("..")
-    await badge.getByRole("button", { name: /remove to remove tag/i }).click()
+    const badge = sidebar.getByText(/#to remove tag/i).locator("..")
+    await badge.getByRole("button", { name: /remove.*to remove tag/i }).click()
 
     // Tag should be removed
-    await expect(sidebar.getByText(/to remove tag/i)).not.toBeVisible()
+    await expect(sidebar.getByText(/#to remove tag/i)).not.toBeVisible()
   })
 
   test("should open tags dialog from header", async ({ page }) => {
@@ -124,7 +124,7 @@ test.describe("Tags", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Original Tag")
     await page.getByRole("option", { name: /create.*original tag/i }).click()
-    await expect(sidebar.getByText(/original tag/i)).toBeVisible()
+    await expect(sidebar.getByText(/#original tag/i)).toBeVisible()
 
     // Close sidebar
     await sidebar.getByRole("button", { name: /back/i }).click()
@@ -138,16 +138,17 @@ test.describe("Tags", () => {
     await expect(dialog).toBeVisible()
 
     // Edit tag name - click on the tag name to start editing
-    const tagName = dialog.getByText(/original tag/i)
+    const tagName = dialog.getByText(/#original tag/i)
     await tagName.click()
     // Wait for input to appear (EditableText shows an Input when editing)
     const nameInput = dialog.locator('input').first()
     await nameInput.waitFor({ state: 'visible' })
+    // When editing, user can type without "#" - it will be added automatically
     await nameInput.fill("Updated Tag")
     await nameInput.press("Enter")
 
-    // Verify name was updated
-    await expect(dialog.getByText(/updated tag/i)).toBeVisible()
+    // Verify name was updated (with "#" prefix)
+    await expect(dialog.getByText(/#updated tag/i)).toBeVisible()
 
     // Change color by clicking color swatch
     const colorSwatch = dialog.locator('button[title="Change color"]').first()
@@ -168,7 +169,7 @@ test.describe("Tags", () => {
     await page.getByRole("button", { name: /new task/i }).click()
     await page.waitForURL(/task=/)
     const reopenedSidebar = page.getByRole("dialog", { name: /edit task/i })
-    await expect(reopenedSidebar.getByText(/updated tag/i)).toBeVisible()
+    await expect(reopenedSidebar.getByText(/#updated tag/i)).toBeVisible()
   })
 
   test("should delete tag when no tasks reference it", async ({ page }) => {
@@ -184,7 +185,7 @@ test.describe("Tags", () => {
     await nameInput.fill("Tag To Delete")
     await nameInput.press("Enter")
 
-    await expect(dialog.getByText(/tag to delete/i)).toBeVisible()
+    await expect(dialog.getByText(/#tag to delete/i)).toBeVisible()
 
     // Delete the tag
     const deleteButton = dialog.getByRole("button", { name: /delete tag/i }).first()
@@ -195,7 +196,7 @@ test.describe("Tags", () => {
     await confirmDialog.getByRole("button", { name: /^delete$/i }).click()
 
     // Tag should be removed
-    await expect(dialog.getByText(/tag to delete/i)).not.toBeVisible()
+    await expect(dialog.getByText(/#tag to delete/i)).not.toBeVisible()
   })
 
   test("should not delete tag with task assignments", async ({ page }) => {
@@ -213,7 +214,7 @@ test.describe("Tags", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Protected Tag")
     await page.getByRole("option", { name: /create.*protected tag/i }).click()
-    await expect(sidebar.getByText(/protected tag/i)).toBeVisible()
+    await expect(sidebar.getByText(/#protected tag/i)).toBeVisible()
 
     // Close sidebar
     await sidebar.getByRole("button", { name: /back/i }).click()
@@ -227,7 +228,7 @@ test.describe("Tags", () => {
 
     // Try to delete the tag - delete button should be disabled
     // Find the delete button - it's in the same row as the tag name
-    const tagRow = dialog.locator('div').filter({ hasText: /protected tag/i }).first()
+    const tagRow = dialog.locator('div').filter({ hasText: /#protected tag/i }).first()
     const deleteButton = tagRow.getByRole("button", { name: /delete/i }).or(tagRow.locator('button[title*="delete"]')).first()
     await expect(deleteButton).toBeDisabled()
     await expect(deleteButton).toHaveAttribute("title", /cannot delete/i)
@@ -255,9 +256,9 @@ test.describe("Tags", () => {
     await sidebar.getByRole("button", { name: /back/i }).click()
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
-    // Verify tag badge appears on task card
+    // Verify tag badge appears on task card (with "#" prefix)
     const taskCard = page.getByText(/new task/i).locator("..").locator("..")
-    await expect(taskCard.getByText(/card tag/i)).toBeVisible()
+    await expect(taskCard.getByText(/#card tag/i)).toBeVisible()
   })
 
   test("should persist tags after background polling (local-first)", async ({ page }) => {
@@ -277,13 +278,13 @@ test.describe("Tags", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Persistent Tag")
     await page.getByRole("option", { name: /create.*persistent tag/i }).click()
-    await expect(sidebar.getByText(/persistent tag/i)).toBeVisible()
+    await expect(sidebar.getByText(/#persistent tag/i)).toBeVisible()
 
     // Wait for outbox to flush and polling to potentially overwrite
     await page.waitForTimeout(3000)
 
     // Tag should STILL be visible after polling
-    await expect(sidebar.getByText(/persistent tag/i)).toBeVisible()
+    await expect(sidebar.getByText(/#persistent tag/i)).toBeVisible()
 
     // Close sidebar and reopen to verify persistence
     await sidebar.getByRole("button", { name: /back/i }).click()
@@ -295,6 +296,6 @@ test.describe("Tags", () => {
 
     // Tag should still be visible after reopening
     const reopenedSidebar = page.getByRole("dialog", { name: /edit task/i })
-    await expect(reopenedSidebar.getByText(/persistent tag/i)).toBeVisible()
+    await expect(reopenedSidebar.getByText(/#persistent tag/i)).toBeVisible()
   })
 })

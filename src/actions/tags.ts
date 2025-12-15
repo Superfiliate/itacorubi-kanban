@@ -6,6 +6,7 @@ import { eq, and, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
 import { getRandomTagColor } from "@/lib/tag-colors"
+import { ensureTagHasHash } from "@/lib/tag-utils"
 
 export async function createTag(
   boardId: string,
@@ -20,10 +21,13 @@ export async function createTag(
       ? opts.color
       : getRandomTagColor()
 
+  // Ensure tag name starts with "#"
+  const normalizedName = ensureTagHasHash(name)
+
   await db.insert(tags).values({
     id,
     boardId,
-    name,
+    name: normalizedName,
     color,
   })
 
@@ -126,7 +130,8 @@ export async function updateTag(
     updateData.color = updates.color
   }
   if (updates.name !== undefined) {
-    updateData.name = updates.name
+    // Ensure tag name starts with "#"
+    updateData.name = ensureTagHasHash(updates.name)
   }
 
   await db.update(tags)

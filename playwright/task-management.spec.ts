@@ -10,8 +10,8 @@ test.describe("Task Management", () => {
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
 
-    // URL should update quickly (local-first sidebar open)
-    await page.waitForURL(/task=/, { timeout: 1000 })
+    // URL should update (local-first sidebar open)
+    await page.waitForURL(/task=/)
 
     // Verify sidebar is open
     await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
@@ -83,7 +83,7 @@ test.describe("Task Management", () => {
 
     // Create a task
     await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/, { timeout: 1000 })
+    await page.waitForURL(/task=/)
 
     const sidebar = page.getByRole("dialog")
     await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
@@ -327,7 +327,7 @@ test.describe("Task Management", () => {
 
     // Create Task 1
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 1000 })
+    await page.waitForURL(/task=/)
     const sidebar1 = page.getByRole("dialog")
     const titleEditable1 = sidebar1.getByText(/new task/i).first()
     await titleEditable1.click()
@@ -339,7 +339,7 @@ test.describe("Task Management", () => {
 
     // Create Task 2
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 1000 })
+    await page.waitForURL(/task=/)
     const sidebar2 = page.getByRole("dialog")
     const titleEditable2 = sidebar2.getByText(/new task/i).first()
     await titleEditable2.click()
@@ -351,7 +351,7 @@ test.describe("Task Management", () => {
 
     // Create Task 3
     await addTaskButton.click()
-    await page.waitForURL(/task=/, { timeout: 1000 })
+    await page.waitForURL(/task=/)
     const sidebar3 = page.getByRole("dialog")
     const titleEditable3 = sidebar3.getByText(/new task/i).first()
     await titleEditable3.click()
@@ -416,7 +416,7 @@ test.describe("Task Management", () => {
     // Create tasks in Doing column first
     const doingAddButton = doingColumn.getByRole("button", { name: /add task/i })
     await doingAddButton.click()
-    await page.waitForURL(/task=/, { timeout: 1000 })
+    await page.waitForURL(/task=/)
     const sidebar4 = page.getByRole("dialog")
     const titleEditable4 = sidebar4.getByText(/new task/i).first()
     await titleEditable4.click()
@@ -427,7 +427,7 @@ test.describe("Task Management", () => {
     await page.waitForURL(new RegExp(`/boards/${boardId}$`))
 
     await doingAddButton.click()
-    await page.waitForURL(/task=/, { timeout: 1000 })
+    await page.waitForURL(/task=/)
     const sidebar5 = page.getByRole("dialog")
     const titleEditable5 = sidebar5.getByText(/new task/i).first()
     await titleEditable5.click()

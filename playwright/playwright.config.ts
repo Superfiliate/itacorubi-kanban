@@ -52,7 +52,8 @@ export default defineConfig({
   /* Build and run production server before starting the tests */
   webServer: {
     // Run from repo root (config file lives in /playwright).
-    cwd: "..",
+    // process.cwd() returns the directory where the command was run from (project root)
+    cwd: process.cwd(),
     // Use a clean test DB (and let the package scripts run migrations/build/start).
     command: "pnpm test:reset && pnpm build && pnpm start",
     url: "http://localhost:5800",

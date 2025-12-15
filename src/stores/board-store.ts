@@ -4,6 +4,7 @@ import { create } from "zustand"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
 import type { BoardData, BoardTask, BoardColumn } from "@/hooks/use-board"
 import type { TaskComment, TaskWithComments } from "@/hooks/use-task"
+import { ensureTagHasHash } from "@/lib/tag-utils"
 
 export type ColumnEntity = {
   id: string
@@ -813,6 +814,8 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
     set((s) => {
       const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
       if (board.tagsById[tagId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      // Ensure tag name starts with "#"
+      const normalizedName = ensureTagHasHash(name)
       return {
         boardsById: {
           ...s.boardsById,
@@ -820,7 +823,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             ...board,
             tagsById: {
               ...board.tagsById,
-              [tagId]: { id: tagId, name, color },
+              [tagId]: { id: tagId, name: normalizedName, color },
             },
             tagOrder: [...board.tagOrder, tagId],
             lastLocalActivityAt: Date.now(),
@@ -835,6 +838,8 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
       const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
       const existing = board.tagsById[tagId]
       if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      // Ensure tag name starts with "#" if name is being updated
+      const normalizedName = name !== undefined ? ensureTagHasHash(name) : undefined
       return {
         boardsById: {
           ...s.boardsById,
@@ -844,7 +849,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
               ...board.tagsById,
               [tagId]: {
                 ...existing,
-                ...(name !== undefined ? { name } : null),
+                ...(normalizedName !== undefined ? { name: normalizedName } : null),
                 ...(color !== undefined ? { color } : null),
               },
             },
