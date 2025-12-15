@@ -144,7 +144,7 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
           <div className="space-y-3 border-t border-border pt-6">
             <h3 className="text-heading-sm">Public Link</h3>
             <p className="text-label">
-              Anyone with this link will have the password prefilled, but still needs to click unlock.
+              Anyone with this link will have the password prefilled and automatically unlock the board.
             </p>
 
             <div className="space-y-1">

@@ -64,7 +64,7 @@ test.describe("Board Unlock", () => {
     expect(page.url()).toContain("/unlock")
   })
 
-  test("should prefill password from query parameter", async ({ page, context }) => {
+  test("should prefill password from query parameter and auto-submit", async ({ page, context }) => {
     const boardId = await createTestBoard(page, "Prefill Test", "prefillpass123")
 
     // Clear cookies
@@ -77,10 +77,7 @@ test.describe("Board Unlock", () => {
     const passwordInput = page.getByPlaceholder(/enter password/i)
     await expect(passwordInput).toHaveValue("prefillpass123")
 
-    // Still need to click unlock button
-    await page.getByRole("button", { name: /unlock board/i }).click()
-
-    // Should redirect to board
+    // Should auto-submit and redirect to board (no need to click unlock button)
     await page.waitForURL(`/boards/${boardId}`)
     await waitForBoardLoad(page)
   })

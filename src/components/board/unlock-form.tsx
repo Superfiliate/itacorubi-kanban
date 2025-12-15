@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -17,6 +17,7 @@ export function UnlockForm({ boardId, initialPassword, initialError }: UnlockFor
   const [password, setPassword] = useState(initialPassword || "")
   const [error, setError] = useState<string | null>(initialError || null)
   const [isLoading, setIsLoading] = useState(false)
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false)
 
   // Update error when initialError changes (e.g., from query params)
   useEffect(() => {
@@ -25,13 +26,12 @@ export function UnlockForm({ boardId, initialPassword, initialError }: UnlockFor
     }
   }, [initialError])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const performUnlock = useCallback(async (passwordToUse: string) => {
     setError(null)
     setIsLoading(true)
 
     try {
-      const result = await unlockBoard(boardId, password)
+      const result = await unlockBoard(boardId, passwordToUse)
       if (result.success) {
         router.push(`/boards/${boardId}`)
         router.refresh()
@@ -43,6 +43,19 @@ export function UnlockForm({ boardId, initialPassword, initialError }: UnlockFor
     } finally {
       setIsLoading(false)
     }
+  }, [boardId, router])
+
+  // Auto-submit when password is pre-filled and there's no error
+  useEffect(() => {
+    if (initialPassword && !initialError && !hasAutoSubmitted && !isLoading && password) {
+      setHasAutoSubmitted(true)
+      performUnlock(password)
+    }
+  }, [initialPassword, initialError, hasAutoSubmitted, isLoading, password, performUnlock])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await performUnlock(password)
   }
 
   return (
