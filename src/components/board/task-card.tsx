@@ -2,13 +2,14 @@
 
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { MessageSquare, User } from "lucide-react"
 import { ContributorBadge } from "@/components/contributor-badge"
 import { TagBadge } from "@/components/tag-badge"
 import { cn } from "@/lib/utils"
 import type { ContributorColor, TaskPriority } from "@/db/schema"
 import { TASK_PRIORITY_META } from "@/lib/task-priority"
+import { useBoardStore } from "@/stores/board-store"
 
 interface TaskCardProps {
   id: string
@@ -82,6 +83,7 @@ function getDaysSinceLastComment(lastCommentCreatedAt: Date | null): number | nu
 }
 
 export function TaskCard({ id, boardId, title, priority, assignees, tags, commentCount, lastCommentCreatedAt }: TaskCardProps) {
+  const router = useRouter()
   const displayTags = tags ?? []
   const {
     attributes,
@@ -91,6 +93,25 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
     transition,
     isDragging,
   } = useSortable({ id, data: { type: "task" } })
+
+  const openTask = () => {
+    // Set pending open task for instant sidebar (bypasses router delay)
+    useBoardStore.getState().setPendingOpenTask({ boardId, taskId: id })
+    // Navigate to the task
+    const newUrl = `/boards/${boardId}?task=${id}`
+    window.history.pushState(window.history.state, "", newUrl)
+    router.push(newUrl, { scroll: false })
+  }
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent click when dragging
+    if (isDragging) {
+      e.preventDefault()
+      return
+    }
+    e.preventDefault()
+    openTask()
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -124,15 +145,11 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
       {...attributes}
       {...listeners}
     >
-      <Link
+      <a
         href={`/boards/${boardId}?task=${id}`}
         className="absolute inset-0 z-10"
-        onClick={(e) => {
-          // Prevent navigation when dragging
-          if (isDragging) {
-            e.preventDefault()
-          }
-        }}
+        onClick={handleClick}
+        aria-label={`Open task ${title}`}
       />
       <h4 className="text-heading-sm text-foreground leading-snug">
         {title}

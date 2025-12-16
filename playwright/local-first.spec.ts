@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright"
+import { createTestBoard, waitForBoardLoad, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright"
 
 test.describe("Local-First Architecture", () => {
   test("should isolate state between multiple boards", async ({ page }) => {
@@ -12,9 +12,8 @@ test.describe("Local-First Architecture", () => {
 
     // Create a task on Board 1 with a distinctive name
     await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/)
+    const sidebar1 = await waitForSidebarOpen(page)
 
-    const sidebar1 = page.getByRole("dialog")
     const titleEditable1 = sidebar1.getByText(/new task/i).first()
     await titleEditable1.click()
     const titleInput1 = sidebar1.getByRole("textbox", { name: /task title/i })
@@ -24,7 +23,11 @@ test.describe("Local-First Architecture", () => {
 
     // Close sidebar
     await sidebar1.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId1}$`))
+    await waitForSidebarClose(page)
+
+    // Wait for changes to be saved before navigating away
+    // Check that "Saving..." is NOT visible (more reliable than waiting for ephemeral "Saved")
+    await expect(page.getByText(/saving/i)).not.toBeVisible()
 
     // Create second board
     await page.goto("/")
@@ -33,9 +36,8 @@ test.describe("Local-First Architecture", () => {
 
     // Create a task on Board 2 with a different distinctive name
     await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/)
+    const sidebar2 = await waitForSidebarOpen(page)
 
-    const sidebar2 = page.getByRole("dialog")
     const titleEditable2 = sidebar2.getByText(/new task/i).first()
     await titleEditable2.click()
     const titleInput2 = sidebar2.getByRole("textbox", { name: /task title/i })
@@ -45,7 +47,11 @@ test.describe("Local-First Architecture", () => {
 
     // Close sidebar
     await sidebar2.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId2}$`))
+    await waitForSidebarClose(page)
+
+    // Wait for changes to be saved before navigating away
+    // Check that "Saving..." is NOT visible (more reliable than waiting for ephemeral "Saved")
+    await expect(page.getByText(/saving/i)).not.toBeVisible()
 
     // Verify Board 2 shows only BOARD2-Task
     await expect(page.getByText(/board2-task/i)).toBeVisible()
@@ -78,28 +84,12 @@ test.describe("Local-First Architecture", () => {
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
 
     // Create 3 tasks rapidly by clicking multiple times
-    // Each click navigates to the task sidebar, so we close it before clicking again
+    // Each click opens the task sidebar, so we close it before clicking again
     for (let i = 0; i < 3; i++) {
-      // Ensure no dialog is blocking
-      const dialog = page.getByRole("dialog")
-      if (await dialog.isVisible().catch(() => false)) {
-        await page.getByRole("button", { name: /back/i }).click()
-        await expect(dialog).not.toBeVisible({ timeout: 5000 })
-      }
-
-      // Wait for button to be clickable
-      await addTaskButton.waitFor({ state: "visible" })
       await addTaskButton.click()
-
-      // Give time for the task to be created and navigation to happen
-      await page.waitForTimeout(500)
-    }
-
-    // Close any open sidebar
-    const dialog = page.getByRole("dialog")
-    if (await dialog.isVisible().catch(() => false)) {
-      await page.getByRole("button", { name: /back/i }).click()
-      await expect(dialog).not.toBeVisible({ timeout: 5000 })
+      const sidebar = await waitForSidebarOpen(page)
+      await sidebar.getByRole("button", { name: /back/i }).click()
+      await waitForSidebarClose(page)
     }
 
     // Wait for outbox to flush - "Saving..." should disappear

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright"
+import { createTestBoard, waitForBoardLoad, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright"
 
 test.describe("Task Management", () => {
   test("should create a task from column", async ({ page }) => {
@@ -10,15 +10,10 @@ test.describe("Task Management", () => {
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
 
-    // URL should update (local-first sidebar open)
-    await page.waitForURL(/task=/)
-
-    // Verify sidebar is open
-    await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
+    // Wait for sidebar to open
+    const sidebar = await waitForSidebarOpen(page)
 
     // Verify task title is visible in the sidebar (should have "New task" in it)
-    // Look specifically in the dialog/sidebar, not the task card
-    const sidebar = page.getByRole("dialog")
     await expect(sidebar.getByText(/new task/i).first()).toBeVisible()
   })
 
@@ -28,10 +23,7 @@ test.describe("Task Management", () => {
 
     // Create a task
     await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog")
-    await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
+    const sidebar = await waitForSidebarOpen(page)
 
     // Default priority should be "No priority"
     const priorityLabel = sidebar.getByText("Priority")
@@ -40,39 +32,39 @@ test.describe("Task Management", () => {
     await expect(prioritySelect).toHaveText(/no priority/i)
 
     // Close sidebar - card should have no priority border or icon
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
-    // Task cards are buttons with name pattern "TaskTitle N" (N is comment count)
-    const taskCard = page.getByRole("button", { name: /^.+new task/i })
+    // Task cards have a link inside for navigation
+    const taskCardLink = page.getByRole("link", { name: /open task.*new task/i })
+    const taskCard = taskCardLink.locator("..")  // parent div for visual checks
     // No priority icon visible for "none" (it shows CircleDashed for none priority)
     await expect(taskCard.locator("svg.lucide-flame")).not.toBeVisible()
     await expect(taskCard.locator("svg.lucide-signal-high")).not.toBeVisible()
 
-    // Re-open task and set to High
-    await page.getByText(/new task/i).click()
-    await page.waitForURL(/task=/)
-    await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
+    // Re-open task by clicking the task card link
+    await taskCardLink.click()
+    await waitForSidebarOpen(page)
 
     await prioritySelect.click()
     await page.getByRole("option", { name: /high/i }).click()
     await expect(prioritySelect).toHaveText(/high/i)
 
     // Close and verify High styling (amber border + signal-high icon)
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
     await expect(taskCard.locator("svg.lucide-signal-high")).toBeVisible()
     await expect(taskCard).toHaveClass(/border-l-amber/)
 
     // Re-open and change to Urgent
-    await page.getByText(/new task/i).click()
-    await page.waitForURL(/task=/)
+    await taskCardLink.click()
+    await waitForSidebarOpen(page)
     await prioritySelect.click()
     await page.getByRole("option", { name: /urgent/i }).click()
 
     // Close and verify Urgent styling (red border + flame icon)
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
     await expect(taskCard.locator("svg.lucide-flame")).toBeVisible()
     await expect(taskCard).toHaveClass(/border-l-red/)
   })
@@ -83,13 +75,7 @@ test.describe("Task Management", () => {
 
     // Create a task
     await page.getByRole("button", { name: /add task/i }).first().click()
-
-    // Wait for sidebar to open (more reliable than waiting for URL)
-    const sidebar = page.getByRole("dialog")
-    await expect(sidebar.getByRole("button", { name: /back/i })).toBeVisible()
-
-    // Verify URL updated
-    await page.waitForURL(/task=/)
+    const sidebar = await waitForSidebarOpen(page)
 
     // Create & assign a new contributor from Assignees select
     const assigneesCombobox = sidebar.getByRole("combobox", { name: /assignees/i })
@@ -108,8 +94,8 @@ test.describe("Task Management", () => {
     expect(classAfter).toBe(classBefore)
 
     // Close sidebar
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     // Card should show contributor immediately
     const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..").locator("..")
@@ -140,13 +126,9 @@ test.describe("Task Management", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    // Wait for sidebar to load
-    await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
+    const sidebar = await waitForSidebarOpen(page)
 
     // Find task title - it's an EditableText component, so click on the span first
-    const sidebar = page.getByRole("dialog")
     const titleEditable = sidebar.getByText(/new task/i).first()
     await titleEditable.click()
 
@@ -167,28 +149,22 @@ test.describe("Task Management", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    // Wait for sidebar to load
-    await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
+    const sidebar = await waitForSidebarOpen(page)
 
     // Close sidebar to see the board
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
-    // Verify task is in first column (To do)
-    await expect(page.getByText(/new task/i)).toBeVisible()
+    // Verify task is in first column (To do) - use the link inside the task card
+    const taskCardLink = page.getByRole("link", { name: /open task.*new task/i })
+    await expect(taskCardLink).toBeVisible()
 
-    // Open task again
-    await page.getByText(/new task/i).click()
-    await page.waitForURL(/task=/)
-
-    // Wait for sidebar to load
-    await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
+    // Open task again by clicking the task card link
+    await taskCardLink.click()
+    await waitForSidebarOpen(page)
 
     // Find Status dropdown and change it to "Done"
     // The Status label is separate, so find the combobox near the "Status" text
-    const sidebar = page.getByRole("dialog")
     const statusLabel = sidebar.getByText("Status")
     const statusSelect = statusLabel.locator("..").getByRole("combobox")
     await expect(statusSelect).toBeVisible()
@@ -196,8 +172,8 @@ test.describe("Task Management", () => {
     await page.getByRole("option", { name: /done/i }).click()
 
     // Close sidebar
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     // Task should now be in "Done" column
     const doneColumn = page.getByText(/done/i).locator("..").locator("..")
@@ -211,11 +187,11 @@ test.describe("Task Management", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
+    const sidebar = await waitForSidebarOpen(page)
 
     // Close sidebar
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     // Find the task card
     const taskCard = page.getByRole("heading", { name: /new task/i }).locator("..").locator("..")
@@ -248,25 +224,25 @@ test.describe("Task Management", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    // Wait for sidebar to load
-    await expect(page.getByRole("button", { name: /back/i })).toBeVisible()
+    const sidebar = await waitForSidebarOpen(page)
 
     // Find delete button (trash icon in sidebar)
-    const sidebar = page.getByRole("dialog")
     const deleteButton = sidebar.getByRole("button", { name: /delete task/i })
     await deleteButton.click()
 
-    // Confirm deletion in dialog (there should be a confirmation dialog now)
-    await expect(page.getByRole("dialog").filter({ hasText: /delete/i })).toBeVisible()
-    await page.getByRole("button", { name: /delete/i }).last().click()
+    // Confirm deletion in the confirmation dialog
+    const confirmDialog = page.getByRole("dialog", { name: /delete task/i })
+    await expect(confirmDialog).toBeVisible()
+    const confirmDeleteButton = confirmDialog.getByRole("button", { name: /^delete$/i })
+    await expect(confirmDeleteButton).toBeEnabled()
+    await confirmDeleteButton.click()
 
-    // Sidebar should close and navigate back to board
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    // Sidebar should close
+    await waitForSidebarClose(page)
 
-    // Task should be gone from board (primary verification that deletion worked)
-    await expect(page.getByText(/new task/i)).not.toBeVisible()
+    // Task should be gone from board (check the column, not the whole page since sidebar might have stale text)
+    const todoColumn = page.locator('[title="Click to edit"]').filter({ hasText: /to do/i }).locator("..")
+    await expect(todoColumn.getByText(/new task/i)).not.toBeVisible()
 
     // Note: Toast should appear but there may be a timing issue with sonner
     // The important verification (task deletion) is confirmed above
@@ -330,39 +306,36 @@ test.describe("Task Management", () => {
 
     // Create Task 1
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-    const sidebar1 = page.getByRole("dialog")
+    const sidebar1 = await waitForSidebarOpen(page)
     const titleEditable1 = sidebar1.getByText(/new task/i).first()
     await titleEditable1.click()
     const titleInput1 = sidebar1.getByRole("textbox", { name: /task title/i })
     await titleInput1.fill("Task 1")
     await titleInput1.press("Enter")
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar1.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     // Create Task 2
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-    const sidebar2 = page.getByRole("dialog")
+    const sidebar2 = await waitForSidebarOpen(page)
     const titleEditable2 = sidebar2.getByText(/new task/i).first()
     await titleEditable2.click()
     const titleInput2 = sidebar2.getByRole("textbox", { name: /task title/i })
     await titleInput2.fill("Task 2")
     await titleInput2.press("Enter")
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar2.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     // Create Task 3
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-    const sidebar3 = page.getByRole("dialog")
+    const sidebar3 = await waitForSidebarOpen(page)
     const titleEditable3 = sidebar3.getByText(/new task/i).first()
     await titleEditable3.click()
     const titleInput3 = sidebar3.getByRole("textbox", { name: /task title/i })
     await titleInput3.fill("Task 3")
     await titleInput3.press("Enter")
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar3.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     // Wait for all tasks to be visible
     await expect(toDoColumn.getByText("Task 1")).toBeVisible()
@@ -382,9 +355,9 @@ test.describe("Task Management", () => {
     const beforeDragOrder = await getTaskOrder(toDoColumn)
     expect(beforeDragOrder).toEqual(["Task 1", "Task 2", "Task 3"])
 
-    // Use button role with name pattern to get the task card (name is "Task N 0" where 0 is comment count)
-    const task3Card = toDoColumn.getByRole("button", { name: /^Task 3\s/ })
-    const task1Card = toDoColumn.getByRole("button", { name: /^Task 1\s/ })
+    // Use button role with name pattern to get the task card
+    const task3Card = toDoColumn.getByRole("button", { name: /Open task Task 3/i })
+    const task1Card = toDoColumn.getByRole("button", { name: /Open task Task 1/i })
 
     // Drag Task 3 to Task 1 (should place Task 3 before Task 1)
     await dragTaskToTask(task3Card, task1Card)
@@ -404,8 +377,8 @@ test.describe("Task Management", () => {
     await expect(toDoColumn.getByText("Task 1")).toBeVisible()
     await expect(toDoColumn.getByText("Task 2")).toBeVisible()
 
-    const task1CardAfter = toDoColumn.getByRole("button", { name: /^Task 1\s/ })
-    const task2CardAfter = toDoColumn.getByRole("button", { name: /^Task 2\s/ })
+    const task1CardAfter = toDoColumn.getByRole("button", { name: /Open task Task 1/i })
+    const task2CardAfter = toDoColumn.getByRole("button", { name: /Open task Task 2/i })
 
     await dragTaskToTask(task1CardAfter, task2CardAfter)
 
@@ -419,34 +392,32 @@ test.describe("Task Management", () => {
     // Create tasks in Doing column first
     const doingAddButton = doingColumn.getByRole("button", { name: /add task/i })
     await doingAddButton.click()
-    await page.waitForURL(/task=/)
-    const sidebar4 = page.getByRole("dialog")
+    const sidebar4 = await waitForSidebarOpen(page)
     const titleEditable4 = sidebar4.getByText(/new task/i).first()
     await titleEditable4.click()
     const titleInput4 = sidebar4.getByRole("textbox", { name: /task title/i })
     await titleInput4.fill("Doing Task 1")
     await titleInput4.press("Enter")
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar4.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     await doingAddButton.click()
-    await page.waitForURL(/task=/)
-    const sidebar5 = page.getByRole("dialog")
+    const sidebar5 = await waitForSidebarOpen(page)
     const titleEditable5 = sidebar5.getByText(/new task/i).first()
     await titleEditable5.click()
     const titleInput5 = sidebar5.getByRole("textbox", { name: /task title/i })
     await titleInput5.fill("Doing Task 2")
     await titleInput5.press("Enter")
-    await page.keyboard.press("Escape")
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await sidebar5.getByRole("button", { name: /back/i }).click()
+    await waitForSidebarClose(page)
 
     // Wait for tasks to be visible
     await expect(doingColumn.getByText("Doing Task 1")).toBeVisible()
     await expect(doingColumn.getByText("Doing Task 2")).toBeVisible()
 
     // Move Task 3 from To Do to between Doing Task 1 and Doing Task 2
-    const task3InToDo = toDoColumn.getByRole("button", { name: /^Task 3\s/ })
-    const doingTask2Card = doingColumn.getByRole("button", { name: /^Doing Task 2\s/ })
+    const task3InToDo = toDoColumn.getByRole("button", { name: /Open task Task 3/i })
+    const doingTask2Card = doingColumn.getByRole("button", { name: /Open task Doing Task 2/i })
 
     await dragTaskToTask(task3InToDo, doingTask2Card)
 
@@ -458,19 +429,22 @@ test.describe("Task Management", () => {
     expect(doingOrder).toEqual(["Doing Task 1", "Task 3", "Doing Task 2"])
 
     // Test 4: Move Task 1 from To Do to end of Doing column
-    const task1InToDo = toDoColumn.getByRole("button", { name: /^Task 1\s/ })
+    const task1InToDo = toDoColumn.getByRole("button", { name: /Open task Task 1/i })
 
     // Drag to the end of Doing column (hover over the last task)
-    const doingTask2CardFinal = doingColumn.getByRole("button", { name: /^Doing Task 2\s/ })
+    const doingTask2CardFinal = doingColumn.getByRole("button", { name: /Open task Doing Task 2/i })
     await dragTaskToTask(task1InToDo, doingTask2CardFinal)
 
     // Verify Task 1 is now at the end of Doing column
-    await expect(doingColumn.getByRole("button", { name: /^Task 1\s/ })).toBeVisible()
-    await expect(toDoColumn.getByRole("button", { name: /^Task 1\s/ })).not.toBeVisible()
+    await expect(doingColumn.getByRole("button", { name: /Open task Task 1/i })).toBeVisible()
+    await expect(toDoColumn.getByRole("button", { name: /Open task Task 1/i })).not.toBeVisible()
 
     const finalDoingOrder = await getTaskOrder(doingColumn)
     // Task 1 is dropped on "Doing Task 2", so it inserts before it
     expect(finalDoingOrder).toEqual(["Doing Task 1", "Task 3", "Task 1", "Doing Task 2"])
+
+    // Wait for all changes to be saved before reloading
+    await expect(page.getByText(/saving/i)).not.toBeVisible()
 
     // Test 5: Verify order persists after page refresh
     await page.reload()
@@ -480,9 +454,9 @@ test.describe("Task Management", () => {
     const doingColumnReloaded = getColumnContainer("doing")
 
     // Verify To Do column only has Task 2
-    await expect(toDoColumnReloaded.getByRole("button", { name: /^Task 2\s/ })).toBeVisible()
-    await expect(toDoColumnReloaded.getByRole("button", { name: /^Task 1\s/ })).not.toBeVisible()
-    await expect(toDoColumnReloaded.getByRole("button", { name: /^Task 3\s/ })).not.toBeVisible()
+    await expect(toDoColumnReloaded.getByRole("button", { name: /Open task Task 2/i })).toBeVisible()
+    await expect(toDoColumnReloaded.getByRole("button", { name: /Open task Task 1/i })).not.toBeVisible()
+    await expect(toDoColumnReloaded.getByRole("button", { name: /Open task Task 3/i })).not.toBeVisible()
 
     // Verify Doing column has correct order
     const reloadedDoingOrder = await getTaskOrder(doingColumnReloaded)

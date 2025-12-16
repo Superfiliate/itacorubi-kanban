@@ -382,17 +382,31 @@ export function TagsDialog({
   const displayTags = useMemo<TagWithStats[]>(() => {
     const byId = new Map<string, TagWithStats>()
 
+    // Compute task counts from local store's tagIdsByTaskId
+    const tagTaskCounts = new Map<string, number>()
+    if (localBoard?.tagIdsByTaskId) {
+      for (const tagIds of Object.values(localBoard.tagIdsByTaskId)) {
+        for (const tagId of tagIds) {
+          tagTaskCounts.set(tagId, (tagTaskCounts.get(tagId) ?? 0) + 1)
+        }
+      }
+    }
+
     // Start from server-provided stats, but overlay name/color from local store if present.
+    // Use computed taskCount from local store for real-time updates.
     for (const t of tags) {
       const local = localBoard?.tagsById[t.id]
+      const localTaskCount = tagTaskCounts.get(t.id)
       byId.set(t.id, {
         ...t,
         name: local?.name ?? t.name,
         color: local?.color ?? t.color,
+        // Use local count if available, otherwise fall back to server count
+        taskCount: localTaskCount !== undefined ? localTaskCount : t.taskCount,
       })
     }
 
-    // Append local-only tags (created locally) with empty stats.
+    // Append local-only tags (created locally) with computed task counts.
     for (const id of localBoard?.tagOrder ?? []) {
       if (byId.has(id)) continue
       const t = localBoard?.tagsById[id]
@@ -402,7 +416,7 @@ export function TagsDialog({
         name: t.name,
         color: t.color,
         boardId,
-        taskCount: 0,
+        taskCount: tagTaskCounts.get(id) ?? 0,
         tasksByColumn: [],
       })
     }
