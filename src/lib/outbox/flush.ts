@@ -210,7 +210,7 @@ async function executeOutboxItem(item: OutboxItem): Promise<void> {
  * Flushes a board outbox sequentially.
  *
  * If an item fails (e.g. bad password), we drop it to avoid blocking all future work.
- * This aligns with the “optimize for good actors” approach.
+ * This aligns with the "optimize for good actors" approach.
  */
 export async function flushBoardOutbox(boardId: string): Promise<void> {
   const store = useBoardStore.getState()
@@ -226,17 +226,26 @@ export async function flushBoardOutbox(boardId: string): Promise<void> {
     while (true) {
       const board = useBoardStore.getState().boardsById[boardId]
       const item = board?.outbox[0]
-      if (!item) return
+      if (!item) break
 
       try {
         await executeOutboxItem(item)
       } catch {
-        // Intentionally ignore; we’ll drop the item below.
+        // Intentionally ignore; we'll drop the item below.
       } finally {
         useBoardStore.getState().popOutbox(boardId, item.id)
       }
     }
   } finally {
     useBoardStore.getState().setFlushing(boardId, false)
+  }
+
+  // Check for items added during the race window between the loop deciding to
+  // exit (outbox appeared empty) and the finally block clearing isFlushing.
+  // Any flushBoardOutbox calls during that window returned early, so we must
+  // re-trigger a flush to process those stragglers.
+  const finalBoard = useBoardStore.getState().boardsById[boardId]
+  if (finalBoard && finalBoard.outbox.length > 0 && !finalBoard.isFlushing) {
+    queueMicrotask(() => void flushBoardOutbox(boardId))
   }
 }

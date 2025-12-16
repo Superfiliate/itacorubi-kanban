@@ -301,8 +301,15 @@ export type NormalizedBoardState = {
 
 type BoardsById = Record<string, NormalizedBoardState | undefined>
 
+// Tracks a task that should open immediately (bypasses router.push delay)
+export type PendingOpenTask = { boardId: string; taskId: string } | null
+
 type BoardStoreState = {
   boardsById: BoardsById
+
+  // Instant sidebar open - set before router.push, cleared when URL updates
+  pendingOpenTask: PendingOpenTask
+  setPendingOpenTask: (task: PendingOpenTask) => void
 
   ensureBoard: (boardId: string) => NormalizedBoardState
 
@@ -536,6 +543,10 @@ function buildTaskDetails(board: NormalizedBoardState, taskId: string): TaskWith
 
 export const useBoardStore = create<BoardStoreState>((set, get) => ({
   boardsById: {},
+
+  // Pending open task for instant sidebar (bypasses router.push delay)
+  pendingOpenTask: null,
+  setPendingOpenTask: (task) => set({ pendingOpenTask: task }),
 
   ensureBoard: (boardId) => {
     const existing = get().boardsById[boardId]

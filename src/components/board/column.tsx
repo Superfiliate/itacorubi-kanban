@@ -155,10 +155,14 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         }
       })
 
-      // 3) Navigate immediately (sidebar uses local-first data; no waiting on backend)
-      router.push(`/boards/${boardId}?task=${taskId}`)
+      // 3) Update URL synchronously for instant sidebar (before React re-render)
+      const newUrl = `/boards/${boardId}?task=${taskId}`
+      window.history.pushState(window.history.state, "", newUrl)
 
-      // 4) Background sync (outbox)
+      // 4) Trigger Next.js to pick up the URL change for proper navigation state
+      router.push(newUrl, { scroll: false })
+
+      // 5) Background sync (outbox)
       useBoardStore.getState().enqueue({
         type: "createTask",
         boardId,

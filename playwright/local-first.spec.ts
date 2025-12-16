@@ -74,28 +74,37 @@ test.describe("Local-First Architecture", () => {
     const boardId = await createTestBoard(page, "Rapid Creation Test", "testpass123")
     await waitForBoardLoad(page)
 
-    // Create first task (this opens sidebar)
-    await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/)
+    // Get the first column's add task button
+    const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
 
-    // Close sidebar quickly and create more tasks
-    await page.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    // Create 3 tasks rapidly by clicking multiple times
+    // Each click navigates to the task sidebar, so we close it before clicking again
+    for (let i = 0; i < 3; i++) {
+      // Ensure no dialog is blocking
+      const dialog = page.getByRole("dialog")
+      if (await dialog.isVisible().catch(() => false)) {
+        await page.getByRole("button", { name: /back/i }).click()
+        await expect(dialog).not.toBeVisible({ timeout: 5000 })
+      }
 
-    // Create second task
-    await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/)
-    await page.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+      // Wait for button to be clickable
+      await addTaskButton.waitFor({ state: "visible" })
+      await addTaskButton.click()
 
-    // Create third task
-    await page.getByRole("button", { name: /add task/i }).first().click()
-    await page.waitForURL(/task=/)
-    await page.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+      // Give time for the task to be created and navigation to happen
+      await page.waitForTimeout(500)
+    }
 
-    // Wait for outbox to flush
-    await page.waitForTimeout(2000)
+    // Close any open sidebar
+    const dialog = page.getByRole("dialog")
+    if (await dialog.isVisible().catch(() => false)) {
+      await page.getByRole("button", { name: /back/i }).click()
+      await expect(dialog).not.toBeVisible({ timeout: 5000 })
+    }
+
+    // Wait for outbox to flush - "Saving..." should disappear
+    // Note: "Saved" appears briefly then hides, so we check that "Saving" is NOT visible
+    await expect(page.getByText(/saving/i)).not.toBeVisible({ timeout: 10000 })
 
     // Verify column shows 3 tasks
     const todoColumn = page.locator('[title="Click to edit"]').filter({ hasText: /to do/i }).locator("..")
