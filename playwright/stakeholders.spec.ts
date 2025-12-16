@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright"
+import { createTestBoard, waitForBoardLoad, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright"
 
 test.describe("Stakeholders", () => {
   test("should create stakeholder via stakeholders dropdown", async ({ page }) => {
@@ -9,9 +9,7 @@ test.describe("Stakeholders", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+    const sidebar = await waitForSidebarOpen(page)
 
     // Open stakeholders dropdown
     const stakeholdersSelect = sidebar.getByRole("combobox", { name: /stakeholders/i })
@@ -24,8 +22,8 @@ test.describe("Stakeholders", () => {
     // Click create option
     await page.getByRole("option", { name: /create.*new stakeholder/i }).click()
 
-    // Stakeholder should be created and added
-    await expect(sidebar.getByText(/new stakeholder/i)).toBeVisible()
+    // Stakeholder should be created and added (use first() to avoid matching dropdown suggestion)
+    await expect(sidebar.getByText(/new stakeholder/i).first()).toBeVisible()
   })
 
   test("should assign existing contributor as stakeholder", async ({ page }) => {
@@ -35,9 +33,7 @@ test.describe("Stakeholders", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+    const sidebar = await waitForSidebarOpen(page)
 
     // Create a contributor first (via assignees)
     const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i })
@@ -45,18 +41,16 @@ test.describe("Stakeholders", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Existing Contributor")
     await page.getByRole("option", { name: /create.*existing contributor/i }).click()
-    await expect(sidebar.getByText(/existing contributor/i)).toBeVisible()
+    await expect(sidebar.getByText(/existing contributor/i).first()).toBeVisible()
 
-    // Close assignees dropdown by clicking outside or using back
+    // Close sidebar
     await sidebar.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await waitForSidebarClose(page)
 
     // Create another task
     const addTaskButton2 = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton2.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar2 = page.getByRole("dialog", { name: /edit task/i })
+    const sidebar2 = await waitForSidebarOpen(page)
 
     // Open stakeholders dropdown
     await sidebar2.getByRole("combobox", { name: /stakeholders/i }).click()
@@ -64,8 +58,8 @@ test.describe("Stakeholders", () => {
     // Select existing contributor
     await page.getByRole("option", { name: /existing contributor/i }).click()
 
-    // Contributor should be added as stakeholder
-    await expect(sidebar2.getByText(/existing contributor/i)).toBeVisible()
+    // Contributor should be added as stakeholder (use first() to avoid matching dropdown)
+    await expect(sidebar2.getByText(/existing contributor/i).first()).toBeVisible()
   })
 
   test("should remove stakeholder from task", async ({ page }) => {
@@ -75,9 +69,7 @@ test.describe("Stakeholders", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+    const sidebar = await waitForSidebarOpen(page)
 
     // Create and add a stakeholder
     const stakeholdersSelect = sidebar.getByRole("combobox", { name: /stakeholders/i })
@@ -85,10 +77,10 @@ test.describe("Stakeholders", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("To Remove Stakeholder")
     await page.getByRole("option", { name: /create.*to remove stakeholder/i }).click()
-    await expect(sidebar.getByText(/to remove stakeholder/i)).toBeVisible()
+    await expect(sidebar.getByText(/to remove stakeholder/i).first()).toBeVisible()
 
     // Remove by clicking X on badge
-    const badge = sidebar.getByText(/to remove stakeholder/i).locator("..")
+    const badge = sidebar.getByText(/to remove stakeholder/i).first().locator("..")
     await badge.getByRole("button", { name: /remove to remove stakeholder/i }).click()
 
     // Stakeholder should be removed
@@ -102,9 +94,7 @@ test.describe("Stakeholders", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const sidebar = await waitForSidebarOpen(page)
 
     // Create an author
     const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
@@ -147,9 +137,7 @@ test.describe("Stakeholders", () => {
     // Create a task and add a comment with stakeholder
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const sidebar = await waitForSidebarOpen(page)
 
     // Create author and stakeholder
     const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
@@ -203,9 +191,7 @@ test.describe("Stakeholders", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog", { name: /edit task/i })
+    const sidebar = await waitForSidebarOpen(page)
 
     // Add a stakeholder
     const stakeholdersSelect = sidebar.getByRole("combobox", { name: /stakeholders/i })
@@ -213,24 +199,23 @@ test.describe("Stakeholders", () => {
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Persistent Stakeholder")
     await page.getByRole("option", { name: /create.*persistent stakeholder/i }).click()
-    await expect(sidebar.getByText(/persistent stakeholder/i)).toBeVisible()
+    await expect(sidebar.getByText(/persistent stakeholder/i).first()).toBeVisible()
 
     // Wait for outbox to flush and polling to potentially overwrite
     await page.waitForTimeout(3000)
 
     // Stakeholder should STILL be visible after polling
-    await expect(sidebar.getByText(/persistent stakeholder/i)).toBeVisible()
+    await expect(sidebar.getByText(/persistent stakeholder/i).first()).toBeVisible()
 
     // Close sidebar and reopen to verify persistence
     await sidebar.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await waitForSidebarClose(page)
 
-    // Reopen sidebar
-    await page.getByRole("button", { name: /new task/i }).click()
-    await page.waitForURL(/task=/)
+    // Reopen sidebar by clicking the task card link
+    await page.getByRole("link", { name: /open task.*new task/i }).click()
+    const reopenedSidebar = await waitForSidebarOpen(page)
 
     // Stakeholder should still be visible after reopening
-    const reopenedSidebar = page.getByRole("dialog", { name: /edit task/i })
     await expect(reopenedSidebar.getByText(/persistent stakeholder/i)).toBeVisible()
   })
 })

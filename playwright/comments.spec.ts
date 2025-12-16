@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright"
+import { createTestBoard, waitForBoardLoad, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright"
 
 test.describe("Comments", () => {
   // Note: Basic "add comment" is covered by the polling persistence test below
@@ -12,9 +12,7 @@ test.describe("Comments", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const sidebar = await waitForSidebarOpen(page)
 
     // Create an author and add a comment
     const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
@@ -31,7 +29,7 @@ test.describe("Comments", () => {
 
     // Close sidebar using Back button
     await sidebar.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await waitForSidebarClose(page)
 
     // Verify comment count shows on task card
     const taskCard = page.getByText(/new task/i).locator("..").locator("..")
@@ -40,10 +38,9 @@ test.describe("Comments", () => {
     // Create another task
     const addTaskButton2 = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton2.click()
-    await page.waitForURL(/task=/)
+    const sidebar2 = await waitForSidebarOpen(page)
 
     // Author should be pre-selected
-    const sidebar2 = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
     await expect(sidebar2.getByRole("combobox").getByText(/remembered author/i)).toBeVisible()
   })
 
@@ -54,10 +51,7 @@ test.describe("Comments", () => {
     // Create a task and add a comment
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    // Create author and comment
-    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const sidebar = await waitForSidebarOpen(page)
     const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
     const authorInput = page.getByPlaceholder(/search or create/i)
@@ -93,10 +87,7 @@ test.describe("Comments", () => {
     // Create a task and add a comment
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    // Create author and comment
-    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
+    const sidebar = await waitForSidebarOpen(page)
     const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
     const authorInput = page.getByPlaceholder(/search or create/i)
@@ -137,9 +128,8 @@ test.describe("Comments", () => {
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
+    const sidebar = await waitForSidebarOpen(page)
 
-    const sidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
     await expect(sidebar.getByRole("heading", { name: /^comments$/i })).toBeVisible()
 
     // Select an author
@@ -168,7 +158,7 @@ test.describe("Comments", () => {
 
     // Close sidebar and reopen to verify persistence across sidebar re-renders
     await sidebar.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await waitForSidebarClose(page)
 
     // Verify task card shows comment count
     const taskCard = page.getByText(/new task/i).locator("..").locator("..")
@@ -176,10 +166,9 @@ test.describe("Comments", () => {
 
     // Reopen sidebar
     await page.getByRole("button", { name: /new task/i }).click()
-    await page.waitForURL(/task=/)
+    const reopenedSidebar = await waitForSidebarOpen(page)
 
     // Comment should still be visible after reopening
-    const reopenedSidebar = page.getByRole("dialog").filter({ hasText: /task details/i }).first()
     await expect(reopenedSidebar.getByText(/this comment should persist after polling/i)).toBeVisible()
   })
 })

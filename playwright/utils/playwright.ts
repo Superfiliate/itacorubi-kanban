@@ -1,4 +1,28 @@
-import { Page, expect } from "@playwright/test"
+import { Page, expect, Locator } from "@playwright/test"
+
+/**
+ * Waits for the task sidebar to be visible
+ * Use this after clicking to create/open a task
+ */
+export async function waitForSidebarOpen(page: Page): Promise<Locator> {
+  // The sidebar uses a Sheet which is a Radix Dialog
+  // We identify it by the presence of the Back button
+  const sidebar = page.getByRole("dialog")
+  const backButton = sidebar.getByRole("button", { name: /back/i })
+  await expect(backButton).toBeVisible()
+  return sidebar
+}
+
+/**
+ * Waits for the task sidebar to be closed
+ * Use this after clicking the back button to close the sidebar
+ */
+export async function waitForSidebarClose(page: Page): Promise<void> {
+  // Wait for the back button in any dialog to not be visible
+  // This is specific to the task sidebar which always has a back button
+  const backButton = page.getByRole("button", { name: /back/i })
+  await expect(backButton).not.toBeVisible()
+}
 
 /**
  * Creates a board via the UI and returns the board ID from the URL

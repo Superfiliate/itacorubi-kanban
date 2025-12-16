@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright"
+import { createTestBoard, waitForBoardLoad, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright"
 
 test.describe("Tags", () => {
   test("should create tag via tags dropdown", async ({ page }) => {
@@ -166,9 +166,8 @@ test.describe("Tags", () => {
     await dialog.getByRole("button", { name: /close/i }).first().click()
 
     // Reopen task sidebar to verify tag still has updated name
-    await page.getByRole("button", { name: /new task/i }).click()
-    await page.waitForURL(/task=/)
-    const reopenedSidebar = page.getByRole("dialog", { name: /edit task/i })
+    await page.getByRole("link", { name: /open task.*new task/i }).click()
+    const reopenedSidebar = await waitForSidebarOpen(page)
     await expect(reopenedSidebar.getByText(/#updated tag/i)).toBeVisible()
   })
 
@@ -200,25 +199,25 @@ test.describe("Tags", () => {
   })
 
   test("should not delete tag with task assignments", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Protected Tag Test", "testpass123")
+    await createTestBoard(page, "Protected Tag Test", "testpass123")
     await waitForBoardLoad(page)
 
     // Create a task and add a tag
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
     await addTaskButton.click()
-    await page.waitForURL(/task=/)
+    const sidebar = await waitForSidebarOpen(page)
 
-    const sidebar = page.getByRole("dialog", { name: /edit task/i })
     const tagsSelect = sidebar.getByRole("combobox", { name: /tags/i })
     await tagsSelect.click()
     const input = page.getByPlaceholder(/search or create/i)
     await input.fill("Protected Tag")
     await page.getByRole("option", { name: /create.*protected tag/i }).click()
-    await expect(sidebar.getByText(/#protected tag/i)).toBeVisible()
+    // Use .first() to target the tag badge in the sidebar (not in the suggestions popover)
+    await expect(sidebar.getByText(/#protected tag/i).first()).toBeVisible()
 
     // Close sidebar
     await sidebar.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+    await waitForSidebarClose(page)
 
     // Open tags dialog
     const tagsButton = page.getByRole("button", { name: /manage tags/i })

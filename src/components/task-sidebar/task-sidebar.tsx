@@ -146,7 +146,9 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
 
   const handleClose = () => {
     setIsOpen(false)
-    // Update URL immediately for better responsiveness
+    // Clear pending task to ensure clean state for reopening
+    useBoardStore.getState().setPendingOpenTask(null)
+    // Update URL
     router.replace(`/boards/${boardId}`)
   }
 
@@ -239,6 +241,7 @@ interface TaskSidebarHostProps {
 export function TaskSidebarHost({ boardId, columns, contributors, tags }: TaskSidebarHostProps) {
   const searchParams = useSearchParams()
   const urlTaskId = searchParams.get("task")
+  const [openCount, setOpenCount] = useState(0)
 
   // Use pending task from zustand for instant sidebar (bypasses router.push delay)
   const pendingOpenTask = useBoardStore((s) => s.pendingOpenTask)
@@ -246,6 +249,13 @@ export function TaskSidebarHost({ boardId, columns, contributors, tags }: TaskSi
 
   // Prefer pending task (local-first), fall back to URL (for direct links/refreshes)
   const taskId = pendingTaskId ?? urlTaskId
+
+  // Track when a new sidebar opens (increment counter for unique key)
+  useEffect(() => {
+    if (taskId) {
+      setOpenCount((c) => c + 1)
+    }
+  }, [taskId])
 
   // Clear pending task once URL catches up
   useEffect(() => {
@@ -258,6 +268,7 @@ export function TaskSidebarHost({ boardId, columns, contributors, tags }: TaskSi
 
   return (
     <TaskSidebar
+      key={`${taskId}-${openCount}`}
       taskId={taskId}
       boardId={boardId}
       columns={columns}
