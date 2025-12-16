@@ -201,10 +201,10 @@ test.describe("Stakeholders", () => {
     await page.getByRole("option", { name: /create.*persistent stakeholder/i }).click()
     await expect(sidebar.getByText(/persistent stakeholder/i).first()).toBeVisible()
 
-    // Wait for outbox to flush and polling to potentially overwrite
-    await page.waitForTimeout(3000)
+    // Wait for sync to complete (check header indicator, not sidebar)
+    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
 
-    // Stakeholder should STILL be visible after polling
+    // Stakeholder should STILL be visible after sync
     await expect(sidebar.getByText(/persistent stakeholder/i).first()).toBeVisible()
 
     // Close sidebar and reopen to verify persistence

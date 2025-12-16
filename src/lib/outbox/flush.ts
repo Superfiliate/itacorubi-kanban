@@ -209,8 +209,12 @@ async function executeOutboxItem(item: OutboxItem): Promise<void> {
 /**
  * Flushes a board outbox sequentially.
  *
- * If an item fails (e.g. bad password), we drop it to avoid blocking all future work.
- * This aligns with the "optimize for good actors" approach.
+ * Uses the store's isFlushing flag as a lock. If a flush is already in progress,
+ * schedule a retry after a short delay. The while loop drains all items, including
+ * those added during the flush.
+ *
+ * If an item fails (e.g. bad password), we log the error and drop it to avoid
+ * blocking all future work. This aligns with the "optimize for good actors" approach.
  */
 export async function flushBoardOutbox(boardId: string): Promise<void> {
   const store = useBoardStore.getState()
@@ -218,11 +222,23 @@ export async function flushBoardOutbox(boardId: string): Promise<void> {
 
   const initial = useBoardStore.getState().boardsById[boardId]
   if (!initial) return
-  if (initial.isFlushing) return
+
+  // If already flushing, schedule a retry. The current flush will drain the outbox,
+  // but items added after its last check need to be processed.
+  if (initial.isFlushing) {
+    // Use setTimeout to ensure this runs after current flush completes
+    setTimeout(() => {
+      const board = useBoardStore.getState().boardsById[boardId]
+      if (board && board.outbox.length > 0 && !board.isFlushing) {
+        void flushBoardOutbox(boardId)
+      }
+    }, 50)
+    return
+  }
 
   store.setFlushing(boardId, true)
   try {
-    // Drain until empty (or until concurrent enqueue adds more; loop handles it)
+    // Drain until empty. Items added during await are picked up in next iteration.
     while (true) {
       const board = useBoardStore.getState().boardsById[boardId]
       const item = board?.outbox[0]
@@ -230,8 +246,8 @@ export async function flushBoardOutbox(boardId: string): Promise<void> {
 
       try {
         await executeOutboxItem(item)
-      } catch {
-        // Intentionally ignore; we'll drop the item below.
+      } catch (error) {
+        console.error(`[Outbox] Failed to sync item:`, item.type, error)
       } finally {
         useBoardStore.getState().popOutbox(boardId, item.id)
       }
@@ -240,12 +256,10 @@ export async function flushBoardOutbox(boardId: string): Promise<void> {
     useBoardStore.getState().setFlushing(boardId, false)
   }
 
-  // Check for items added during the race window between the loop deciding to
-  // exit (outbox appeared empty) and the finally block clearing isFlushing.
-  // Any flushBoardOutbox calls during that window returned early, so we must
-  // re-trigger a flush to process those stragglers.
+  // Re-check after clearing isFlushing, in case items were added during race window
   const finalBoard = useBoardStore.getState().boardsById[boardId]
-  if (finalBoard && finalBoard.outbox.length > 0 && !finalBoard.isFlushing) {
-    queueMicrotask(() => void flushBoardOutbox(boardId))
+  if (finalBoard && finalBoard.outbox.length > 0) {
+    // Use setTimeout(0) to allow other pending code to run first
+    setTimeout(() => void flushBoardOutbox(boardId), 0)
   }
 }

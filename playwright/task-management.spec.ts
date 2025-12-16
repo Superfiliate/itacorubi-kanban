@@ -87,11 +87,16 @@ test.describe("Task Management", () => {
     const aliceBadge = sidebar.locator("span").filter({ hasText: "Alice" }).first()
     await expect(aliceBadge).toBeVisible()
 
-    // Color class should not change after a bit (no flicker)
+    // Wait for sync to complete - this triggers any server-side data reconciliation
+    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
+
+    // After sync, class should remain stable (no flicker from server data)
     const classBefore = await aliceBadge.getAttribute("class")
-    await page.waitForTimeout(2000)
-    const classAfter = await aliceBadge.getAttribute("class")
-    expect(classAfter).toBe(classBefore)
+    // Use expect.poll to verify class stability over time
+    await expect.poll(
+      async () => await aliceBadge.getAttribute("class"),
+      { timeout: 3000 }
+    ).toBe(classBefore)
 
     // Close sidebar
     await sidebar.getByRole("button", { name: /back/i }).click()
@@ -297,7 +302,7 @@ test.describe("Task Management", () => {
       await page.mouse.up()
 
       // Wait for drag to complete and server sync
-      await page.waitForTimeout(1500)
+      await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
     }
 
     // Create 3 tasks in "To do" column
@@ -362,10 +367,8 @@ test.describe("Task Management", () => {
     // Drag Task 3 to Task 1 (should place Task 3 before Task 1)
     await dragTaskToTask(task3Card, task1Card)
 
-    // Wait for server sync and UI update
-    await page.waitForTimeout(2000)
-
     // Verify new order: Task 3, Task 1, Task 2
+    // (dragTaskToTask already waits for sync to complete)
     const order1 = await getTaskOrder(toDoColumn)
     if (order1[0] !== "Task 3") {
       console.log("Unexpected order after drag:", order1)

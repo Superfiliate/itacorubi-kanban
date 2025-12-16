@@ -279,10 +279,10 @@ test.describe("Tags", () => {
     await page.getByRole("option", { name: /create.*persistent tag/i }).click()
     await expect(sidebar.getByText(/#persistent tag/i)).toBeVisible()
 
-    // Wait for outbox to flush and polling to potentially overwrite
-    await page.waitForTimeout(3000)
+    // Wait for sync to complete (check header indicator, not sidebar)
+    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
 
-    // Tag should STILL be visible after polling
+    // Tag should STILL be visible after sync
     await expect(sidebar.getByText(/#persistent tag/i)).toBeVisible()
 
     // Close sidebar and reopen to verify persistence

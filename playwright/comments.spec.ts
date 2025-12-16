@@ -149,11 +149,10 @@ test.describe("Comments", () => {
     // Verify comment appears immediately (optimistic update)
     await expect(page.getByText(/this comment should persist after polling/i)).toBeVisible()
 
-    // Wait for outbox to flush and polling to potentially overwrite
-    // The polling interval is 1 second, so waiting 3 seconds should be enough
-    await page.waitForTimeout(3000)
+    // Wait for sync to complete (check header indicator, not sidebar)
+    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
 
-    // Comment should STILL be visible after polling
+    // Comment should STILL be visible after sync
     await expect(page.getByText(/this comment should persist after polling/i)).toBeVisible()
 
     // Close sidebar and reopen to verify persistence across sidebar re-renders
