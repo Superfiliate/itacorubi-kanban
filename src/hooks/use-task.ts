@@ -980,11 +980,13 @@ export function useCreateComment(boardId: string) {
       authorId,
       content,
       stakeholderId,
+      commentId: providedCommentId,
     }: {
       taskId: string
       authorId: string
       content: string
       stakeholderId?: string | null
+      commentId?: string // Optional: pass a pre-generated ID for file uploads
     }) => {
       const board = useBoardStore.getState().boardsById[boardId]
       const authorFromStore = board?.contributorsById[authorId]
@@ -1003,7 +1005,8 @@ export function useCreateComment(boardId: string) {
         : null
       const stakeholder = stakeholderFromStore ?? stakeholderFromCache
 
-      const commentId = crypto.randomUUID()
+      // Use provided commentId if available (for file uploads), otherwise generate new one
+      const commentId = providedCommentId ?? crypto.randomUUID()
       const createdAt = new Date()
 
       const newComment: TaskComment = {

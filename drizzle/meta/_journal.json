@@ -50,6 +50,20 @@
       "when": 1766000000000,
       "tag": "0006_add-tags",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1766100000000,
+      "tag": "0007_add-uploaded-files",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1766200000000,
+      "tag": "0008_remove-uploaded-files-comment-fk",
+      "breakpoints": true
     }
   ]
 }

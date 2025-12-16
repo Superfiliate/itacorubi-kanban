@@ -1,8 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
+import React, { useEffect, useRef, useCallback, useState } from "react"
 import { useEditor, EditorContent, type Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
+import Image from "@tiptap/extension-image"
+import { FileAttachment } from "./tiptap-extensions/file-attachment"
 import {
   Bold,
   Italic,
@@ -17,9 +19,12 @@ import {
   Minus,
   Undo,
   Redo,
+  Paperclip,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
+import { toast } from "sonner"
 
 interface RichTextEditorProps {
   content?: string
@@ -27,6 +32,42 @@ interface RichTextEditorProps {
   editable?: boolean
   placeholder?: string
   className?: string
+  // File upload props (optional - only needed when file uploads are enabled)
+  boardId?: string
+  commentId?: string
+  onUploadStart?: () => void
+  onUploadEnd?: () => void
+}
+
+interface UploadedFileResult {
+  id: string
+  url: string
+  filename: string
+  contentType: string
+  size: number
+}
+
+async function uploadFileToServer(
+  file: File,
+  boardId: string,
+  commentId: string
+): Promise<UploadedFileResult> {
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("boardId", boardId)
+  formData.append("commentId", commentId)
+
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Failed to upload file")
+  }
+
+  return response.json()
 }
 
 function ToolbarButton({
@@ -61,7 +102,14 @@ function ToolbarDivider() {
   return <div className="w-px h-5 bg-border mx-1" />
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+interface ToolbarProps {
+  editor: Editor
+  onAttachClick?: () => void
+  isUploading?: boolean
+  canUpload?: boolean
+}
+
+function Toolbar({ editor, onAttachClick, isUploading, canUpload }: ToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-0.5 p-1 border-b border-border bg-muted/30">
       {/* Text formatting */}
@@ -180,6 +228,25 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         <Redo className="h-4 w-4" />
       </ToolbarButton>
+
+      {/* Attachment button - only show if upload is enabled */}
+      {canUpload && (
+        <>
+          <ToolbarDivider />
+          <ToolbarButton
+            onClick={() => onAttachClick?.()}
+            disabled={isUploading}
+            title="Attach file"
+            aria-label="Attach file"
+          >
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
+          </ToolbarButton>
+        </>
+      )}
     </div>
   )
 }
@@ -190,7 +257,81 @@ export function RichTextEditor({
   editable = true,
   placeholder = "Write something...",
   className,
+  boardId,
+  commentId,
+  onUploadStart,
+  onUploadEnd,
 }: RichTextEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const editorRef = useRef<Editor | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const canUpload = !!(boardId && commentId)
+
+  const handleFileUpload = useCallback(
+    async (files: FileList | File[]) => {
+      const currentEditor = editorRef.current
+      if (!boardId || !commentId || !currentEditor) return
+
+      const fileArray = Array.from(files)
+      if (fileArray.length === 0) return
+
+      setIsUploading(true)
+      onUploadStart?.()
+
+      try {
+        for (const file of fileArray) {
+          try {
+            const result = await uploadFileToServer(file, boardId, commentId)
+
+            // Insert appropriate node based on file type
+            if (result.contentType.startsWith("image/")) {
+              // Insert image inline
+              currentEditor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
+            } else if (result.contentType.startsWith("video/")) {
+              // Insert video as custom HTML
+              currentEditor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: "fileAttachment",
+                  attrs: {
+                    url: result.url,
+                    filename: result.filename,
+                    contentType: result.contentType,
+                    size: result.size,
+                  },
+                })
+                .run()
+            } else {
+              // Insert file attachment node
+              currentEditor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: "fileAttachment",
+                  attrs: {
+                    url: result.url,
+                    filename: result.filename,
+                    contentType: result.contentType,
+                    size: result.size,
+                  },
+                })
+                .run()
+            }
+
+            toast.success(`Uploaded ${result.filename}`)
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to upload file")
+          }
+        }
+      } finally {
+        setIsUploading(false)
+        onUploadEnd?.()
+      }
+    },
+    [boardId, commentId, onUploadStart, onUploadEnd]
+  )
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -198,6 +339,14 @@ export function RichTextEditor({
           levels: [1, 2, 3],
         },
       }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+        HTMLAttributes: {
+          class: "rounded-md max-w-full h-auto cursor-pointer",
+        },
+      }),
+      FileAttachment,
     ],
     content: content ? JSON.parse(content) : undefined,
     editable,
@@ -208,6 +357,29 @@ export function RichTextEditor({
           !editable && "min-h-0 p-0"
         ),
       },
+      handleDrop: (view, event, _slice, moved) => {
+        if (!canUpload || moved || !event.dataTransfer?.files.length) {
+          return false
+        }
+        event.preventDefault()
+        handleFileUpload(event.dataTransfer.files)
+        return true
+      },
+      handlePaste: (view, event) => {
+        if (!canUpload) return false
+
+        const files = event.clipboardData?.files
+        if (files && files.length > 0) {
+          // Check if there are actual files (not just text)
+          const hasFiles = Array.from(files).some((file) => file.type)
+          if (hasFiles) {
+            event.preventDefault()
+            handleFileUpload(files)
+            return true
+          }
+        }
+        return false
+      },
     },
     onUpdate: ({ editor }) => {
       if (onChange) {
@@ -217,6 +389,11 @@ export function RichTextEditor({
     // Prevent SSR hydration issues
     immediatelyRender: false,
   })
+
+  // Keep ref in sync with editor
+  useEffect(() => {
+    editorRef.current = editor
+  }, [editor])
 
   // Sync editor content when prop changes (e.g., when form is reset)
   useEffect(() => {
@@ -230,6 +407,19 @@ export function RichTextEditor({
       editor.commands.setContent(newContent)
     }
   }, [editor, content])
+
+  const handleAttachClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      handleFileUpload(files)
+    }
+    // Reset input so same file can be selected again
+    e.target.value = ""
+  }
 
   if (!editor) {
     return null
@@ -251,7 +441,12 @@ export function RichTextEditor({
         className
       )}
     >
-      <Toolbar editor={editor} />
+      <Toolbar
+        editor={editor}
+        onAttachClick={handleAttachClick}
+        isUploading={isUploading}
+        canUpload={canUpload}
+      />
       <div className="relative">
         <EditorContent editor={editor} />
         {/* Placeholder */}
@@ -261,6 +456,17 @@ export function RichTextEditor({
           </div>
         )}
       </div>
+      {/* Hidden file input for attachment button */}
+      {canUpload && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileInputChange}
+          accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+        />
+      )}
     </div>
   )
 }

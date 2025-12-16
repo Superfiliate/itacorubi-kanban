@@ -238,7 +238,21 @@ interface TaskSidebarHostProps {
 
 export function TaskSidebarHost({ boardId, columns, contributors, tags }: TaskSidebarHostProps) {
   const searchParams = useSearchParams()
-  const taskId = searchParams.get("task")
+  const urlTaskId = searchParams.get("task")
+
+  // Use pending task from zustand for instant sidebar (bypasses router.push delay)
+  const pendingOpenTask = useBoardStore((s) => s.pendingOpenTask)
+  const pendingTaskId = pendingOpenTask?.boardId === boardId ? pendingOpenTask.taskId : null
+
+  // Prefer pending task (local-first), fall back to URL (for direct links/refreshes)
+  const taskId = pendingTaskId ?? urlTaskId
+
+  // Clear pending task once URL catches up
+  useEffect(() => {
+    if (urlTaskId && pendingTaskId && urlTaskId === pendingTaskId) {
+      useBoardStore.getState().setPendingOpenTask(null)
+    }
+  }, [urlTaskId, pendingTaskId])
 
   if (!taskId) return null
 

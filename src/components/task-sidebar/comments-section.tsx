@@ -44,6 +44,8 @@ export function CommentsSection({
 }: CommentsSectionProps) {
   const [newCommentContent, setNewCommentContent] = useState("")
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string | null>(null)
+  // Generate a pending comment ID for file uploads - regenerated after each comment submission
+  const [pendingCommentId, setPendingCommentId] = useState(() => crypto.randomUUID())
 
   // Derive current author data from contributors (normalized source of truth)
   // This ensures comment badges reflect latest contributor name/color
@@ -80,11 +82,18 @@ export function CommentsSection({
     if (isRichTextEmpty(newCommentContent) || !selectedAuthorId) return
 
     createCommentMutation.mutate(
-      { taskId, authorId: selectedAuthorId, content: newCommentContent, stakeholderId: selectedStakeholderId },
+      {
+        taskId,
+        authorId: selectedAuthorId,
+        content: newCommentContent,
+        stakeholderId: selectedStakeholderId,
+        commentId: pendingCommentId, // Use the pending ID so uploaded files are linked
+      },
       {
         onSuccess: () => {
           setNewCommentContent("")
           setSelectedStakeholderId(null)
+          setPendingCommentId(crypto.randomUUID()) // Generate new ID for next comment
           toast.success("Comment added")
         },
         onError: () => {
@@ -157,6 +166,8 @@ export function CommentsSection({
             content={newCommentContent}
             onChange={setNewCommentContent}
             placeholder="Write your comment..."
+            boardId={boardId}
+            commentId={pendingCommentId}
           />
         </div>
         <div className="flex justify-end">

@@ -19,6 +19,8 @@ Each feature file focuses on a single model and its interactions:
 | `008-glassmorphism.md` | — | Visual styling direction |
 | `009-sync-status.md` | — | Sync indicator behavior |
 | `010-user-feedback.md` | — | Toasts, confirmations, empty states |
+| `011-tags.md` | Tag | Create, assign, remove, colors |
+| `012-file-uploads.md` | UploadedFile | Upload, display, delete, storage limits |
 
 ## File Structure
 

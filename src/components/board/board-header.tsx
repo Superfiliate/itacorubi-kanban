@@ -70,7 +70,7 @@ export function BoardHeader({ boardId, title, contributors, tags }: BoardHeaderP
         >
           <Tag className="h-4 w-4" />
         </Button>
-        <ThemeToggle />
+        <ThemeToggle boardId={boardId} />
       </div>
 
       <ShareDialog

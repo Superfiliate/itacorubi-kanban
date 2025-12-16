@@ -107,6 +107,20 @@ export const comments = sqliteTable("comments", {
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 
+// Uploaded files - belong to a board, track storage usage
+// Note: commentId has no FK constraint since files are uploaded before comments exist
+// Cleanup is handled by explicit logic in deleteComment action
+export const uploadedFiles = sqliteTable("uploaded_files", {
+  id: text("id").primaryKey(), // UUID
+  boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "restrict" }),
+  commentId: text("comment_id").notNull(), // No FK - files uploaded before comment exists
+  url: text("url").notNull(),
+  filename: text("filename").notNull(),
+  contentType: text("content_type").notNull(),
+  size: integer("size").notNull(), // Size in bytes for quota calculations
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
 // ============================================================
 // RELATIONS
 // ============================================================
@@ -117,6 +131,7 @@ export const boardsRelations = relations(boards, ({ many }) => ({
   contributors: many(contributors),
   tags: many(tags),
   comments: many(comments),
+  uploadedFiles: many(uploadedFiles),
 }))
 
 export const columnsRelations = relations(columns, ({ one, many }) => ({
@@ -194,7 +209,7 @@ export const taskTagsRelations = relations(taskTags, ({ one }) => ({
   }),
 }))
 
-export const commentsRelations = relations(comments, ({ one }) => ({
+export const commentsRelations = relations(comments, ({ one, many }) => ({
   task: one(tasks, {
     fields: [comments.taskId],
     references: [tasks.id],
@@ -210,6 +225,18 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   stakeholder: one(contributors, {
     fields: [comments.stakeholderId],
     references: [contributors.id],
+  }),
+  uploadedFiles: many(uploadedFiles),
+}))
+
+export const uploadedFilesRelations = relations(uploadedFiles, ({ one }) => ({
+  board: one(boards, {
+    fields: [uploadedFiles.boardId],
+    references: [boards.id],
+  }),
+  comment: one(comments, {
+    fields: [uploadedFiles.commentId],
+    references: [comments.id],
   }),
 }))
 
@@ -232,3 +259,5 @@ export type NewTag = typeof tags.$inferInsert
 export type TaskTag = typeof taskTags.$inferSelect
 export type Comment = typeof comments.$inferSelect
 export type NewComment = typeof comments.$inferInsert
+export type UploadedFile = typeof uploadedFiles.$inferSelect
+export type NewUploadedFile = typeof uploadedFiles.$inferInsert

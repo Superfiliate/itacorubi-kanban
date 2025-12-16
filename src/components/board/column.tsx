@@ -155,11 +155,12 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         }
       })
 
-      // 3) Update URL synchronously for instant sidebar (before React re-render)
+      // 3) Set pending open task in zustand for instant sidebar (bypasses router.push delay)
+      useBoardStore.getState().setPendingOpenTask({ boardId, taskId })
+
+      // 4) Update URL - pushState for browser, router.push for Next.js state
       const newUrl = `/boards/${boardId}?task=${taskId}`
       window.history.pushState(window.history.state, "", newUrl)
-
-      // 4) Trigger Next.js to pick up the URL change for proper navigation state
       router.push(newUrl, { scroll: false })
 
       // 5) Background sync (outbox)

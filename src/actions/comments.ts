@@ -1,10 +1,11 @@
 "use server"
 
 import { db } from "@/db"
-import { comments, tasks } from "@/db/schema"
+import { comments, tasks, uploadedFiles } from "@/db/schema"
 import { eq, and, lt, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireBoardAccess } from "@/lib/secure-board"
+import { deleteFile } from "@/lib/storage"
 
 export async function createComment(
   taskId: string,
@@ -108,6 +109,27 @@ export async function deleteComment(commentId: string, boardId: string) {
     throw new Error("Comment not found")
   }
 
+  // Get all files associated with this comment
+  const files = await db.query.uploadedFiles.findMany({
+    where: eq(uploadedFiles.commentId, commentId),
+  })
+
+  // Delete files from storage
+  for (const file of files) {
+    try {
+      await deleteFile(file.url)
+    } catch (error) {
+      // Log but don't fail - file might already be deleted
+      console.error(`Failed to delete file ${file.url}:`, error)
+    }
+  }
+
+  // Delete file records from database
+  if (files.length > 0) {
+    await db.delete(uploadedFiles).where(eq(uploadedFiles.commentId, commentId))
+  }
+
+  // Delete the comment
   await db.delete(comments).where(eq(comments.id, commentId))
   revalidatePath(`/boards/${boardId}`)
 }
