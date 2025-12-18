@@ -2,10 +2,54 @@
 
 import { db } from "@/db"
 import { comments, tasks, uploadedFiles } from "@/db/schema"
-import { eq, and, lt, sql } from "drizzle-orm"
+import { eq, and, lt, sql, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireBoardAccess } from "@/lib/secure-board"
 import { deleteFile } from "@/lib/storage"
+
+/**
+ * Extract all file URLs from Tiptap JSON content.
+ * Walks the content tree and collects:
+ * - `src` from `image` nodes
+ * - `url` from `fileAttachment` nodes
+ */
+function extractFileUrlsFromContent(content: string): string[] {
+  try {
+    const json = JSON.parse(content)
+    const urls: string[] = []
+
+    function walkNodes(nodes: unknown[] | undefined) {
+      if (!nodes || !Array.isArray(nodes)) return
+
+      for (const node of nodes) {
+        if (typeof node !== "object" || node === null) continue
+
+        const n = node as { type?: string; attrs?: Record<string, unknown>; content?: unknown[] }
+
+        // Image nodes have src attribute
+        if (n.type === "image" && n.attrs?.src && typeof n.attrs.src === "string") {
+          urls.push(n.attrs.src)
+        }
+
+        // FileAttachment nodes have url attribute
+        if (n.type === "fileAttachment" && n.attrs?.url && typeof n.attrs.url === "string") {
+          urls.push(n.attrs.url)
+        }
+
+        // Recursively walk child nodes
+        if (n.content) {
+          walkNodes(n.content)
+        }
+      }
+    }
+
+    walkNodes(json.content)
+    return urls
+  } catch {
+    // If content is not valid JSON, return empty array
+    return []
+  }
+}
 
 export async function createComment(
   taskId: string,
@@ -88,6 +132,35 @@ export async function updateComment(
     })
     if (!stakeholder || stakeholder.boardId !== boardId) {
       throw new Error("Stakeholder not found or does not belong to board")
+    }
+  }
+
+  // Clean up orphaned files (files in DB but not in the new content)
+  const filesInDb = await db.query.uploadedFiles.findMany({
+    where: eq(uploadedFiles.commentId, commentId),
+  })
+
+  if (filesInDb.length > 0) {
+    const urlsInContent = new Set(extractFileUrlsFromContent(content))
+    const orphanedFiles = filesInDb.filter((file) => !urlsInContent.has(file.url))
+
+    // Delete orphaned files from storage and database
+    for (const file of orphanedFiles) {
+      try {
+        await deleteFile(file.url)
+      } catch (error) {
+        // Log but don't fail - file might already be deleted
+        console.error(`Failed to delete orphaned file ${file.url}:`, error)
+      }
+    }
+
+    if (orphanedFiles.length > 0) {
+      await db.delete(uploadedFiles).where(
+        inArray(
+          uploadedFiles.id,
+          orphanedFiles.map((f) => f.id)
+        )
+      )
     }
   }
 

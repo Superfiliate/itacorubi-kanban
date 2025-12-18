@@ -14,6 +14,9 @@ test.describe("Comments", () => {
     await addTaskButton.click()
     const sidebar = await waitForSidebarOpen(page)
 
+    // Before selecting author, should show "Missing an author" disabled reason
+    await expect(sidebar.getByText(/missing an author/i)).toBeVisible()
+
     // Create an author and add a comment
     const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i })
     await authorSelect.click()
@@ -21,9 +24,16 @@ test.describe("Comments", () => {
     await authorInput.fill("Remembered Author")
     await page.getByRole("option", { name: /create.*remembered author/i }).click()
 
+    // After selecting author but before writing, should show "Missing content"
+    await expect(sidebar.getByText(/missing content/i)).toBeVisible()
+
     const editor = sidebar.locator('[contenteditable="true"]').first()
     await editor.click()
     await editor.fill("First comment")
+
+    // After writing content, disabled reason should not be visible
+    await expect(sidebar.getByText(/missing an author|missing content/i)).not.toBeVisible()
+
     await page.getByRole("button", { name: /add comment/i }).click()
     await expect(page.getByText(/comment added/i)).toBeVisible()
 

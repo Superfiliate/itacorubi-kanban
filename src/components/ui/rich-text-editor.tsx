@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useCallback, useState } from "react"
 import { useEditor, EditorContent, type Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
-import Image from "@tiptap/extension-image"
 import { FileHandler } from "@tiptap/extension-file-handler"
+import { ImageExtension } from "./tiptap-extensions/image-extension"
 import { FileAttachment } from "./tiptap-extensions/file-attachment"
 import { UploadPlaceholder } from "./tiptap-extensions/upload-placeholder"
 import {
@@ -449,12 +449,9 @@ export function RichTextEditor({
           levels: [1, 2, 3],
         },
       }),
-      Image.configure({
+      ImageExtension.configure({
         inline: false,
         allowBase64: false,
-        HTMLAttributes: {
-          class: "rounded-md max-w-full h-auto cursor-pointer",
-        },
       }),
       FileAttachment,
       UploadPlaceholder,
@@ -605,11 +602,32 @@ export function isRichTextEmpty(content: string | undefined): boolean {
   try {
     const json = JSON.parse(content)
     if (!json.content || json.content.length === 0) return true
-    // Check if all nodes are empty (no text content)
-    return json.content.every(
-      (node: { type: string; content?: unknown[] }) =>
-        !node.content || node.content.length === 0
-    )
+
+    // Recursively check if there's any meaningful content
+    function hasContent(nodes: unknown[]): boolean {
+      for (const node of nodes) {
+        if (typeof node !== "object" || node === null) continue
+        const n = node as { type?: string; content?: unknown[]; text?: string; attrs?: Record<string, unknown> }
+
+        // Images and file attachments are meaningful content
+        if (n.type === "image" || n.type === "fileAttachment") {
+          return true
+        }
+
+        // Text nodes with actual text
+        if (n.text && n.text.trim().length > 0) {
+          return true
+        }
+
+        // Recursively check children
+        if (n.content && hasContent(n.content)) {
+          return true
+        }
+      }
+      return false
+    }
+
+    return !hasContent(json.content)
   } catch {
     return true
   }

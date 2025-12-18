@@ -46,6 +46,9 @@ export function CommentsSection({
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string | null>(null)
   // Generate a pending comment ID for file uploads - regenerated after each comment submission
   const [pendingCommentId, setPendingCommentId] = useState(() => crypto.randomUUID())
+  // Track concurrent upload batches with a counter (not boolean) since multiple batches can overlap
+  const [uploadingCount, setUploadingCount] = useState(0)
+  const isUploading = uploadingCount > 0
 
   // Derive current author data from contributors (normalized source of truth)
   // This ensures comment badges reflect latest contributor name/color
@@ -106,7 +109,19 @@ export function CommentsSection({
   const canSubmit =
     !isRichTextEmpty(newCommentContent) &&
     selectedAuthorId &&
-    !createCommentMutation.isPending
+    !createCommentMutation.isPending &&
+    !isUploading
+
+  // Compute reason for disabled state (in priority order)
+  const disabledReason = !selectedAuthorId
+    ? "Missing an author"
+    : isRichTextEmpty(newCommentContent)
+      ? "Missing content"
+      : isUploading
+        ? "Upload in progress..."
+        : createCommentMutation.isPending
+          ? "Saving..."
+          : null
 
   return (
     <div className="space-y-3 p-6">
@@ -168,9 +183,16 @@ export function CommentsSection({
             placeholder="Write your comment..."
             boardId={boardId}
             commentId={pendingCommentId}
+            onUploadStart={() => setUploadingCount((c) => c + 1)}
+            onUploadEnd={() => setUploadingCount((c) => c - 1)}
           />
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-3">
+          {disabledReason && (
+            <span className="text-sm italic text-amber-600/60 dark:text-amber-400/60">
+              {disabledReason}
+            </span>
+          )}
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit}

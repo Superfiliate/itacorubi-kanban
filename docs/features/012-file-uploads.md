@@ -45,19 +45,29 @@ Users can upload files (images, videos, documents) to task comments. Files are d
 ### View Uploaded Image
 
 - Images display inline at full width (max container width)
-- Click image to open in new tab (full size)
+- Hover over image to reveal action buttons:
+  - **Download** - saves image to your device
+  - **Expand** - opens fullscreen lightbox preview
+- Lightbox: dark backdrop, centered image at max size, click backdrop or X to close
 
 ### View Uploaded Video
 
 - Videos display inline with native video controls
 - Play/pause, volume, fullscreen available
-- Download link below video
+- Hover to reveal Download button
 
 ### View Other Files
 
-- Non-media files display as styled download links
+- Non-media files display as styled download cards
 - Shows file icon (based on type), filename, and size
-- Click to download
+- Hover to reveal Download button
+- Click filename to download
+
+### Delete File (Edit Mode)
+
+- When editing a comment, all files show a Delete button on hover
+- Click Delete to remove the file from the comment
+- Orphaned files are cleaned up from storage when comment is saved
 
 ### Check Storage Usage
 
@@ -73,13 +83,14 @@ Users can upload files (images, videos, documents) to task comments. Files are d
 - Rounded corners
 - Max width: 100% of container
 - Responsive height
-- Clickable to view full size
+- Hover overlay with action buttons (Download, Expand, Delete in edit mode)
 
 ### Videos in Comments
 
 - Native HTML5 video player
 - Controls: play, pause, volume, fullscreen
 - Preloads metadata only (saves bandwidth)
+- Hover overlay with action buttons (Download, Delete in edit mode)
 
 ### File Attachments
 
@@ -87,12 +98,13 @@ Users can upload files (images, videos, documents) to task comments. Files are d
 - File type icon (emoji)
 - Filename (truncated if long)
 - File size in human-readable format
-- Hover effect for interactivity
+- Hover overlay with action buttons (Download, Delete in edit mode)
 
 ## Technical Notes
 
 - Uploads require board authentication (password)
 - Files are tracked in database linked to board and comment
 - When a comment is deleted, its files are also deleted
+- When a comment is updated, orphaned files (removed from content) are cleaned up
 - File URLs are stored in Tiptap JSON content
 - Storage check happens before upload (quota enforcement)
