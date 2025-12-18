@@ -23,20 +23,24 @@ Users can upload files (images, videos, documents) to task comments. Files are d
 
 - Click the paperclip (attach) button in the rich-text editor toolbar
 - Select one or more files from the file picker
-- Files upload in sequence with progress indicator
-- Uploaded files appear inline in the comment content
+- A placeholder appears at cursor position showing "Uploading..."
+- Toast notification shows upload progress
+- Placeholder is replaced with the file when upload completes
 
 ### Upload File via Drag and Drop
 
 - Drag files from your computer into the rich-text editor
-- Drop to start upload
-- Files appear inline after upload completes
+- Drop indicator shows where file will be inserted
+- Drop to start upload - placeholder appears at exact drop location
+- Toast notification shows upload progress
+- Placeholder is replaced with the file when upload completes
 
 ### Upload File via Paste
 
 - Copy an image (e.g., screenshot)
 - Paste into the rich-text editor (Ctrl+V / Cmd+V)
-- Image uploads automatically and appears inline
+- Placeholder appears at cursor position
+- Image uploads automatically and replaces placeholder
 
 ### View Uploaded Image
 

@@ -5,6 +5,15 @@ File uploads use environment-aware storage: local filesystem in development, Ver
 - **Development**: Files stored in `public/uploads/{boardId}/` (gitignored, served by Next.js static)
 - **Production**: Vercel Blob storage with automatic CDN
 
+## Upload Methods
+
+Two upload methods based on file size and environment:
+
+- **Server upload** (`/api/upload`): File goes through our API, then to storage. Works for files <4.5MB. Used in development and for small files in production.
+- **Client upload** (`/api/upload/client`): File goes directly to Vercel Blob. Works for any file size up to 100MB. Used in production for files >=4MB.
+
+The client automatically selects the best method based on file size and environment.
+
 ## Database Schema
 
 Files tracked in `uploaded_files` table with:
@@ -20,9 +29,20 @@ Files tracked in `uploaded_files` table with:
 
 ## Tiptap Integration
 
+- `@tiptap/extension-file-handler` for drag-drop and paste handling with correct positioning
 - `@tiptap/extension-image` for inline images
 - Custom `FileAttachment` node for videos and documents
-- Drop/paste/click handlers for upload flow
+- Custom `UploadPlaceholder` node for visual feedback during upload
+
+### Upload Flow
+
+1. User drops/pastes/attaches file
+2. `FileHandler` extension captures the event with exact document position
+3. `UploadPlaceholder` node inserted at that position immediately
+4. Toast shows "Uploading {filename}..."
+5. File uploads (server or client method based on size)
+6. Placeholder replaced with actual image/file node
+7. Toast updates to success/error
 
 ## Production Setup
 
@@ -41,5 +61,7 @@ When a comment is deleted:
 ## Links
 
 - Storage: `src/lib/storage/index.ts`
-- API: `src/app/api/upload/route.ts`
-- Tiptap: `src/components/ui/tiptap-extensions/file-attachment.ts`
+- Server upload API: `src/app/api/upload/route.ts`
+- Client upload API: `src/app/api/upload/client/route.ts`
+- Rich text editor: `src/components/ui/rich-text-editor.tsx`
+- Tiptap extensions: `src/components/ui/tiptap-extensions/`

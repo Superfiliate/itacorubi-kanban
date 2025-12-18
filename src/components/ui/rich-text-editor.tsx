@@ -4,7 +4,9 @@ import React, { useEffect, useRef, useCallback, useState } from "react"
 import { useEditor, EditorContent, type Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
+import { FileHandler } from "@tiptap/extension-file-handler"
 import { FileAttachment } from "./tiptap-extensions/file-attachment"
+import { UploadPlaceholder } from "./tiptap-extensions/upload-placeholder"
 import {
   Bold,
   Italic,
@@ -47,7 +49,14 @@ interface UploadedFileResult {
   size: number
 }
 
-async function uploadFileToServer(
+// Threshold for using client upload (4MB - below Vercel's function payload limit)
+const CLIENT_UPLOAD_THRESHOLD = 4 * 1024 * 1024
+
+/**
+ * Upload a file using server-side upload (goes through our API)
+ * Works for files < 4.5MB
+ */
+async function uploadFileViaServer(
   file: File,
   boardId: string,
   commentId: string
@@ -68,6 +77,62 @@ async function uploadFileToServer(
   }
 
   return response.json()
+}
+
+/**
+ * Upload a file using client-side upload (direct to Vercel Blob)
+ * Works for any file size up to 100MB
+ * Only works in production (onUploadCompleted doesn't work locally)
+ */
+async function uploadFileViaClient(
+  file: File,
+  boardId: string,
+  commentId: string
+): Promise<UploadedFileResult> {
+  // Dynamic import to avoid bundling in non-production builds
+  const { upload } = await import("@vercel/blob/client")
+
+  const blob = await upload(file.name, file, {
+    access: "public",
+    handleUploadUrl: "/api/upload/client",
+    clientPayload: JSON.stringify({
+      boardId,
+      commentId,
+      fileSize: file.size,
+      filename: file.name,
+    }),
+  })
+
+  return {
+    id: crypto.randomUUID(), // ID is generated server-side in onUploadCompleted
+    url: blob.url,
+    filename: file.name,
+    contentType: blob.contentType,
+    size: file.size,
+  }
+}
+
+/**
+ * Upload a file using the best available method:
+ * - Production + large files: client upload (direct to Vercel Blob)
+ * - Development or small files: server upload (through our API)
+ */
+async function uploadFile(
+  file: File,
+  boardId: string,
+  commentId: string
+): Promise<UploadedFileResult> {
+  const isProduction = process.env.NODE_ENV === "production"
+  const isLargeFile = file.size >= CLIENT_UPLOAD_THRESHOLD
+
+  // Use client upload for large files in production
+  // (client upload callback doesn't work in development)
+  if (isProduction && isLargeFile) {
+    return uploadFileViaClient(file, boardId, commentId)
+  }
+
+  // Use server upload for small files or in development
+  return uploadFileViaServer(file, boardId, commentId)
 }
 
 function ToolbarButton({
@@ -268,7 +333,7 @@ export function RichTextEditor({
   const canUpload = !!(boardId && commentId)
 
   const handleFileUpload = useCallback(
-    async (files: FileList | File[]) => {
+    async (files: FileList | File[], pos?: number) => {
       const currentEditor = editorRef.current
       if (!boardId || !commentId || !currentEditor) return
 
@@ -280,48 +345,81 @@ export function RichTextEditor({
 
       try {
         for (const file of fileArray) {
-          try {
-            const result = await uploadFileToServer(file, boardId, commentId)
+          // Generate unique ID for this upload's placeholder
+          const uploadId = crypto.randomUUID()
 
-            // Insert appropriate node based on file type
+          // Insert placeholder immediately at the drop position
+          const placeholderNode = {
+            type: "uploadPlaceholder",
+            attrs: { uploadId, filename: file.name },
+          }
+
+          if (pos !== undefined) {
+            currentEditor.chain().focus().insertContentAt(pos, placeholderNode).run()
+          } else {
+            currentEditor.chain().focus().insertContent(placeholderNode).run()
+          }
+
+          // Show loading toast
+          const toastId = toast.loading(`Uploading ${file.name}...`)
+
+          try {
+            const result = await uploadFile(file, boardId, commentId)
+
+            // Build the content to replace placeholder with
+            let nodeContent: { type: string; attrs: Record<string, unknown> }
+
             if (result.contentType.startsWith("image/")) {
-              // Insert image inline
-              currentEditor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
-            } else if (result.contentType.startsWith("video/")) {
-              // Insert video as custom HTML
-              currentEditor
-                .chain()
-                .focus()
-                .insertContent({
-                  type: "fileAttachment",
-                  attrs: {
-                    url: result.url,
-                    filename: result.filename,
-                    contentType: result.contentType,
-                    size: result.size,
-                  },
-                })
-                .run()
+              nodeContent = {
+                type: "image",
+                attrs: { src: result.url, alt: result.filename },
+              }
             } else {
-              // Insert file attachment node
+              // Video and other files use fileAttachment node
+              nodeContent = {
+                type: "fileAttachment",
+                attrs: {
+                  url: result.url,
+                  filename: result.filename,
+                  contentType: result.contentType,
+                  size: result.size,
+                },
+              }
+            }
+
+            // Find and replace the placeholder with actual content
+            const { doc } = currentEditor.state
+            let placeholderPos: number | null = null
+
+            doc.descendants((node, nodePos) => {
+              if (
+                node.type.name === "uploadPlaceholder" &&
+                node.attrs.uploadId === uploadId
+              ) {
+                placeholderPos = nodePos
+                return false // Stop searching
+              }
+              return true
+            })
+
+            if (placeholderPos !== null) {
+              // Replace placeholder with actual content
               currentEditor
                 .chain()
                 .focus()
-                .insertContent({
-                  type: "fileAttachment",
-                  attrs: {
-                    url: result.url,
-                    filename: result.filename,
-                    contentType: result.contentType,
-                    size: result.size,
-                  },
-                })
+                .deleteRange({ from: placeholderPos, to: placeholderPos + 1 })
+                .insertContentAt(placeholderPos, nodeContent)
                 .run()
             }
 
-            toast.success(`Uploaded ${result.filename}`)
+            toast.success(`Uploaded ${result.filename}`, { id: toastId })
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Failed to upload file")
+            // Remove placeholder on error
+            currentEditor.commands.removeUploadPlaceholder(uploadId)
+            toast.error(
+              error instanceof Error ? error.message : "Failed to upload file",
+              { id: toastId }
+            )
           }
         }
       } finally {
@@ -331,6 +429,18 @@ export function RichTextEditor({
     },
     [boardId, commentId, onUploadStart, onUploadEnd]
   )
+
+  // Store refs to allow callbacks to access latest values without recreating extension
+  const handleFileUploadRef = useRef(handleFileUpload)
+  const canUploadRef = useRef(canUpload)
+
+  useEffect(() => {
+    handleFileUploadRef.current = handleFileUpload
+  }, [handleFileUpload])
+
+  useEffect(() => {
+    canUploadRef.current = canUpload
+  }, [canUpload])
 
   const editor = useEditor({
     extensions: [
@@ -347,6 +457,25 @@ export function RichTextEditor({
         },
       }),
       FileAttachment,
+      UploadPlaceholder,
+      // FileHandler is always included, but callbacks check if upload is enabled
+      // Note: Not using allowedMimeTypes to avoid filtering issues - we validate on the server
+      FileHandler.configure({
+        onDrop: (_currentEditor, files, pos) => {
+          // Always handle the event to prevent browser default (opening file)
+          if (canUploadRef.current && files.length > 0) {
+            // pos is the exact document position where file was dropped
+            handleFileUploadRef.current(files, pos)
+          }
+        },
+        onPaste: (_currentEditor, files) => {
+          // Always handle the event to prevent browser default
+          if (canUploadRef.current && files.length > 0) {
+            // For paste, insert at current selection
+            handleFileUploadRef.current(files)
+          }
+        },
+      }),
     ],
     content: content ? JSON.parse(content) : undefined,
     editable,
@@ -357,25 +486,24 @@ export function RichTextEditor({
           !editable && "min-h-0 p-0"
         ),
       },
+      // Prevent browser's default behavior for file drops (especially images)
+      // FileHandler will handle the actual upload via its onDrop callback
       handleDrop: (view, event, _slice, moved) => {
-        if (!canUpload || moved || !event.dataTransfer?.files.length) {
-          return false
-        }
-        event.preventDefault()
-        handleFileUpload(event.dataTransfer.files)
-        return true
-      },
-      handlePaste: (view, event) => {
-        if (!canUpload) return false
+        if (moved) return false // Let ProseMirror handle internal moves
 
-        const files = event.clipboardData?.files
+        const files = event.dataTransfer?.files
         if (files && files.length > 0) {
-          // Check if there are actual files (not just text)
-          const hasFiles = Array.from(files).some((file) => file.type)
-          if (hasFiles) {
+          // Check if any of the files are types we handle
+          const hasHandledFiles = Array.from(files).some(file =>
+            file.type.startsWith("image/") ||
+            file.type.startsWith("video/") ||
+            file.type
+          )
+          if (hasHandledFiles) {
+            // Prevent browser from opening the file
+            // FileHandler extension will process it via onDrop callback
             event.preventDefault()
-            handleFileUpload(files)
-            return true
+            return false // Let FileHandler process the files
           }
         }
         return false

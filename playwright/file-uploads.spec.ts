@@ -147,7 +147,7 @@ test.describe("File Uploads", () => {
   // trigger Tiptap/ProseMirror's event handlers. Manual testing required.
   test.skip("should handle drag and drop file upload", async () => {
     // Synthetic drop events don't trigger ProseMirror's handleDrop reliably
-    // The implementation uses editorProps.handleDrop in rich-text-editor.tsx
+    // The implementation uses @tiptap/extension-file-handler with onDrop callback
     // Manual testing confirms drag-and-drop works in browsers
   })
 })
