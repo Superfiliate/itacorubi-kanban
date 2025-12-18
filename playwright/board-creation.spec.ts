@@ -85,6 +85,38 @@ test.describe("Board Creation", () => {
     await expect(boardIdCode).toBeVisible()
   })
 
+  test("should forget board from recent boards", async ({ page }) => {
+    const boardTitle = "Board To Forget"
+    await createTestBoard(page, boardTitle, "testpass123")
+
+    // Navigate back to homepage
+    await page.goto("/")
+
+    // Verify the board appears in recent boards
+    const boardLink = page.getByRole("link", { name: new RegExp(boardTitle, "i") })
+    await expect(boardLink).toBeVisible()
+
+    // Hover over the board item to reveal the forget button
+    const boardItem = boardLink.locator("..")
+    await boardItem.hover()
+
+    // Click the forget button
+    const forgetButton = page.getByRole("button", { name: new RegExp(`forget ${boardTitle}`, "i") })
+    await forgetButton.click()
+
+    // Verify confirmation dialog appears
+    const dialog = page.getByRole("dialog")
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText(/forget board/i)).toBeVisible()
+    await expect(dialog.getByText(new RegExp(boardTitle, "i"))).toBeVisible()
+
+    // Confirm forget
+    await dialog.getByRole("button", { name: /forget/i }).click()
+
+    // Verify the board is removed from recent boards
+    await expect(boardLink).not.toBeVisible()
+  })
+
   test("should require both title and password", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("button", { name: /create.*board/i }).click()

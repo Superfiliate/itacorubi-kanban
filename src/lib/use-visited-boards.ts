@@ -44,6 +44,12 @@ export function trackBoardVisit(id: string, title: string) {
   saveVisitedBoardsToStorage(updated)
 }
 
+export function forgetBoard(id: string) {
+  const boards = getVisitedBoardsFromStorage()
+  const filtered = boards.filter((b) => b.id !== id)
+  saveVisitedBoardsToStorage(filtered)
+}
+
 export function useVisitedBoards() {
   const [boards, setBoards] = useState<VisitedBoard[]>([])
 
@@ -51,5 +57,10 @@ export function useVisitedBoards() {
     setBoards(getVisitedBoardsFromStorage())
   }, [])
 
-  return boards
+  const forget = (id: string) => {
+    forgetBoard(id)
+    setBoards((prev) => prev.filter((b) => b.id !== id))
+  }
+
+  return { boards, forget }
 }
