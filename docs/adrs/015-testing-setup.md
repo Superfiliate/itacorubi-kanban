@@ -7,6 +7,22 @@ We use Playwright for end-to-end testing of high-level user flows.
 - **Test database isolation** - Each test run uses a separate `test.db` file
 - **Real browser testing** - Tests run in actual Chromium browsers
 
+## Hard Rules (Non-Negotiable)
+
+1. **Never skip tests** - No `test.skip()`, `test.fixme()`, or any skipping mechanism. If a test can't be made reliable, delete it entirely.
+2. **Flaky tests are bugs** - If a test is unreliable in our controlled test environment, the underlying code is unreliable for users too. Fix it.
+3. **No overlapping tests** - If two tests cover the same scenario with minor variations, merge them or keep only one.
+4. **Speed matters** - Tests run in parallel. Slow tests block iteration. Optimize aggressively.
+
+## Flaky Failures vs Hard Failures
+
+Retries help distinguish failure types. Both are bugs requiring different debugging approaches:
+
+| Failure Type | Behavior | Debugging Approach |
+|--------------|----------|-------------------|
+| **Flaky** | Fails initially, passes on retry | Race conditions, timing issues, async patterns, missing waits |
+| **Hard** | Fails all retries | Logic bugs, broken selectors, missing elements, real regressions |
+
 ## Test Organization
 
 All Playwright tests and utilities are located in the `playwright/` directory:
@@ -49,101 +65,38 @@ pnpm test playwright/board-creation.spec.ts
 - The build step automatically initializes the database with `pnpm db:push`
 - Environment variable `TURSO_DATABASE_URL=file:test.db` is set for test runs
 
-## Test Patterns
-
-### High-Level Feature Testing
-
-Tests focus on complete user workflows:
-
-```typescript
-test("should create a new board from homepage", async ({ page }) => {
-  await page.goto("/")
-  await page.getByRole("button", { name: /create.*board/i }).click()
-  // ... complete flow
-})
-```
-
-### Test Helpers
-
-Use helpers from `playwright/utils/playwright.ts`:
-
-- `createTestBoard()` - Create a board via UI
-- `unlockTestBoard()` - Unlock a board in browser context
-- `waitForBoardLoad()` - Wait for board to be fully loaded
-
-### Database Isolation
-
-- Database is reset once before all tests via `global-setup.ts`
-- Tests are configured to run **in parallel** (multiple workers) both locally and on CI
-- Each test creates isolated boards (unique IDs) so tests can run concurrently without stepping on each other
-- SQLite handles concurrent operations safely, but we treat any timeout/flakiness as a **bug** to fix (not something to hide with higher timeouts)
-- Each test should work with a clean database state
-
 ## Configuration
 
 The Playwright config (`playwright/playwright.config.ts`) includes:
 
 - **Test server**: Automatically builds and starts Next.js production server on port 5800
 - **Test database**: Uses `file:test.db` via environment variable
-- **Browser**: Chromium only (can be extended to Firefox/WebKit)
-- **Retries**: 2 retries on CI, 1 locally
+- **Browser**: Chromium only
+- **Retries**: 2 retries (for flakiness detection, not to hide bugs)
 - **Screenshots/Videos**: Captured on failure for debugging
 - **Parallel execution**: Enabled (`fullyParallel: true`) with multiple workers
-- **Timeouts**: All timeouts configured globally:
+- **Timeouts**: All timeouts configured globally (no per-test overrides allowed):
   - `timeout: 30000` - 30 seconds maximum per test
   - `expect.timeout: 10000` - 10 seconds for assertions
-  - `actionTimeout: 10000` - 10 seconds for actions (click, fill, etc.)
+  - `actionTimeout: 10000` - 10 seconds for actions
   - `navigationTimeout: 10000` - 10 seconds for navigation
 
-## Timeout Configuration
-
-**All timeouts are configured globally** - no explicit timeouts allowed in test files or helpers.
-
-- **10 second maximum** for actions, assertions, and navigation
-- **30 second maximum** for full test execution
-- **10 seconds is already very generous** - if an operation takes longer than 10 seconds, it's treated as a bug to be fixed
-- **Never increase timeouts** - if a test fails due to timeout, fix the underlying issue (slow operation, missing wait, race condition, etc.)
-- This forces us to optimize slow operations rather than masking them with long waits
-
-**Why no explicit timeouts?**
-- Consistency - all tests use the same timeout values
-- Maintainability - timeout changes happen in one place
-- Forces optimization - slow operations are caught early
-
-**Strict Policy:**
-- If a test times out, investigate and fix the root cause
-- Do not increase timeouts as a workaround
-- Common fixes: add proper waits, optimize slow queries, fix race conditions, ensure proper loading states
-
-## Test Balance: Reliability vs Speed
-
-**Goal:** Maintain high reliability while keeping test suite fast enough for rapid feedback.
-
-### Principles
-
-1. **Test critical paths, not every edge case** - Focus on user-facing workflows that would cause real problems if broken
-2. **Avoid overlapping test scenarios** - If Test A covers scenario X, don't create Test B that also covers X with minor variations
-3. **Prefer integration over unit** - E2E tests should cover complete flows, not individual form validations
-4. **Form validation is implicit** - If a form works in the happy path, validation is likely working; don't test every validation rule separately
-5. **One test per unique outcome** - If multiple tests verify the same outcome, consolidate them
-
-### When Adding Tests
+## Avoiding Overlapping Tests
 
 Before adding a new test, ask:
-- **Does this test a unique user flow?** If yes, add it. If it's a variation of existing flow, skip it.
-- **Would this catch a real bug users would hit?** If yes, add it. If it's a theoretical edge case, skip it.
-- **Does this overlap with existing tests?** If yes, consolidate or skip it.
-- **Is this testing implementation details?** If yes, skip it - focus on user-visible behavior.
 
-### Example: Password Change Feature
+1. **Does an existing test already cover this?** If yes, don't add a new one.
+2. **Is this a minor variation of an existing test?** If yes, merge it into the existing test.
+3. **Would users actually hit this scenario?** If it's a theoretical edge case, skip it.
 
-**Good (2 tests):**
-- Test 1: Change password happy path (covers: dialog, warning, success, stays logged in)
-- Test 2: Old password invalid after change (covers: old password fails, new password works)
+**Example - Password Change Feature:**
 
-**Avoid (8+ tests):**
-- Separate tests for cancel, empty password validation, mismatched passwords, redirect scenarios, etc.
-- These overlap with the core flows and slow down the suite without adding meaningful coverage
+Good (2 tests):
+- Happy path: change password, verify success, stays logged in
+- Security: old password fails after change, new password works
+
+Avoid (8+ separate tests):
+- Cancel button, empty validation, mismatch validation, redirect scenarios, etc.
 
 ## Best Practices
 
@@ -151,57 +104,53 @@ Before adding a new test, ask:
 2. **Wait for elements** - Use Playwright's auto-waiting, avoid manual `sleep()` calls
 3. **Test user flows** - Focus on what users do, not implementation details
 4. **Keep tests independent** - Each test should work in isolation
-5. **Use test steps** - Use `test.step()` for better test organization and reporting
-6. **No explicit timeouts** - Always use global timeout configuration
-7. **Parallel execution** - Tests run in parallel for faster feedback
-8. **Balance coverage and speed** - Prefer fewer, focused tests over many overlapping scenarios
+5. **No explicit timeouts** - Always use global timeout configuration
+
+## Known Limitations
+
+Some scenarios cannot be reliably tested with Playwright's synthetic events:
+
+- **Drag-and-drop file uploads** - Synthetic drop events don't trigger ProseMirror/Tiptap's event handlers reliably. The toolbar upload button is tested instead.
+- **Complex editor interactions** - Some rich text editor behaviors require real browser events that can't be synthesized.
+
+These are documented here rather than kept as skipped tests.
 
 ## Gotchas (Lessons Learned)
 
-These are recurring root causes behind timeouts/flaky E2E tests. If a test starts failing, check these first.
+These are recurring root causes behind timeouts/flaky E2E tests. Check these first when debugging.
 
 ### Selector collisions (Playwright strict mode)
 
-- Prefer scoping queries to a container:
+- Scope queries to a container:
   - Example: `const sidebar = page.getByRole("dialog", { name: /edit task/i })`
   - Then query within it: `sidebar.getByRole("combobox", { name: /assignees/i })`
-- Avoid `getByText(/foo/i)` when the same text can appear in multiple places:
-  - Empty states often include the keyword (e.g. "No comments yet" matches `/comments/i`)
-  - Dropdown suggestion lists can contain the same labels as the selected value
-- When you *must* use text matching, disambiguate with `.first()` / `.nth()` or a more specific role-based locator.
+- Avoid `getByText(/foo/i)` when the same text can appear in multiple places
+- Disambiguate with `.first()` / `.nth()` or a more specific role-based locator
 
 ### Accessibility drives testability
 
 We rely on `getByRole(..., { name })` heavily. That requires proper accessible names.
 
 - Icon-only buttons must have `aria-label` (and ideally `title`)
-- Custom combobox triggers (e.g. Popover + Button) must have an accessible name:
-  - Add `aria-label` (or an associated `<label htmlFor>` + `id`) so tests can do:
-    `getByRole("combobox", { name: /assignees/i })`
+- Custom combobox triggers must have an accessible name via `aria-label` or associated `<label>`
 
 ### Escape key closes the wrong layer
 
-`Escape` can close:
-- Popovers/menus (desired), **or**
-- the whole sidebar Sheet/dialog (undesired), depending on focus.
+`Escape` can close popovers/menus (desired) or the whole sidebar (undesired), depending on focus.
 
-Recommendations:
-- Prefer closing the sidebar via the explicit UI control (e.g. `Back`) instead of `page.keyboard.press("Escape")`
-- In the app, close selection popovers after selecting/creating items to avoid needing Escape at all.
+- Prefer closing via explicit UI controls (e.g. `Back` button) instead of `page.keyboard.press("Escape")`
+- Close selection popovers after selecting/creating items to avoid needing Escape
 
 ### Optimistic updates should keep stable identities
 
-If the UI swaps an optimistic entity ID for a server ID, it can:
-- detach the node Playwright is interacting with (click becomes “element detached”)
-- cause confirm dialogs/buttons to become “not stable”
+If the UI swaps an optimistic entity ID for a server ID, it can detach nodes Playwright is interacting with.
 
-Preferred patterns:
-- Create the entity with a deterministic id when possible (client generates id and server accepts it), **or**
-- If replacement is unavoidable, ensure the UI remains stable (avoid unmount/remount during critical interactions).
+- Create entities with deterministic IDs when possible (client generates, server accepts)
+- If replacement is unavoidable, ensure the UI remains stable during critical interactions
 
 ### Drag and drop needs explicit handles
 
 For DnD (dnd-kit):
-- Do not attach drag listeners to large interactive regions (headers that also contain inputs/buttons)
-- Provide a dedicated “Drag …” handle/button and attach listeners there
-- In tests, use pointer-based dragging that matches the app’s sensor/activation constraints.
+- Provide a dedicated drag handle button with listeners
+- Don't attach drag listeners to large interactive regions
+- Use pointer-based dragging that matches the app's sensor/activation constraints

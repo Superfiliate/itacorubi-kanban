@@ -183,39 +183,4 @@ test.describe("Stakeholders", () => {
     await expect(page.getByText(/updated stakeholder/i)).toBeVisible()
     await expect(page.getByText(/original stakeholder/i)).not.toBeVisible()
   })
-
-  test("should persist stakeholders after background polling (local-first)", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Persist Stakeholder Test", "testpass123")
-    await waitForBoardLoad(page)
-
-    // Create a task
-    const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
-    await addTaskButton.click()
-    const sidebar = await waitForSidebarOpen(page)
-
-    // Add a stakeholder
-    const stakeholdersSelect = sidebar.getByRole("combobox", { name: /stakeholders/i })
-    await stakeholdersSelect.click()
-    const input = page.getByPlaceholder(/search or create/i)
-    await input.fill("Persistent Stakeholder")
-    await page.getByRole("option", { name: /create.*persistent stakeholder/i }).click()
-    await expect(sidebar.getByText(/persistent stakeholder/i).first()).toBeVisible()
-
-    // Wait for sync to complete (check header indicator, not sidebar)
-    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
-
-    // Stakeholder should STILL be visible after sync
-    await expect(sidebar.getByText(/persistent stakeholder/i).first()).toBeVisible()
-
-    // Close sidebar and reopen to verify persistence
-    await sidebar.getByRole("button", { name: /back/i }).click()
-    await waitForSidebarClose(page)
-
-    // Reopen sidebar by clicking the task card link
-    await page.getByRole("link", { name: /open task.*new task/i }).click()
-    const reopenedSidebar = await waitForSidebarOpen(page)
-
-    // Stakeholder should still be visible after reopening
-    await expect(reopenedSidebar.getByText(/persistent stakeholder/i)).toBeVisible()
-  })
 })

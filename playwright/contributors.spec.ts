@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test"
 import { createTestBoard, waitForBoardLoad } from "./utils/playwright"
 
 test.describe("Contributors", () => {
-  test("should create contributor via assignees dropdown", async ({ page }) => {
+  test("should create contributor via assignees dropdown and show badge on task card", async ({ page }) => {
     const boardId = await createTestBoard(page, "Contributor Test Board", "testpass123")
     await waitForBoardLoad(page)
 
@@ -26,6 +26,13 @@ test.describe("Contributors", () => {
 
     // Contributor should be created and assigned
     await expect(sidebar.getByText(/new contributor/i)).toBeVisible()
+
+    // Close sidebar and verify contributor badge appears on task card
+    await sidebar.getByRole("button", { name: /back/i }).click()
+    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
+
+    const taskCard = page.getByText(/new task/i).locator("..").locator("..")
+    await expect(taskCard.getByText(/new contributor/i)).toBeVisible()
   })
 
   test("should assign existing contributor to task", async ({ page }) => {
@@ -92,33 +99,6 @@ test.describe("Contributors", () => {
 
     // Contributor should be removed
     await expect(sidebar.getByText(/to remove/i)).not.toBeVisible()
-  })
-
-  test("should show contributor badges on task cards", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Badge Test Board", "testpass123")
-    await waitForBoardLoad(page)
-
-    // Create a task
-    const addTaskButton = page.getByRole("button", { name: /add task/i }).first()
-    await addTaskButton.click()
-    await page.waitForURL(/task=/)
-
-    const sidebar = page.getByRole("dialog", { name: /edit task/i })
-
-    // Assign a contributor
-    const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i })
-    await assigneesSelect.click()
-    const input = page.getByPlaceholder(/search or create/i)
-    await input.fill("Card Contributor")
-    await page.getByRole("option", { name: /create.*card contributor/i }).click()
-
-    // Close sidebar
-    await sidebar.getByRole("button", { name: /back/i }).click()
-    await page.waitForURL(new RegExp(`/boards/${boardId}$`))
-
-    // Verify contributor badge appears on task card
-    const taskCard = page.getByText(/new task/i).locator("..").locator("..")
-    await expect(taskCard.getByText(/card contributor/i)).toBeVisible()
   })
 
   test("should open contributors dialog from header", async ({ page }) => {

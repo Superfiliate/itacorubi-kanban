@@ -92,11 +92,7 @@ test.describe("Local-First Architecture", () => {
       await waitForSidebarClose(page)
     }
 
-    // Wait for outbox to flush - "Saving..." should disappear
-    // Note: "Saved" appears briefly then hides, so we check that "Saving" is NOT visible
-    await expect(page.getByText(/saving/i)).not.toBeVisible({ timeout: 10000 })
-
-    // Verify column shows 3 tasks
+    // Verify column shows 3 tasks (optimistic update should show immediately)
     const todoColumn = page.locator('[title="Click to edit"]').filter({ hasText: /to do/i }).locator("..")
     await expect(todoColumn.getByText(/3/)).toBeVisible()
 

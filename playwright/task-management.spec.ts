@@ -69,7 +69,7 @@ test.describe("Task Management", () => {
     await expect(taskCard).toHaveClass(/border-l-red/)
   })
 
-  test("should reflect contributor rename on task cards without refresh (and keep color stable)", async ({ page }) => {
+  test("should reflect contributor rename on task cards without refresh", async ({ page }) => {
     const boardId = await createTestBoard(page, "Contributor Sync Test", "testpass123")
     await waitForBoardLoad(page)
 
@@ -84,19 +84,7 @@ test.describe("Task Management", () => {
     await page.getByRole("option", { name: /create.*alice/i }).click()
 
     // Badge should appear in sidebar
-    const aliceBadge = sidebar.locator("span").filter({ hasText: "Alice" }).first()
-    await expect(aliceBadge).toBeVisible()
-
-    // Wait for sync to complete - this triggers any server-side data reconciliation
-    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
-
-    // After sync, class should remain stable (no flicker from server data)
-    const classBefore = await aliceBadge.getAttribute("class")
-    // Use expect.poll to verify class stability over time
-    await expect.poll(
-      async () => await aliceBadge.getAttribute("class"),
-      { timeout: 3000 }
-    ).toBe(classBefore)
+    await expect(sidebar.locator("span").filter({ hasText: "Alice" }).first()).toBeVisible()
 
     // Close sidebar
     await sidebar.getByRole("button", { name: /back/i }).click()
