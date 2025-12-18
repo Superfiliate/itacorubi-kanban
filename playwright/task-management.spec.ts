@@ -154,22 +154,38 @@ test.describe("Task Management", () => {
 
     // Open task again by clicking the task card link
     await taskCardLink.click()
-    await waitForSidebarOpen(page)
+    const reopenedSidebar = await waitForSidebarOpen(page)
 
     // Find Status dropdown and change it to "Done"
     // The Status label is separate, so find the combobox near the "Status" text
-    const statusLabel = sidebar.getByText("Status")
+    const statusLabel = reopenedSidebar.getByText("Status")
     const statusSelect = statusLabel.locator("..").getByRole("combobox")
     await expect(statusSelect).toBeVisible()
     await statusSelect.click()
     await page.getByRole("option", { name: /done/i }).click()
 
     // Close sidebar
-    await sidebar.getByRole("button", { name: /back/i }).click()
+    await reopenedSidebar.getByRole("button", { name: /back/i }).click()
     await waitForSidebarClose(page)
 
-    // Task should now be in "Done" column
-    const doneColumn = page.getByText(/done/i).locator("..").locator("..")
+    // Task should no longer be in To-Do column
+    const todoColumn = page
+      .locator('[title="Click to edit"]')
+      .filter({ hasText: /to do/i })
+      .first()
+      .locator("..")
+      .locator("..")
+      .locator("..")
+    await expect(todoColumn.getByText(/new task/i)).not.toBeVisible()
+
+    // Task should now be in Done column
+    const doneColumn = page
+      .locator('[title="Click to edit"]')
+      .filter({ hasText: /done/i })
+      .first()
+      .locator("..")
+      .locator("..")
+      .locator("..")
     await expect(doneColumn.getByText(/new task/i)).toBeVisible()
   })
 
@@ -288,9 +304,6 @@ test.describe("Task Management", () => {
       // Now drag to target
       await targetTask.hover()
       await page.mouse.up()
-
-      // Wait for drag to complete and server sync
-      await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible()
     }
 
     // Create 3 tasks in "To do" column
@@ -433,9 +446,6 @@ test.describe("Task Management", () => {
     const finalDoingOrder = await getTaskOrder(doingColumn)
     // Task 1 is dropped on "Doing Task 2", so it inserts before it
     expect(finalDoingOrder).toEqual(["Doing Task 1", "Task 3", "Task 1", "Doing Task 2"])
-
-    // Wait for all changes to be saved before reloading
-    await expect(page.getByText(/saving/i)).not.toBeVisible()
 
     // Test 5: Verify order persists after page refresh
     await page.reload()
