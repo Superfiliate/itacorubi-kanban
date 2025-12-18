@@ -6,21 +6,21 @@ This folder contains user flows and feature documentation organized **by model/e
 
 Each feature file focuses on a single model and its interactions:
 
-| File | Model | Scope |
-|------|-------|-------|
-| `000-overview.md` | — | App overview, data model, visual design, tech notes |
-| `001-homepage.md` | — | Landing page, entry points |
-| `002-boards.md` | Board | Create, access, rename, delete |
-| `003-columns.md` | Column | Add, rename, reorder, collapse/expand, delete |
-| `004-tasks.md` | Task | Create, view/edit, move, delete |
-| `005-contributors.md` | Contributor | Assign, create, remove, colors |
-| `006-comments.md` | Comment | Add, edit, delete, author memory, age indicators |
-| `007-dark-mode.md` | — | Theme toggle and persistence |
-| `008-glassmorphism.md` | — | Visual styling direction |
-| `009-sync-status.md` | — | Sync indicator behavior |
-| `010-user-feedback.md` | — | Toasts, confirmations, empty states |
-| `011-tags.md` | Tag | Create, assign, remove, colors |
-| `012-file-uploads.md` | UploadedFile | Upload, display, delete, storage limits |
+| File                   | Model        | Scope                                               |
+| ---------------------- | ------------ | --------------------------------------------------- |
+| `000-overview.md`      | —            | App overview, data model, visual design, tech notes |
+| `001-homepage.md`      | —            | Landing page, entry points                          |
+| `002-boards.md`        | Board        | Create, access, rename, delete                      |
+| `003-columns.md`       | Column       | Add, rename, reorder, collapse/expand, delete       |
+| `004-tasks.md`         | Task         | Create, view/edit, move, delete                     |
+| `005-contributors.md`  | Contributor  | Assign, create, remove, colors                      |
+| `006-comments.md`      | Comment      | Add, edit, delete, author memory, age indicators    |
+| `007-dark-mode.md`     | —            | Theme toggle and persistence                        |
+| `008-glassmorphism.md` | —            | Visual styling direction                            |
+| `009-sync-status.md`   | —            | Sync indicator behavior                             |
+| `010-user-feedback.md` | —            | Toasts, confirmations, empty states                 |
+| `011-tags.md`          | Tag          | Create, assign, remove, colors                      |
+| `012-file-uploads.md`  | UploadedFile | Upload, display, delete, storage limits             |
 
 ## File Structure
 

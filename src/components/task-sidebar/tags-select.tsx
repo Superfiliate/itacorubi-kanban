@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,88 +10,71 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { TagBadge } from "@/components/tag-badge"
-import {
-  useAddTag,
-  useRemoveTag,
-  useCreateAndAddTag,
-} from "@/hooks/use-task"
-import type { ContributorColor } from "@/db/schema"
-import { ensureTagHasHash } from "@/lib/tag-utils"
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { TagBadge } from "@/components/tag-badge";
+import { useAddTag, useRemoveTag, useCreateAndAddTag } from "@/hooks/use-task";
+import type { ContributorColor } from "@/db/schema";
+import { ensureTagHasHash } from "@/lib/tag-utils";
 
 interface TagsSelectProps {
-  taskId: string
-  boardId: string
+  taskId: string;
+  boardId: string;
   tags: Array<{
     tag: {
-      id: string
-      name: string
-      color: ContributorColor
-    }
-  }>
+      id: string;
+      name: string;
+      color: ContributorColor;
+    };
+  }>;
   allTags: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
 }
 
-export function TagsSelect({
-  taskId,
-  boardId,
-  tags,
-  allTags,
-}: TagsSelectProps) {
-  const [open, setOpen] = useState(false)
-  const [inputValue, setInputValue] = useState("")
+export function TagsSelect({ taskId, boardId, tags, allTags }: TagsSelectProps) {
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
 
   // Mutations
-  const addTagMutation = useAddTag(boardId)
-  const removeTagMutation = useRemoveTag(boardId)
-  const createAndAddMutation = useCreateAndAddTag(boardId)
+  const addTagMutation = useAddTag(boardId);
+  const removeTagMutation = useRemoveTag(boardId);
+  const createAndAddMutation = useCreateAndAddTag(boardId);
 
-  const tagIds = new Set(tags.map((t) => t.tag.id))
+  const tagIds = new Set(tags.map((t) => t.tag.id));
 
   const handleSelect = (tagId: string) => {
     if (tagIds.has(tagId)) {
-      removeTagMutation.mutate({ taskId, tagId })
+      removeTagMutation.mutate({ taskId, tagId });
     } else {
-      addTagMutation.mutate({ taskId, tagId })
+      addTagMutation.mutate({ taskId, tagId });
     }
     // Close after selecting to avoid focus/escape closing the whole sidebar (Sheet)
-    setOpen(false)
-    setInputValue("")
-  }
+    setOpen(false);
+    setInputValue("");
+  };
 
   const handleCreateNew = () => {
-    const name = inputValue.trim()
+    const name = inputValue.trim();
     if (name) {
       // Ensure tag name starts with "#" (the hook will also ensure this, but we do it here for consistency)
-      const normalizedName = ensureTagHasHash(name)
-      createAndAddMutation.mutate({ taskId, name: normalizedName })
-      setInputValue("")
-      setOpen(false)
+      const normalizedName = ensureTagHasHash(name);
+      createAndAddMutation.mutate({ taskId, name: normalizedName });
+      setInputValue("");
+      setOpen(false);
     }
-  }
+  };
 
   const filteredTags = inputValue
-    ? allTags.filter((t) =>
-        t.name.toLowerCase().includes(inputValue.toLowerCase())
-      )
-    : allTags
+    ? allTags.filter((t) => t.name.toLowerCase().includes(inputValue.toLowerCase()))
+    : allTags;
 
   const showCreateOption =
     inputValue.trim() &&
-    !allTags.some(
-      (t) => t.name.toLowerCase() === inputValue.trim().toLowerCase()
-    )
+    !allTags.some((t) => t.name.toLowerCase() === inputValue.trim().toLowerCase());
 
   return (
     <div className="space-y-2">
@@ -121,9 +104,7 @@ export function TagsSelect({
             aria-label="Tags"
             className="w-full justify-between"
           >
-            {tags.length === 0
-              ? "Select tags..."
-              : `${tags.length} selected`}
+            {tags.length === 0 ? "Select tags..." : `${tags.length} selected`}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -149,23 +130,14 @@ export function TagsSelect({
               </CommandEmpty>
               <CommandGroup>
                 {filteredTags.map((tag) => (
-                  <CommandItem
-                    key={tag.id}
-                    value={tag.id}
-                    onSelect={() => handleSelect(tag.id)}
-                  >
+                  <CommandItem key={tag.id} value={tag.id} onSelect={() => handleSelect(tag.id)}>
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        tagIds.has(tag.id)
-                          ? "opacity-100"
-                          : "opacity-0"
+                        tagIds.has(tag.id) ? "opacity-100" : "opacity-0",
                       )}
                     />
-                    <TagBadge
-                      name={tag.name}
-                      color={tag.color}
-                    />
+                    <TagBadge name={tag.name} color={tag.color} />
                   </CommandItem>
                 ))}
                 {showCreateOption && (
@@ -185,5 +157,5 @@ export function TagsSelect({
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

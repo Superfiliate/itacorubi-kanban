@@ -7,3 +7,4 @@ CREATE TABLE `task_stakeholders` (
 );
 --> statement-breakpoint
 ALTER TABLE `comments` ADD `stakeholder_id` text REFERENCES contributors(id) ON DELETE restrict;
+

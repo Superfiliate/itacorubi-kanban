@@ -53,17 +53,20 @@ Local writes enqueue an outbox item describing the server mutation to perform.
 The outbox is persisted to **localStorage** to prevent data loss when users navigate away before sync completes.
 
 **How it works:**
+
 1. When items are enqueued/dequeued, the outbox is saved to localStorage
 2. On page load, `ensureBoard()` restores any persisted outbox items
 3. `HydrateBoard` applies restored items locally to reconstruct optimistic state
 4. Flushing resumes automatically
 
 **Navigation protection:**
+
 - `beforeunload` handler warns users if they try to close/refresh with pending changes
 - Even if users dismiss the warning, localStorage persistence ensures data isn't lost
 - On return to the board, pending changes are synced and visible immediately
 
 **Key files:**
+
 - `src/lib/outbox/persistence.ts` - localStorage save/load
 - `src/lib/outbox/apply-local.ts` - reconstructs optimistic state from outbox items
 - `src/hooks/use-outbox-guard.ts` - beforeunload handler hook

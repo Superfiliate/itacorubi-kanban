@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import React, { useEffect, useRef, useCallback, useState } from "react"
-import { useEditor, EditorContent, type Editor } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
-import { FileHandler } from "@tiptap/extension-file-handler"
-import { ImageExtension } from "./tiptap-extensions/image-extension"
-import { FileAttachment } from "./tiptap-extensions/file-attachment"
-import { UploadPlaceholder } from "./tiptap-extensions/upload-placeholder"
+import React, { useEffect, useRef, useCallback, useState } from "react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { FileHandler } from "@tiptap/extension-file-handler";
+import { ImageExtension } from "./tiptap-extensions/image-extension";
+import { FileAttachment } from "./tiptap-extensions/file-attachment";
+import { UploadPlaceholder } from "./tiptap-extensions/upload-placeholder";
 import {
   Bold,
   Italic,
@@ -23,34 +23,34 @@ import {
   Redo,
   Paperclip,
   Loader2,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "./button"
-import { toast } from "sonner"
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "./button";
+import { toast } from "sonner";
 
 interface RichTextEditorProps {
-  content?: string
-  onChange?: (content: string) => void
-  editable?: boolean
-  placeholder?: string
-  className?: string
+  content?: string;
+  onChange?: (content: string) => void;
+  editable?: boolean;
+  placeholder?: string;
+  className?: string;
   // File upload props (optional - only needed when file uploads are enabled)
-  boardId?: string
-  commentId?: string
-  onUploadStart?: () => void
-  onUploadEnd?: () => void
+  boardId?: string;
+  commentId?: string;
+  onUploadStart?: () => void;
+  onUploadEnd?: () => void;
 }
 
 interface UploadedFileResult {
-  id: string
-  url: string
-  filename: string
-  contentType: string
-  size: number
+  id: string;
+  url: string;
+  filename: string;
+  contentType: string;
+  size: number;
 }
 
 // Threshold for using client upload (4MB - below Vercel's function payload limit)
-const CLIENT_UPLOAD_THRESHOLD = 4 * 1024 * 1024
+const CLIENT_UPLOAD_THRESHOLD = 4 * 1024 * 1024;
 
 /**
  * Upload a file using server-side upload (goes through our API)
@@ -59,24 +59,24 @@ const CLIENT_UPLOAD_THRESHOLD = 4 * 1024 * 1024
 async function uploadFileViaServer(
   file: File,
   boardId: string,
-  commentId: string
+  commentId: string,
 ): Promise<UploadedFileResult> {
-  const formData = new FormData()
-  formData.append("file", file)
-  formData.append("boardId", boardId)
-  formData.append("commentId", commentId)
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("boardId", boardId);
+  formData.append("commentId", commentId);
 
   const response = await fetch("/api/upload", {
     method: "POST",
     body: formData,
-  })
+  });
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || "Failed to upload file")
+    const error = await response.json();
+    throw new Error(error.error || "Failed to upload file");
   }
 
-  return response.json()
+  return response.json();
 }
 
 /**
@@ -87,10 +87,10 @@ async function uploadFileViaServer(
 async function uploadFileViaClient(
   file: File,
   boardId: string,
-  commentId: string
+  commentId: string,
 ): Promise<UploadedFileResult> {
   // Dynamic import to avoid bundling in non-production builds
-  const { upload } = await import("@vercel/blob/client")
+  const { upload } = await import("@vercel/blob/client");
 
   const blob = await upload(file.name, file, {
     access: "public",
@@ -101,7 +101,7 @@ async function uploadFileViaClient(
       fileSize: file.size,
       filename: file.name,
     }),
-  })
+  });
 
   return {
     id: crypto.randomUUID(), // ID is generated server-side in onUploadCompleted
@@ -109,7 +109,7 @@ async function uploadFileViaClient(
     filename: file.name,
     contentType: blob.contentType,
     size: file.size,
-  }
+  };
 }
 
 /**
@@ -120,19 +120,19 @@ async function uploadFileViaClient(
 async function uploadFile(
   file: File,
   boardId: string,
-  commentId: string
+  commentId: string,
 ): Promise<UploadedFileResult> {
-  const isProduction = process.env.NODE_ENV === "production"
-  const isLargeFile = file.size >= CLIENT_UPLOAD_THRESHOLD
+  const isProduction = process.env.NODE_ENV === "production";
+  const isLargeFile = file.size >= CLIENT_UPLOAD_THRESHOLD;
 
   // Use client upload for large files in production
   // (client upload callback doesn't work in development)
   if (isProduction && isLargeFile) {
-    return uploadFileViaClient(file, boardId, commentId)
+    return uploadFileViaClient(file, boardId, commentId);
   }
 
   // Use server upload for small files or in development
-  return uploadFileViaServer(file, boardId, commentId)
+  return uploadFileViaServer(file, boardId, commentId);
 }
 
 function ToolbarButton({
@@ -142,11 +142,11 @@ function ToolbarButton({
   children,
   title,
 }: {
-  onClick: () => void
-  isActive?: boolean
-  disabled?: boolean
-  children: React.ReactNode
-  title: string
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+  title: string;
 }) {
   return (
     <Button
@@ -160,18 +160,18 @@ function ToolbarButton({
     >
       {children}
     </Button>
-  )
+  );
 }
 
 function ToolbarDivider() {
-  return <div className="w-px h-5 bg-border mx-1" />
+  return <div className="w-px h-5 bg-border mx-1" />;
 }
 
 interface ToolbarProps {
-  editor: Editor
-  onAttachClick?: () => void
-  isUploading?: boolean
-  canUpload?: boolean
+  editor: Editor;
+  onAttachClick?: () => void;
+  isUploading?: boolean;
+  canUpload?: boolean;
 }
 
 function Toolbar({ editor, onAttachClick, isUploading, canUpload }: ToolbarProps) {
@@ -313,7 +313,7 @@ function Toolbar({ editor, onAttachClick, isUploading, canUpload }: ToolbarProps
         </>
       )}
     </div>
-  )
+  );
 }
 
 export function RichTextEditor({
@@ -327,53 +327,53 @@ export function RichTextEditor({
   onUploadStart,
   onUploadEnd,
 }: RichTextEditorProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const editorRef = useRef<Editor | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const canUpload = !!(boardId && commentId)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<Editor | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const canUpload = !!(boardId && commentId);
 
   const handleFileUpload = useCallback(
     async (files: FileList | File[], pos?: number) => {
-      const currentEditor = editorRef.current
-      if (!boardId || !commentId || !currentEditor) return
+      const currentEditor = editorRef.current;
+      if (!boardId || !commentId || !currentEditor) return;
 
-      const fileArray = Array.from(files)
-      if (fileArray.length === 0) return
+      const fileArray = Array.from(files);
+      if (fileArray.length === 0) return;
 
-      setIsUploading(true)
-      onUploadStart?.()
+      setIsUploading(true);
+      onUploadStart?.();
 
       try {
         for (const file of fileArray) {
           // Generate unique ID for this upload's placeholder
-          const uploadId = crypto.randomUUID()
+          const uploadId = crypto.randomUUID();
 
           // Insert placeholder immediately at the drop position
           const placeholderNode = {
             type: "uploadPlaceholder",
             attrs: { uploadId, filename: file.name },
-          }
+          };
 
           if (pos !== undefined) {
-            currentEditor.chain().focus().insertContentAt(pos, placeholderNode).run()
+            currentEditor.chain().focus().insertContentAt(pos, placeholderNode).run();
           } else {
-            currentEditor.chain().focus().insertContent(placeholderNode).run()
+            currentEditor.chain().focus().insertContent(placeholderNode).run();
           }
 
           // Show loading toast
-          const toastId = toast.loading(`Uploading ${file.name}...`)
+          const toastId = toast.loading(`Uploading ${file.name}...`);
 
           try {
-            const result = await uploadFile(file, boardId, commentId)
+            const result = await uploadFile(file, boardId, commentId);
 
             // Build the content to replace placeholder with
-            let nodeContent: { type: string; attrs: Record<string, unknown> }
+            let nodeContent: { type: string; attrs: Record<string, unknown> };
 
             if (result.contentType.startsWith("image/")) {
               nodeContent = {
                 type: "image",
                 attrs: { src: result.url, alt: result.filename },
-              }
+              };
             } else {
               // Video and other files use fileAttachment node
               nodeContent = {
@@ -384,23 +384,20 @@ export function RichTextEditor({
                   contentType: result.contentType,
                   size: result.size,
                 },
-              }
+              };
             }
 
             // Find and replace the placeholder with actual content
-            const { doc } = currentEditor.state
-            let placeholderPos: number | null = null
+            const { doc } = currentEditor.state;
+            let placeholderPos: number | null = null;
 
             doc.descendants((node, nodePos) => {
-              if (
-                node.type.name === "uploadPlaceholder" &&
-                node.attrs.uploadId === uploadId
-              ) {
-                placeholderPos = nodePos
-                return false // Stop searching
+              if (node.type.name === "uploadPlaceholder" && node.attrs.uploadId === uploadId) {
+                placeholderPos = nodePos;
+                return false; // Stop searching
               }
-              return true
-            })
+              return true;
+            });
 
             if (placeholderPos !== null) {
               // Replace placeholder with actual content
@@ -409,38 +406,37 @@ export function RichTextEditor({
                 .focus()
                 .deleteRange({ from: placeholderPos, to: placeholderPos + 1 })
                 .insertContentAt(placeholderPos, nodeContent)
-                .run()
+                .run();
             }
 
-            toast.success(`Uploaded ${result.filename}`, { id: toastId })
+            toast.success(`Uploaded ${result.filename}`, { id: toastId });
           } catch (error) {
             // Remove placeholder on error
-            currentEditor.commands.removeUploadPlaceholder(uploadId)
-            toast.error(
-              error instanceof Error ? error.message : "Failed to upload file",
-              { id: toastId }
-            )
+            currentEditor.commands.removeUploadPlaceholder(uploadId);
+            toast.error(error instanceof Error ? error.message : "Failed to upload file", {
+              id: toastId,
+            });
           }
         }
       } finally {
-        setIsUploading(false)
-        onUploadEnd?.()
+        setIsUploading(false);
+        onUploadEnd?.();
       }
     },
-    [boardId, commentId, onUploadStart, onUploadEnd]
-  )
+    [boardId, commentId, onUploadStart, onUploadEnd],
+  );
 
   // Store refs to allow callbacks to access latest values without recreating extension
-  const handleFileUploadRef = useRef(handleFileUpload)
-  const canUploadRef = useRef(canUpload)
+  const handleFileUploadRef = useRef(handleFileUpload);
+  const canUploadRef = useRef(canUpload);
 
   useEffect(() => {
-    handleFileUploadRef.current = handleFileUpload
-  }, [handleFileUpload])
+    handleFileUploadRef.current = handleFileUpload;
+  }, [handleFileUpload]);
 
   useEffect(() => {
-    canUploadRef.current = canUpload
-  }, [canUpload])
+    canUploadRef.current = canUpload;
+  }, [canUpload]);
 
   const editor = useEditor({
     extensions: [
@@ -462,14 +458,14 @@ export function RichTextEditor({
           // Always handle the event to prevent browser default (opening file)
           if (canUploadRef.current && files.length > 0) {
             // pos is the exact document position where file was dropped
-            handleFileUploadRef.current(files, pos)
+            handleFileUploadRef.current(files, pos);
           }
         },
         onPaste: (_currentEditor, files) => {
           // Always handle the event to prevent browser default
           if (canUploadRef.current && files.length > 0) {
             // For paste, insert at current selection
-            handleFileUploadRef.current(files)
+            handleFileUploadRef.current(files);
           }
         },
       }),
@@ -480,74 +476,72 @@ export function RichTextEditor({
       attributes: {
         class: cn(
           "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[100px] px-3 py-2",
-          !editable && "min-h-0 p-0"
+          !editable && "min-h-0 p-0",
         ),
       },
       // Prevent browser's default behavior for file drops (especially images)
       // FileHandler will handle the actual upload via its onDrop callback
       handleDrop: (view, event, _slice, moved) => {
-        if (moved) return false // Let ProseMirror handle internal moves
+        if (moved) return false; // Let ProseMirror handle internal moves
 
-        const files = event.dataTransfer?.files
+        const files = event.dataTransfer?.files;
         if (files && files.length > 0) {
           // Check if any of the files are types we handle
-          const hasHandledFiles = Array.from(files).some(file =>
-            file.type.startsWith("image/") ||
-            file.type.startsWith("video/") ||
-            file.type
-          )
+          const hasHandledFiles = Array.from(files).some(
+            (file) => file.type.startsWith("image/") || file.type.startsWith("video/") || file.type,
+          );
           if (hasHandledFiles) {
             // Prevent browser from opening the file
             // FileHandler extension will process it via onDrop callback
-            event.preventDefault()
-            return false // Let FileHandler process the files
+            event.preventDefault();
+            return false; // Let FileHandler process the files
           }
         }
-        return false
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
       if (onChange) {
-        onChange(JSON.stringify(editor.getJSON()))
+        onChange(JSON.stringify(editor.getJSON()));
       }
     },
     // Prevent SSR hydration issues
     immediatelyRender: false,
-  })
+  });
 
   // Keep ref in sync with editor
   useEffect(() => {
-    editorRef.current = editor
-  }, [editor])
+    editorRef.current = editor;
+  }, [editor]);
 
   // Sync editor content when prop changes (e.g., when form is reset)
   useEffect(() => {
-    if (!editor) return
+    if (!editor) return;
 
-    const newContent = content ? JSON.parse(content) : null
-    const currentContent = editor.getJSON()
+    const newContent = content ? JSON.parse(content) : null;
+    const currentContent = editor.getJSON();
 
     // Only update if content actually changed (compare serialized versions)
     if (JSON.stringify(newContent) !== JSON.stringify(currentContent)) {
-      editor.commands.setContent(newContent)
+      editor.commands.setContent(newContent);
     }
-  }, [editor, content])
+  }, [editor, content]);
 
   const handleAttachClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
+    const files = e.target.files;
     if (files) {
-      handleFileUpload(files)
+      handleFileUpload(files);
     }
     // Reset input so same file can be selected again
-    e.target.value = ""
-  }
+    e.target.value = "";
+  };
 
   if (!editor) {
-    return null
+    return null;
   }
 
   // Read-only mode: just render the content without toolbar or border
@@ -556,14 +550,14 @@ export function RichTextEditor({
       <div className={cn("rich-text-content", className)}>
         <EditorContent editor={editor} />
       </div>
-    )
+    );
   }
 
   return (
     <div
       className={cn(
         "relative rounded-md border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background",
-        className
+        className,
       )}
     >
       <Toolbar
@@ -593,42 +587,47 @@ export function RichTextEditor({
         />
       )}
     </div>
-  )
+  );
 }
 
 // Helper to check if content is empty
 export function isRichTextEmpty(content: string | undefined): boolean {
-  if (!content) return true
+  if (!content) return true;
   try {
-    const json = JSON.parse(content)
-    if (!json.content || json.content.length === 0) return true
+    const json = JSON.parse(content);
+    if (!json.content || json.content.length === 0) return true;
 
     // Recursively check if there's any meaningful content
     function hasContent(nodes: unknown[]): boolean {
       for (const node of nodes) {
-        if (typeof node !== "object" || node === null) continue
-        const n = node as { type?: string; content?: unknown[]; text?: string; attrs?: Record<string, unknown> }
+        if (typeof node !== "object" || node === null) continue;
+        const n = node as {
+          type?: string;
+          content?: unknown[];
+          text?: string;
+          attrs?: Record<string, unknown>;
+        };
 
         // Images and file attachments are meaningful content
         if (n.type === "image" || n.type === "fileAttachment") {
-          return true
+          return true;
         }
 
         // Text nodes with actual text
         if (n.text && n.text.trim().length > 0) {
-          return true
+          return true;
         }
 
         // Recursively check children
         if (n.content && hasContent(n.content)) {
-          return true
+          return true;
         }
       }
-      return false
+      return false;
     }
 
-    return !hasContent(json.content)
+    return !hasContent(json.content);
   } catch {
-    return true
+    return true;
   }
 }

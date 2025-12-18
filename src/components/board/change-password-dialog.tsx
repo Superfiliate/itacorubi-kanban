@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { updateBoardPassword } from "@/actions/boards"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { updateBoardPassword } from "@/actions/boards";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,60 +11,60 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { PasswordInput } from "@/components/ui/password-input"
-import { AlertTriangle } from "lucide-react"
+} from "@/components/ui/dialog";
+import { PasswordInput } from "@/components/ui/password-input";
+import { AlertTriangle } from "lucide-react";
 
 interface ChangePasswordDialogProps {
-  boardId: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  boardId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function ChangePasswordDialog({ boardId, open, onOpenChange }: ChangePasswordDialogProps) {
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       // Reset form when closing
-      setNewPassword("")
-      setConfirmPassword("")
-      setError(null)
+      setNewPassword("");
+      setConfirmPassword("");
+      setError(null);
     }
-    onOpenChange(newOpen)
-  }
+    onOpenChange(newOpen);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     // Validation
     if (!newPassword.trim()) {
-      setError("Password cannot be empty")
-      return
+      setError("Password cannot be empty");
+      return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match")
-      return
+      setError("Passwords do not match");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      await updateBoardPassword(boardId, newPassword.trim())
-      toast.success("Password updated successfully")
-      handleOpenChange(false)
+      await updateBoardPassword(boardId, newPassword.trim());
+      toast.success("Password updated successfully");
+      handleOpenChange(false);
     } catch (error) {
-      console.error("Failed to update password:", error)
-      toast.error("Failed to update password")
-      setError("An error occurred. Please try again.")
+      console.error("Failed to update password:", error);
+      toast.error("Failed to update password");
+      setError("An error occurred. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -83,8 +83,9 @@ export function ChangePasswordDialog({ boardId, open, onOpenChange }: ChangePass
           {/* Warning Message */}
           <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
             <p className="text-sm text-destructive-foreground">
-              <strong>Warning:</strong> Anyone who had access with the old password will lose access.
-              They will need to enter the new password to unlock the board. This action cannot be undone.
+              <strong>Warning:</strong> Anyone who had access with the old password will lose
+              access. They will need to enter the new password to unlock the board. This action
+              cannot be undone.
             </p>
           </div>
 
@@ -98,8 +99,8 @@ export function ChangePasswordDialog({ boardId, open, onOpenChange }: ChangePass
                 id="new-password"
                 value={newPassword}
                 onChange={(e) => {
-                  setNewPassword(e.target.value)
-                  setError(null)
+                  setNewPassword(e.target.value);
+                  setError(null);
                 }}
                 placeholder="Enter new password"
                 disabled={isSubmitting}
@@ -116,8 +117,8 @@ export function ChangePasswordDialog({ boardId, open, onOpenChange }: ChangePass
                 id="confirm-password"
                 value={confirmPassword}
                 onChange={(e) => {
-                  setConfirmPassword(e.target.value)
-                  setError(null)
+                  setConfirmPassword(e.target.value);
+                  setError(null);
                 }}
                 placeholder="Confirm new password"
                 disabled={isSubmitting}
@@ -149,5 +150,5 @@ export function ChangePasswordDialog({ boardId, open, onOpenChange }: ChangePass
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

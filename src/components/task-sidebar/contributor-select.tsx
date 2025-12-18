@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,32 +10,28 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { ContributorBadge } from "@/components/contributor-badge"
-import type { ContributorColor } from "@/db/schema"
-import { getRandomContributorColor } from "@/lib/contributor-colors"
-import { useBoardStore } from "@/stores/board-store"
-import { flushBoardOutbox } from "@/lib/outbox/flush"
-import { useQueryClient } from "@tanstack/react-query"
-import { boardKeys, type BoardData } from "@/hooks/use-board"
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { ContributorBadge } from "@/components/contributor-badge";
+import type { ContributorColor } from "@/db/schema";
+import { getRandomContributorColor } from "@/lib/contributor-colors";
+import { useBoardStore } from "@/stores/board-store";
+import { flushBoardOutbox } from "@/lib/outbox/flush";
+import { useQueryClient } from "@tanstack/react-query";
+import { boardKeys, type BoardData } from "@/hooks/use-board";
 
 interface ContributorSelectProps {
-  boardId: string
-  selectedContributorId: string | null
-  onContributorChange: (contributorId: string | null) => void
+  boardId: string;
+  selectedContributorId: string | null;
+  onContributorChange: (contributorId: string | null) => void;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
-  placeholder?: string
-  allowNone?: boolean
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
+  placeholder?: string;
+  allowNone?: boolean;
 }
 
 export function ContributorSelect({
@@ -46,58 +42,54 @@ export function ContributorSelect({
   placeholder = "Select contributor...",
   allowNone = false,
 }: ContributorSelectProps) {
-  const [open, setOpen] = useState(false)
-  const [inputValue, setInputValue] = useState("")
-  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const queryClient = useQueryClient();
 
-  const selectedContributor = contributors.find((c) => c.id === selectedContributorId)
+  const selectedContributor = contributors.find((c) => c.id === selectedContributorId);
 
   const handleSelect = (contributorId: string | null) => {
-    onContributorChange(contributorId)
-    setOpen(false)
-    setInputValue("")
-  }
+    onContributorChange(contributorId);
+    setOpen(false);
+    setInputValue("");
+  };
 
   const handleCreateNew = async () => {
-    const name = inputValue.trim()
+    const name = inputValue.trim();
     if (name) {
-      const contributorId = crypto.randomUUID()
-      const color = getRandomContributorColor()
+      const contributorId = crypto.randomUUID();
+      const color = getRandomContributorColor();
 
-      useBoardStore.getState().createContributorLocal({ boardId, contributorId, name, color })
+      useBoardStore.getState().createContributorLocal({ boardId, contributorId, name, color });
 
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-        if (!old) return old
+        if (!old) return old;
         return {
           ...old,
           contributors: [...old.contributors, { id: contributorId, boardId, name, color }],
-        }
-      })
+        };
+      });
 
       useBoardStore.getState().enqueue({
         type: "createContributor",
         boardId,
         payload: { contributorId, name, color },
-      })
-      void flushBoardOutbox(boardId)
+      });
+      void flushBoardOutbox(boardId);
 
-      onContributorChange(contributorId)
-      setInputValue("")
-      setOpen(false)
+      onContributorChange(contributorId);
+      setInputValue("");
+      setOpen(false);
     }
-  }
+  };
 
   const filteredContributors = inputValue
-    ? contributors.filter((c) =>
-        c.name.toLowerCase().includes(inputValue.toLowerCase())
-      )
-    : contributors
+    ? contributors.filter((c) => c.name.toLowerCase().includes(inputValue.toLowerCase()))
+    : contributors;
 
   const showCreateOption =
     inputValue.trim() &&
-    !contributors.some(
-      (c) => c.name.toLowerCase() === inputValue.trim().toLowerCase()
-    )
+    !contributors.some((c) => c.name.toLowerCase() === inputValue.trim().toLowerCase());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -111,10 +103,7 @@ export function ContributorSelect({
           className="w-full justify-between"
         >
           {selectedContributor ? (
-            <ContributorBadge
-              name={selectedContributor.name}
-              color={selectedContributor.color}
-            />
+            <ContributorBadge name={selectedContributor.name} color={selectedContributor.color} />
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
@@ -147,9 +136,7 @@ export function ContributorSelect({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedContributorId === null
-                        ? "opacity-100"
-                        : "opacity-0"
+                      selectedContributorId === null ? "opacity-100" : "opacity-0",
                     )}
                   />
                   <span className="text-muted-foreground">None</span>
@@ -164,15 +151,10 @@ export function ContributorSelect({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedContributorId === contributor.id
-                        ? "opacity-100"
-                        : "opacity-0"
+                      selectedContributorId === contributor.id ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <ContributorBadge
-                    name={contributor.name}
-                    color={contributor.color}
-                  />
+                  <ContributorBadge name={contributor.name} color={contributor.color} />
                 </CommandItem>
               ))}
               {showCreateOption && (
@@ -191,5 +173,5 @@ export function ContributorSelect({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

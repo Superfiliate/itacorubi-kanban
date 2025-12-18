@@ -26,4 +26,5 @@ headers: () => [{
 ```
 
 ## Links
+
 - Header config: `next.config.ts`

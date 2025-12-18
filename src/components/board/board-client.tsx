@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   DndContext,
@@ -10,56 +10,53 @@ import {
   useSensor,
   useSensors,
   rectIntersection,
-} from "@dnd-kit/core"
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { useState, useMemo } from "react"
-import { Columns3 } from "lucide-react"
-import { Column } from "./column"
-import { AddColumnButton } from "./add-column-button"
-import { useReorderColumns } from "@/hooks/use-board"
-import { useUpdateTaskColumn } from "@/hooks/use-task"
-import { useBoardPolling } from "@/hooks/use-board-polling"
-import { useBoardStore, selectBoard, type ColumnVM, type TagEntity } from "@/stores/board-store"
-import { Loader2 } from "lucide-react"
+} from "@dnd-kit/core";
+import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { useState, useMemo } from "react";
+import { Columns3 } from "lucide-react";
+import { Column } from "./column";
+import { AddColumnButton } from "./add-column-button";
+import { useReorderColumns } from "@/hooks/use-board";
+import { useUpdateTaskColumn } from "@/hooks/use-task";
+import { useBoardPolling } from "@/hooks/use-board-polling";
+import { useBoardStore, selectBoard, type ColumnVM, type TagEntity } from "@/stores/board-store";
+import { Loader2 } from "lucide-react";
 
 interface BoardClientProps {
-  boardId: string
+  boardId: string;
 }
 
 export function BoardClient({ boardId }: BoardClientProps) {
-  useBoardPolling(boardId)
+  useBoardPolling(boardId);
 
   // Use Zustand store for board data
-  const board = useBoardStore(selectBoard(boardId))
+  const board = useBoardStore(selectBoard(boardId));
 
   // Derive columns from the normalized board data
   // Using useMemo to avoid creating new objects on every render (prevents "getSnapshot should be cached" error)
   const columns = useMemo((): ColumnVM[] => {
-    if (!board) return []
+    if (!board) return [];
 
     return board.columnOrder.map((colId) => {
-      const col = board.columnsById[colId]
-      const taskIds = board.tasksByColumnId[colId] ?? []
+      const col = board.columnsById[colId];
+      const taskIds = board.tasksByColumnId[colId] ?? [];
       const tasks = taskIds
         .map((taskId) => {
-          const task = board.tasksById[taskId]
-          if (!task) return null
-          const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
+          const task = board.tasksById[taskId];
+          if (!task) return null;
+          const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? [];
           const assignees = assigneeIds
             .map((cid) => board.contributorsById[cid])
             .filter(Boolean)
-            .map((c) => ({ id: c.id, name: c.name, color: c.color }))
+            .map((c) => ({ id: c.id, name: c.name, color: c.color }));
 
-          const tagIds = board.tagIdsByTaskId[taskId] ?? []
+          const tagIds = board.tagIdsByTaskId[taskId] ?? [];
           const tags = tagIds
             .map((tid) => board.tagsById[tid])
             .filter((t): t is TagEntity => Boolean(t))
-            .map((t) => ({ id: t.id, name: t.name, color: t.color }))
+            .map((t) => ({ id: t.id, name: t.name, color: t.color }));
 
-          const meta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null }
+          const meta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null };
           return {
             id: task.id,
             title: task.title,
@@ -68,20 +65,20 @@ export function BoardClient({ boardId }: BoardClientProps) {
             tags,
             commentCount: meta.count,
             lastCommentCreatedAt: meta.lastCreatedAt,
-          }
+          };
         })
-        .filter((x): x is NonNullable<typeof x> => x !== null)
+        .filter((x): x is NonNullable<typeof x> => x !== null);
 
-      return { id: colId, name: col?.name ?? "", isCollapsed: col?.isCollapsed ?? false, tasks }
-    })
-  }, [board])
+      return { id: colId, name: col?.name ?? "", isCollapsed: col?.isCollapsed ?? false, tasks };
+    });
+  }, [board]);
 
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [activeType, setActiveType] = useState<"column" | "task" | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeType, setActiveType] = useState<"column" | "task" | null>(null);
 
   // Mutations
-  const reorderColumnsMutation = useReorderColumns(boardId)
-  const updateTaskColumnMutation = useUpdateTaskColumn(boardId)
+  const reorderColumnsMutation = useReorderColumns(boardId);
+  const updateTaskColumnMutation = useUpdateTaskColumn(boardId);
 
   // DnD sensors - must be called unconditionally (rules of hooks)
   const sensors = useSensors(
@@ -89,8 +86,8 @@ export function BoardClient({ boardId }: BoardClientProps) {
       activationConstraint: {
         distance: 8,
       },
-    })
-  )
+    }),
+  );
 
   // Show loading state while waiting for HydrateBoard to populate the store
   if (!board) {
@@ -98,63 +95,63 @@ export function BoardClient({ boardId }: BoardClientProps) {
       <div className="absolute inset-0 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
-  const columnIds = columns.map((c) => c.id)
+  const columnIds = columns.map((c) => c.id);
 
   const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event
-    setActiveId(active.id as string)
-    setActiveType(active.data.current?.type as "column" | "task")
-  }
+    const { active } = event;
+    setActiveId(active.id as string);
+    setActiveType(active.data.current?.type as "column" | "task");
+  };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event
-    if (!over) return
+    const { active, over } = event;
+    if (!over) return;
 
-    const activeData = active.data.current
-    const overData = over.data.current
+    const activeData = active.data.current;
+    const overData = over.data.current;
 
     // Only handle task dragging over columns/tasks
-    if (activeData?.type !== "task") return
+    if (activeData?.type !== "task") return;
 
-    const activeTaskId = active.id as string
-    const overId = over.id as string
+    const activeTaskId = active.id as string;
+    const overId = over.id as string;
 
     // Find which column the task is currently in
-    const activeColumn = columns.find((c) => c.tasks.some((t) => t.id === activeTaskId))
-    if (!activeColumn) return
+    const activeColumn = columns.find((c) => c.tasks.some((t) => t.id === activeTaskId));
+    if (!activeColumn) return;
 
-    let overColumnId: string | undefined
+    let overColumnId: string | undefined;
 
     if (overData?.type === "task") {
       // Hovering over another task - find its column
-      const col = columns.find((c) => c.tasks.some((t) => t.id === overId))
-      overColumnId = col?.id
+      const col = columns.find((c) => c.tasks.some((t) => t.id === overId));
+      overColumnId = col?.id;
     } else if (overData?.type === "column-drop") {
-      overColumnId = overData.columnId as string
+      overColumnId = overData.columnId as string;
     } else if (overData?.type === "column") {
-      overColumnId = overId
+      overColumnId = overId;
     }
 
-    if (!overColumnId) return
+    if (!overColumnId) return;
 
-    const targetColumn = columns.find((c) => c.id === overColumnId)
-    if (!targetColumn) return
+    const targetColumn = columns.find((c) => c.id === overColumnId);
+    if (!targetColumn) return;
 
     // Calculate target index
-    let toIndex: number
+    let toIndex: number;
     if (overData?.type === "task") {
-      toIndex = targetColumn.tasks.findIndex((t) => t.id === overId)
-      if (toIndex === -1) toIndex = targetColumn.tasks.length
+      toIndex = targetColumn.tasks.findIndex((t) => t.id === overId);
+      if (toIndex === -1) toIndex = targetColumn.tasks.length;
     } else {
-      toIndex = targetColumn.tasks.length
+      toIndex = targetColumn.tasks.length;
     }
 
     // Check if actually moving
-    const currentIndex = activeColumn.tasks.findIndex((t) => t.id === activeTaskId)
-    if (activeColumn.id === overColumnId && currentIndex === toIndex) return
+    const currentIndex = activeColumn.tasks.findIndex((t) => t.id === activeTaskId);
+    if (activeColumn.id === overColumnId && currentIndex === toIndex) return;
 
     // Update local store immediately
     useBoardStore.getState().moveTaskLocal({
@@ -162,26 +159,26 @@ export function BoardClient({ boardId }: BoardClientProps) {
       taskId: activeTaskId,
       toColumnId: overColumnId,
       toIndex,
-    })
-  }
+    });
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-    setActiveId(null)
-    setActiveType(null)
+    const { active, over } = event;
+    setActiveId(null);
+    setActiveType(null);
 
-    if (!over) return
+    if (!over) return;
 
-    const draggedId = active.id as string
-    const overId = over.id as string
-    const activeData = active.data.current
-    const overData = over.data.current
+    const draggedId = active.id as string;
+    const overId = over.id as string;
+    const activeData = active.data.current;
+    const overData = over.data.current;
 
     if (activeData?.type === "column" && overData?.type === "column") {
       // Reordering columns
       if (draggedId !== overId) {
-        const oldIndex = columns.findIndex((c) => c.id === draggedId)
-        const newIndex = columns.findIndex((c) => c.id === overId)
+        const oldIndex = columns.findIndex((c) => c.id === draggedId);
+        const newIndex = columns.findIndex((c) => c.id === overId);
 
         if (oldIndex !== -1 && newIndex !== -1) {
           // Update local store
@@ -189,35 +186,34 @@ export function BoardClient({ boardId }: BoardClientProps) {
             boardId,
             columnId: draggedId,
             toIndex: newIndex,
-          })
+          });
 
           // Server update
-          const overColumn = columns.find((c) => c.id === overId)
+          const overColumn = columns.find((c) => c.id === overId);
           if (overColumn) {
-            reorderColumnsMutation.mutate({ columnId: draggedId, newPosition: newIndex })
+            reorderColumnsMutation.mutate({ columnId: draggedId, newPosition: newIndex });
           }
         }
       }
     } else if (activeData?.type === "task") {
       // Find where the task ended up (after dragOver updates)
-      const finalColumn = columns.find((c) => c.tasks.some((t) => t.id === draggedId))
-      if (!finalColumn) return
+      const finalColumn = columns.find((c) => c.tasks.some((t) => t.id === draggedId));
+      if (!finalColumn) return;
 
-      const targetPosition = finalColumn.tasks.findIndex((t) => t.id === draggedId)
+      const targetPosition = finalColumn.tasks.findIndex((t) => t.id === draggedId);
 
       // Server update via mutation (dragOver already handled optimistic UI update)
       updateTaskColumnMutation.mutate({
         taskId: draggedId,
         newColumnId: finalColumn.id,
         newPosition: targetPosition,
-      })
+      });
     }
-  }
+  };
 
-  const activeColumn = activeType === "column" ? columns.find((c) => c.id === activeId) : null
-  const activeTask = activeType === "task"
-    ? columns.flatMap((c) => c.tasks).find((t) => t.id === activeId)
-    : null
+  const activeColumn = activeType === "column" ? columns.find((c) => c.id === activeId) : null;
+  const activeTask =
+    activeType === "task" ? columns.flatMap((c) => c.tasks).find((t) => t.id === activeId) : null;
 
   if (columns.length === 0) {
     return (
@@ -226,14 +222,12 @@ export function BoardClient({ boardId }: BoardClientProps) {
           <Columns3 className="h-16 w-16 text-muted-foreground/50" />
           <div>
             <h3 className="text-heading">No columns yet</h3>
-            <p className="mt-1 text-muted">
-              Add your first column to start organizing tasks
-            </p>
+            <p className="mt-1 text-muted">Add your first column to start organizing tasks</p>
           </div>
         </div>
         <AddColumnButton boardId={boardId} />
       </div>
-    )
+    );
   }
 
   return (
@@ -273,5 +267,5 @@ export function BoardClient({ boardId }: BoardClientProps) {
         )}
       </DragOverlay>
     </DndContext>
-  )
+  );
 }

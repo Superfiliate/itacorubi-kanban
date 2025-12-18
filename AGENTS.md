@@ -39,6 +39,7 @@ When planning any task, include documentation updates as explicit steps in your 
 - **New features or user flows?** → Plan to add/update `/docs/features/`
 
 If you use Plan mode, your plan MUST include documentation tasks when the work introduces:
+
 - New user-facing features
 - New technical patterns or conventions
 - Changes to existing documented behavior

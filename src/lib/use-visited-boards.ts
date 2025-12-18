@@ -1,66 +1,66 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "itacorubi:visited-boards"
-const MAX_BOARDS = 20
+const STORAGE_KEY = "itacorubi:visited-boards";
+const MAX_BOARDS = 20;
 
 export interface VisitedBoard {
-  id: string
-  title: string
-  visitedAt: string
+  id: string;
+  title: string;
+  visitedAt: string;
 }
 
 function getVisitedBoardsFromStorage(): VisitedBoard[] {
-  if (typeof window === "undefined") return []
+  if (typeof window === "undefined") return [];
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : []
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
   } catch {
-    return []
+    return [];
   }
 }
 
 function saveVisitedBoardsToStorage(boards: VisitedBoard[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(boards))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
   } catch {
     // Ignore storage errors
   }
 }
 
 export function trackBoardVisit(id: string, title: string) {
-  const boards = getVisitedBoardsFromStorage()
+  const boards = getVisitedBoardsFromStorage();
 
   // Remove existing entry for this board (if any)
-  const filtered = boards.filter((b) => b.id !== id)
+  const filtered = boards.filter((b) => b.id !== id);
 
   // Add to front with updated timestamp
   const updated: VisitedBoard[] = [
     { id, title, visitedAt: new Date().toISOString() },
     ...filtered,
-  ].slice(0, MAX_BOARDS)
+  ].slice(0, MAX_BOARDS);
 
-  saveVisitedBoardsToStorage(updated)
+  saveVisitedBoardsToStorage(updated);
 }
 
 export function forgetBoard(id: string) {
-  const boards = getVisitedBoardsFromStorage()
-  const filtered = boards.filter((b) => b.id !== id)
-  saveVisitedBoardsToStorage(filtered)
+  const boards = getVisitedBoardsFromStorage();
+  const filtered = boards.filter((b) => b.id !== id);
+  saveVisitedBoardsToStorage(filtered);
 }
 
 export function useVisitedBoards() {
-  const [boards, setBoards] = useState<VisitedBoard[]>([])
+  const [boards, setBoards] = useState<VisitedBoard[]>([]);
 
   useEffect(() => {
-    setBoards(getVisitedBoardsFromStorage())
-  }, [])
+    setBoards(getVisitedBoardsFromStorage());
+  }, []);
 
   const forget = (id: string) => {
-    forgetBoard(id)
-    setBoards((prev) => prev.filter((b) => b.id !== id))
-  }
+    forgetBoard(id);
+    setBoards((prev) => prev.filter((b) => b.id !== id));
+  };
 
-  return { boards, forget }
+  return { boards, forget };
 }

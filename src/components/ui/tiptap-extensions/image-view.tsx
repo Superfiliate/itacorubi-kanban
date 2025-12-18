@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react"
-import { ArrowDownToLine, Maximize2, Trash2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { ImageLightbox } from "@/components/ui/image-lightbox"
+import { useState } from "react";
+import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
+import { ArrowDownToLine, Maximize2, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 
 /**
  * React component for rendering images in Tiptap with hover actions.
@@ -14,29 +14,29 @@ import { ImageLightbox } from "@/components/ui/image-lightbox"
  * Edit mode: Download + Expand + Delete buttons
  */
 export function ImageView({ node, deleteNode, editor }: NodeViewProps) {
-  const [isHovered, setIsHovered] = useState(false)
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [isHovered, setIsHovered] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  const { src, alt } = node.attrs as { src: string; alt?: string }
-  const isEditable = editor.isEditable
+  const { src, alt } = node.attrs as { src: string; alt?: string };
+  const isEditable = editor.isEditable;
 
   const handleDownload = () => {
     // Create a temporary link to trigger download
-    const link = document.createElement("a")
-    link.href = src
-    link.download = alt || "image"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const link = document.createElement("a");
+    link.href = src;
+    link.download = alt || "image";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleExpand = () => {
-    setIsLightboxOpen(true)
-  }
+    setIsLightboxOpen(true);
+  };
 
   const handleDelete = () => {
-    deleteNode()
-  }
+    deleteNode();
+  };
 
   return (
     <NodeViewWrapper className="relative my-2 inline-block max-w-full">
@@ -46,19 +46,14 @@ export function ImageView({ node, deleteNode, editor }: NodeViewProps) {
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Image */}
-        <img
-          src={src}
-          alt={alt || ""}
-          className="rounded-md max-w-full h-auto"
-          draggable={false}
-        />
+        <img src={src} alt={alt || ""} className="rounded-md max-w-full h-auto" draggable={false} />
 
         {/* Hover overlay with action buttons */}
         <div
           className={cn(
             "absolute inset-0 flex items-center justify-center gap-2 rounded-md transition-opacity duration-200",
             "bg-black/40",
-            isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+            isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
         >
           {/* Download button */}
@@ -105,12 +100,7 @@ export function ImageView({ node, deleteNode, editor }: NodeViewProps) {
       </div>
 
       {/* Lightbox dialog */}
-      <ImageLightbox
-        src={src}
-        alt={alt}
-        open={isLightboxOpen}
-        onOpenChange={setIsLightboxOpen}
-      />
+      <ImageLightbox src={src} alt={alt} open={isLightboxOpen} onOpenChange={setIsLightboxOpen} />
     </NodeViewWrapper>
-  )
+  );
 }

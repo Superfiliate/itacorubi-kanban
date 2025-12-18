@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { CreateBoardDialog } from "@/components/create-board-dialog"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { CreateBoardDialog } from "@/components/create-board-dialog";
 
 export function CreateBoardButton() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   return (
     <>
@@ -19,5 +19,5 @@ export function CreateBoardButton() {
       </Button>
       <CreateBoardDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
     </>
-  )
+  );
 }

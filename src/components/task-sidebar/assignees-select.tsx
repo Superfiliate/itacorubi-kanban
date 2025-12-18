@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,36 +10,28 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { ContributorBadge } from "@/components/contributor-badge"
-import {
-  useAddAssignee,
-  useRemoveAssignee,
-  useCreateAndAssignContributor,
-} from "@/hooks/use-task"
-import type { ContributorColor } from "@/db/schema"
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { ContributorBadge } from "@/components/contributor-badge";
+import { useAddAssignee, useRemoveAssignee, useCreateAndAssignContributor } from "@/hooks/use-task";
+import type { ContributorColor } from "@/db/schema";
 
 interface AssigneesSelectProps {
-  taskId: string
-  boardId: string
+  taskId: string;
+  boardId: string;
   assignees: Array<{
     contributor: {
-      id: string
-      name: string
-      color: ContributorColor
-    }
-  }>
+      id: string;
+      name: string;
+      color: ContributorColor;
+    };
+  }>;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
 }
 
 export function AssigneesSelect({
@@ -48,47 +40,43 @@ export function AssigneesSelect({
   assignees,
   contributors,
 }: AssigneesSelectProps) {
-  const [open, setOpen] = useState(false)
-  const [inputValue, setInputValue] = useState("")
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
 
   // Mutations
-  const addAssigneeMutation = useAddAssignee(boardId)
-  const removeAssigneeMutation = useRemoveAssignee(boardId)
-  const createAndAssignMutation = useCreateAndAssignContributor(boardId)
+  const addAssigneeMutation = useAddAssignee(boardId);
+  const removeAssigneeMutation = useRemoveAssignee(boardId);
+  const createAndAssignMutation = useCreateAndAssignContributor(boardId);
 
-  const assigneeIds = new Set(assignees.map((a) => a.contributor.id))
+  const assigneeIds = new Set(assignees.map((a) => a.contributor.id));
 
   const handleSelect = (contributorId: string) => {
     if (assigneeIds.has(contributorId)) {
-      removeAssigneeMutation.mutate({ taskId, contributorId })
+      removeAssigneeMutation.mutate({ taskId, contributorId });
     } else {
-      addAssigneeMutation.mutate({ taskId, contributorId })
+      addAssigneeMutation.mutate({ taskId, contributorId });
     }
     // Close after selecting to avoid focus/escape closing the whole sidebar (Sheet)
-    setOpen(false)
-    setInputValue("")
-  }
+    setOpen(false);
+    setInputValue("");
+  };
 
   const handleCreateNew = () => {
-    const name = inputValue.trim()
+    const name = inputValue.trim();
     if (name) {
-      createAndAssignMutation.mutate({ taskId, name })
-      setInputValue("")
-      setOpen(false)
+      createAndAssignMutation.mutate({ taskId, name });
+      setInputValue("");
+      setOpen(false);
     }
-  }
+  };
 
   const filteredContributors = inputValue
-    ? contributors.filter((c) =>
-        c.name.toLowerCase().includes(inputValue.toLowerCase())
-      )
-    : contributors
+    ? contributors.filter((c) => c.name.toLowerCase().includes(inputValue.toLowerCase()))
+    : contributors;
 
   const showCreateOption =
     inputValue.trim() &&
-    !contributors.some(
-      (c) => c.name.toLowerCase() === inputValue.trim().toLowerCase()
-    )
+    !contributors.some((c) => c.name.toLowerCase() === inputValue.trim().toLowerCase());
 
   return (
     <div className="space-y-2">
@@ -118,9 +106,7 @@ export function AssigneesSelect({
             aria-label="Assignees"
             className="w-full justify-between"
           >
-            {assignees.length === 0
-              ? "Select assignees..."
-              : `${assignees.length} selected`}
+            {assignees.length === 0 ? "Select assignees..." : `${assignees.length} selected`}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -154,15 +140,10 @@ export function AssigneesSelect({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        assigneeIds.has(contributor.id)
-                          ? "opacity-100"
-                          : "opacity-0"
+                        assigneeIds.has(contributor.id) ? "opacity-100" : "opacity-0",
                       )}
                     />
-                    <ContributorBadge
-                      name={contributor.name}
-                      color={contributor.color}
-                    />
+                    <ContributorBadge name={contributor.name} color={contributor.color} />
                   </CommandItem>
                 ))}
                 {showCreateOption && (
@@ -182,5 +163,5 @@ export function AssigneesSelect({
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

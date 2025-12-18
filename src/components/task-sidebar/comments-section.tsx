@@ -1,88 +1,83 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from "react"
-import { MessageSquare } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor"
-import { AuthorSelect, getRememberedAuthor } from "./author-select"
-import { ContributorSelect } from "./contributor-select"
-import { CommentItem } from "./comment-item"
-import { useCreateComment } from "@/hooks/use-task"
-import { toast } from "sonner"
-import type { ContributorColor } from "@/db/schema"
+import { useState, useMemo } from "react";
+import { MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor";
+import { AuthorSelect, getRememberedAuthor } from "./author-select";
+import { ContributorSelect } from "./contributor-select";
+import { CommentItem } from "./comment-item";
+import { useCreateComment } from "@/hooks/use-task";
+import { toast } from "sonner";
+import type { ContributorColor } from "@/db/schema";
 
 interface CommentsSectionProps {
-  taskId: string
-  boardId: string
+  taskId: string;
+  boardId: string;
   comments: Array<{
-    id: string
-    content: string
-    createdAt: Date | null
+    id: string;
+    content: string;
+    createdAt: Date | null;
     author: {
-      id: string
-      name: string
-      color: ContributorColor
-    }
+      id: string;
+      name: string;
+      color: ContributorColor;
+    };
     stakeholder?: {
-      id: string
-      name: string
-      color: ContributorColor
-    } | null
-  }>
+      id: string;
+      name: string;
+      color: ContributorColor;
+    } | null;
+  }>;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
 }
 
-export function CommentsSection({
-  taskId,
-  boardId,
-  comments,
-  contributors,
-}: CommentsSectionProps) {
-  const [newCommentContent, setNewCommentContent] = useState("")
-  const [selectedStakeholderId, setSelectedStakeholderId] = useState<string | null>(null)
+export function CommentsSection({ taskId, boardId, comments, contributors }: CommentsSectionProps) {
+  const [newCommentContent, setNewCommentContent] = useState("");
+  const [selectedStakeholderId, setSelectedStakeholderId] = useState<string | null>(null);
   // Generate a pending comment ID for file uploads - regenerated after each comment submission
-  const [pendingCommentId, setPendingCommentId] = useState(() => crypto.randomUUID())
+  const [pendingCommentId, setPendingCommentId] = useState(() => crypto.randomUUID());
   // Track concurrent upload batches with a counter (not boolean) since multiple batches can overlap
-  const [uploadingCount, setUploadingCount] = useState(0)
-  const isUploading = uploadingCount > 0
+  const [uploadingCount, setUploadingCount] = useState(0);
+  const isUploading = uploadingCount > 0;
 
   // Derive current author data from contributors (normalized source of truth)
   // This ensures comment badges reflect latest contributor name/color
   const enrichedComments = useMemo(() => {
-    const contributorsById = new Map(contributors.map((c) => [c.id, c]))
+    const contributorsById = new Map(contributors.map((c) => [c.id, c]));
     return comments.map((comment) => {
-      const currentAuthor = contributorsById.get(comment.author.id)
+      const currentAuthor = contributorsById.get(comment.author.id);
       const currentStakeholder = comment.stakeholder?.id
         ? contributorsById.get(comment.stakeholder.id)
-        : null
+        : null;
       return {
         ...comment,
         author: currentAuthor ?? comment.author,
         stakeholder: currentStakeholder ?? comment.stakeholder,
-      }
-    })
-  }, [comments, contributors])
+      };
+    });
+  }, [comments, contributors]);
 
   // Get initial author from localStorage - memoized to only run once per board
   const initialAuthorId = useMemo(() => {
-    const rememberedAuthor = getRememberedAuthor(boardId)
+    const rememberedAuthor = getRememberedAuthor(boardId);
     if (rememberedAuthor && contributors.some((c) => c.id === rememberedAuthor)) {
-      return rememberedAuthor
+      return rememberedAuthor;
     }
-    return null
-  }, [boardId, contributors])
+    return null;
+  }, [boardId, contributors]);
 
-  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(initialAuthorId)
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(initialAuthorId);
 
   // Mutation
-  const createCommentMutation = useCreateComment(boardId)
+  const createCommentMutation = useCreateComment(boardId);
 
   const handleSubmit = () => {
-    if (isRichTextEmpty(newCommentContent) || !selectedAuthorId) return
+    if (isRichTextEmpty(newCommentContent) || !selectedAuthorId) return;
 
     createCommentMutation.mutate(
       {
@@ -94,23 +89,23 @@ export function CommentsSection({
       },
       {
         onSuccess: () => {
-          setNewCommentContent("")
-          setSelectedStakeholderId(null)
-          setPendingCommentId(crypto.randomUUID()) // Generate new ID for next comment
-          toast.success("Comment added")
+          setNewCommentContent("");
+          setSelectedStakeholderId(null);
+          setPendingCommentId(crypto.randomUUID()); // Generate new ID for next comment
+          toast.success("Comment added");
         },
         onError: () => {
-          toast.error("Failed to add comment")
+          toast.error("Failed to add comment");
         },
-      }
-    )
-  }
+      },
+    );
+  };
 
   const canSubmit =
     !isRichTextEmpty(newCommentContent) &&
     selectedAuthorId &&
     !createCommentMutation.isPending &&
-    !isUploading
+    !isUploading;
 
   // Compute reason for disabled state (in priority order)
   const disabledReason = !selectedAuthorId
@@ -121,7 +116,7 @@ export function CommentsSection({
         ? "Upload in progress..."
         : createCommentMutation.isPending
           ? "Saving..."
-          : null
+          : null;
 
   return (
     <div className="space-y-3 p-6">
@@ -130,12 +125,8 @@ export function CommentsSection({
       {enrichedComments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-sm text-muted-foreground">
-            No comments yet
-          </p>
-          <p className="text-xs text-muted-foreground/70">
-            Be the first to add a comment
-          </p>
+          <p className="mt-4 text-sm text-muted-foreground">No comments yet</p>
+          <p className="text-xs text-muted-foreground/70">Be the first to add a comment</p>
         </div>
       ) : (
         enrichedComments.map((comment) => (
@@ -193,15 +184,11 @@ export function CommentsSection({
               {disabledReason}
             </span>
           )}
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            size="sm"
-          >
+          <Button onClick={handleSubmit} disabled={!canSubmit} size="sm">
             Add Comment
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

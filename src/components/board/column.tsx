@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { useDroppable } from "@dnd-kit/core"
-import { GripVertical, Minimize2, Maximize2, Plus, Trash2 } from "lucide-react"
-import { EditableText } from "@/components/editable-text"
-import { TaskCard } from "./task-card"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { useState } from "react";
+import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useDroppable } from "@dnd-kit/core";
+import { GripVertical, Minimize2, Maximize2, Plus, Trash2 } from "lucide-react";
+import { EditableText } from "@/components/editable-text";
+import { TaskCard } from "./task-card";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -16,57 +16,53 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { useQueryClient } from "@tanstack/react-query"
-import {
-  useUpdateColumnName,
-  useToggleColumnCollapsed,
-  useDeleteColumn,
-} from "@/hooks/use-board"
-import { getRandomEmoji } from "@/lib/emojis"
-import { boardKeys, type BoardData, type BoardTask } from "@/hooks/use-board"
-import { useBoardStore } from "@/stores/board-store"
-import { flushBoardOutbox } from "@/lib/outbox/flush"
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUpdateColumnName, useToggleColumnCollapsed, useDeleteColumn } from "@/hooks/use-board";
+import { getRandomEmoji } from "@/lib/emojis";
+import { boardKeys, type BoardData, type BoardTask } from "@/hooks/use-board";
+import { useBoardStore } from "@/stores/board-store";
+import { flushBoardOutbox } from "@/lib/outbox/flush";
 
-import type { ContributorColor, TaskPriority } from "@/db/schema"
+import type { ContributorColor, TaskPriority } from "@/db/schema";
 
 interface ColumnProps {
-  id: string
-  boardId: string
-  name: string
-  isCollapsed: boolean
+  id: string;
+  boardId: string;
+  name: string;
+  isCollapsed: boolean;
   tasks: Array<{
-    id: string
-    title: string
-    priority: TaskPriority
+    id: string;
+    title: string;
+    priority: TaskPriority;
     assignees: Array<{
-      id: string
-      name: string
-      color: ContributorColor
-    }>
+      id: string;
+      name: string;
+      color: ContributorColor;
+    }>;
     tags?: Array<{
-      id: string
-      name: string
-      color: ContributorColor
-    }>
-    commentCount: number
-    lastCommentCreatedAt: Date | null
-  }>
+      id: string;
+      name: string;
+      color: ContributorColor;
+    }>;
+    commentCount: number;
+    lastCommentCreatedAt: Date | null;
+  }>;
 }
 
 export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
-  const collapsed = isCollapsed
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const collapsed = isCollapsed;
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Mutations
-  const updateColumnNameMutation = useUpdateColumnName(boardId)
-  const toggleCollapsedMutation = useToggleColumnCollapsed(boardId)
-  const deleteColumnMutation = useDeleteColumn(boardId)
+  const updateColumnNameMutation = useUpdateColumnName(boardId);
+  const toggleCollapsedMutation = useToggleColumnCollapsed(boardId);
+  const deleteColumnMutation = useDeleteColumn(boardId);
 
   const {
     attributes,
@@ -75,47 +71,47 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id, data: { type: "column" } })
+  } = useSortable({ id, data: { type: "column" } });
 
   const { setNodeRef: setDroppableRef } = useDroppable({
     id: `column-${id}`,
     data: { type: "column-drop", columnId: id },
-  })
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  }
+  };
 
   const handleNameSave = async (newName: string) => {
-    updateColumnNameMutation.mutate({ columnId: id, name: newName })
-  }
+    updateColumnNameMutation.mutate({ columnId: id, name: newName });
+  };
 
   const handleToggleCollapse = () => {
-    toggleCollapsedMutation.mutate(id)
-  }
+    toggleCollapsedMutation.mutate(id);
+  };
 
   const handleDelete = async () => {
     deleteColumnMutation.mutate(id, {
       onSuccess: (result) => {
         if (result?.error) {
-          toast.error(result.error)
+          toast.error(result.error);
         } else {
-          toast.success("Column deleted")
-          setIsDeleteDialogOpen(false)
+          toast.success("Column deleted");
+          setIsDeleteDialogOpen(false);
         }
       },
       onError: () => {
-        toast.error("Failed to delete column")
+        toast.error("Failed to delete column");
       },
-    })
-  }
+    });
+  };
 
   const handleAddTask = async () => {
-    const emoji = getRandomEmoji()
-    const title = `${emoji} New task`
-    const taskId = crypto.randomUUID()
-    const createdAt = new Date()
+    const emoji = getRandomEmoji();
+    const title = `${emoji} New task`;
+    const taskId = crypto.randomUUID();
+    const createdAt = new Date();
 
     try {
       // 1) Local-first: update in-memory store immediately
@@ -125,11 +121,11 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         columnId: id,
         title,
         createdAt,
-      })
+      });
 
       // 2) Keep current board UI stable (still TanStack-driven for now)
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-        if (!old) return old
+        if (!old) return old;
 
         const newTask: BoardTask = {
           id: taskId,
@@ -141,43 +137,42 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
           createdAt,
           assignees: [],
           comments: [],
-        }
+        };
 
         return {
           ...old,
           columns: old.columns.map((col) => {
-            if (col.id !== id) return col
-            const maxPosition = col.tasks.length > 0
-              ? Math.max(...col.tasks.map((t) => t.position))
-              : -1
-            return { ...col, tasks: [...col.tasks, { ...newTask, position: maxPosition + 1 }] }
+            if (col.id !== id) return col;
+            const maxPosition =
+              col.tasks.length > 0 ? Math.max(...col.tasks.map((t) => t.position)) : -1;
+            return { ...col, tasks: [...col.tasks, { ...newTask, position: maxPosition + 1 }] };
           }),
-        }
-      })
+        };
+      });
 
       // 3) Set pending open task in zustand for instant sidebar (bypasses router.push delay)
-      useBoardStore.getState().setPendingOpenTask({ boardId, taskId })
+      useBoardStore.getState().setPendingOpenTask({ boardId, taskId });
 
       // 4) Update URL - pushState for browser, router.push for Next.js state
-      const newUrl = `/boards/${boardId}?task=${taskId}`
-      window.history.pushState(window.history.state, "", newUrl)
-      router.push(newUrl, { scroll: false })
+      const newUrl = `/boards/${boardId}?task=${taskId}`;
+      window.history.pushState(window.history.state, "", newUrl);
+      router.push(newUrl, { scroll: false });
 
       // 5) Background sync (outbox)
       useBoardStore.getState().enqueue({
         type: "createTask",
         boardId,
         payload: { taskId, columnId: id, title, createdAt },
-      })
-      void flushBoardOutbox(boardId)
+      });
+      void flushBoardOutbox(boardId);
 
-      toast.success("Task created")
+      toast.success("Task created");
     } catch {
-      toast.error("Failed to create task")
+      toast.error("Failed to create task");
     }
-  }
+  };
 
-  const taskIds = tasks.map((t) => t.id)
+  const taskIds = tasks.map((t) => t.id);
 
   return (
     <div
@@ -186,14 +181,14 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
       className={cn(
         "relative flex h-full shrink-0 flex-col glass glass-strong transition-[width] duration-200 ease-in-out",
         collapsed ? "w-10" : "w-72",
-        isDragging && "opacity-50"
+        isDragging && "opacity-50",
       )}
     >
       {/* Collapsed View */}
       <div
         className={cn(
           "absolute inset-0 flex flex-col items-end py-3 transition-opacity duration-200",
-          collapsed ? "opacity-100" : "pointer-events-none opacity-0"
+          collapsed ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
         <Button
@@ -232,13 +227,11 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
       <div
         className={cn(
           "flex min-h-0 flex-1 flex-col transition-opacity duration-200",
-          collapsed ? "pointer-events-none opacity-0" : "opacity-100"
+          collapsed ? "pointer-events-none opacity-0" : "opacity-100",
         )}
       >
         {/* Column Header */}
-        <div
-          className="flex items-center gap-2 border-b border-border px-3 py-2"
-        >
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
           <Button
             variant="ghost"
             size="icon"
@@ -294,10 +287,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
 
         {/* Tasks */}
         <ScrollArea className="min-h-0 flex-1">
-          <div
-            ref={setDroppableRef}
-            className="flex min-h-[100px] flex-col gap-2 p-3"
-          >
+          <div ref={setDroppableRef} className="flex min-h-[100px] flex-col gap-2 p-3">
             <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
               {tasks.map((task) => (
                 <TaskCard
@@ -344,5 +334,5 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

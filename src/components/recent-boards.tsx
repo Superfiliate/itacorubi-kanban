@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { BookmarkMinus } from "lucide-react"
-import { useVisitedBoards, type VisitedBoard } from "@/lib/use-visited-boards"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import Link from "next/link";
+import { BookmarkMinus } from "lucide-react";
+import { useVisitedBoards, type VisitedBoard } from "@/lib/use-visited-boards";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,22 +12,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 export function RecentBoards() {
-  const { boards, forget } = useVisitedBoards()
-  const [boardToForget, setBoardToForget] = useState<VisitedBoard | null>(null)
+  const { boards, forget } = useVisitedBoards();
+  const [boardToForget, setBoardToForget] = useState<VisitedBoard | null>(null);
 
   if (boards.length === 0) {
-    return null
+    return null;
   }
 
   const handleForget = () => {
     if (boardToForget) {
-      forget(boardToForget.id)
-      setBoardToForget(null)
+      forget(boardToForget.id);
+      setBoardToForget(null);
     }
-  }
+  };
 
   return (
     <div className="mx-auto mt-12 max-w-md">
@@ -42,9 +42,7 @@ export function RecentBoards() {
                 href={`/boards/${board.id}`}
                 className="flex items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-white/60 dark:hover:bg-white/10"
               >
-                <span className="text-heading-sm text-foreground">
-                  {board.title}
-                </span>
+                <span className="text-heading-sm text-foreground">{board.title}</span>
                 <code className="text-xs text-muted-foreground/80 transition-opacity group-hover:opacity-0">
                   {board.id.slice(0, 8)}...
                 </code>
@@ -54,9 +52,9 @@ export function RecentBoards() {
                 size="icon"
                 className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-destructive"
                 onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setBoardToForget(board)
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setBoardToForget(board);
                 }}
                 aria-label={`Forget ${board.title}`}
                 title="Forget this board"
@@ -73,20 +71,18 @@ export function RecentBoards() {
           <DialogHeader>
             <DialogTitle>Forget Board?</DialogTitle>
             <DialogDescription>
-              This will remove &quot;{boardToForget?.title}&quot; from your recent boards list.
-              The board itself won&apos;t be deleted — you can access it again with the link.
+              This will remove &quot;{boardToForget?.title}&quot; from your recent boards list. The
+              board itself won&apos;t be deleted — you can access it again with the link.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setBoardToForget(null)}>
               Cancel
             </Button>
-            <Button onClick={handleForget}>
-              Forget
-            </Button>
+            <Button onClick={handleForget}>Forget</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

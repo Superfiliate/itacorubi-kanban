@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import { useTheme } from "next-themes"
-import { useQuery } from "@tanstack/react-query"
-import { Moon, Sun, Monitor, HardDrive } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useTheme } from "next-themes";
+import { useQuery } from "@tanstack/react-query";
+import { Moon, Sun, Monitor, HardDrive } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { getBoardStorageUsage } from "@/actions/storage"
-import { formatFileSize, MAX_BOARD_STORAGE } from "@/lib/storage/constants"
+} from "@/components/ui/dropdown-menu";
+import { getBoardStorageUsage } from "@/actions/storage";
+import { formatFileSize, MAX_BOARD_STORAGE } from "@/lib/storage/constants";
 
 interface ThemeToggleProps {
-  boardId?: string
+  boardId?: string;
 }
 
 export function ThemeToggle({ boardId }: ThemeToggleProps) {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme();
 
   // Fetch storage usage if boardId is provided
   const { data: storageUsage } = useQuery({
@@ -27,11 +27,10 @@ export function ThemeToggle({ boardId }: ThemeToggleProps) {
     queryFn: () => getBoardStorageUsage(boardId!),
     enabled: !!boardId,
     staleTime: 30000, // 30 seconds
-  })
+  });
 
-  const storagePercentage = storageUsage !== undefined
-    ? Math.round((storageUsage / MAX_BOARD_STORAGE) * 100)
-    : 0
+  const storagePercentage =
+    storageUsage !== undefined ? Math.round((storageUsage / MAX_BOARD_STORAGE) * 100) : 0;
 
   return (
     <DropdownMenu>
@@ -77,8 +76,8 @@ export function ThemeToggle({ boardId }: ThemeToggleProps) {
                     storagePercentage > 90
                       ? "bg-destructive"
                       : storagePercentage > 70
-                      ? "bg-amber-500"
-                      : "bg-primary"
+                        ? "bg-amber-500"
+                        : "bg-primary"
                   }`}
                   style={{ width: `${Math.min(storagePercentage, 100)}%` }}
                 />
@@ -91,5 +90,5 @@ export function ThemeToggle({ boardId }: ThemeToggleProps) {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { Toaster } from "@/components/ui/sonner"
-import { QueryProvider } from "@/lib/query-client"
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/lib/query-client";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -12,5 +12,5 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         <Toaster />
       </NextThemesProvider>
     </QueryProvider>
-  )
+  );
 }

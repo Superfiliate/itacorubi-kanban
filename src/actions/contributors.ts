@@ -1,212 +1,220 @@
-"use server"
+"use server";
 
-import { db } from "@/db"
-import { contributors, taskAssignees, taskStakeholders, comments, columns, tasks, CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
-import { eq, and, sql } from "drizzle-orm"
-import { revalidatePath } from "next/cache"
-import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board"
-import { getRandomContributorColor } from "@/lib/contributor-colors"
+import { db } from "@/db";
+import {
+  contributors,
+  taskAssignees,
+  taskStakeholders,
+  comments,
+  columns,
+  tasks,
+  CONTRIBUTOR_COLORS,
+  type ContributorColor,
+} from "@/db/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board";
+import { getRandomContributorColor } from "@/lib/contributor-colors";
 
 export async function createContributor(
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor }
+  opts?: { id?: string; color?: ContributorColor },
 ) {
-  await requireBoardAccess(boardId)
+  await requireBoardAccess(boardId);
 
-  const id = opts?.id ?? crypto.randomUUID()
+  const id = opts?.id ?? crypto.randomUUID();
   const color =
     opts?.color && CONTRIBUTOR_COLORS.includes(opts.color)
       ? opts.color
-      : getRandomContributorColor()
+      : getRandomContributorColor();
 
   await db.insert(contributors).values({
     id,
     boardId,
     name,
     color,
-  })
+  });
 
-  revalidatePath(`/boards/${boardId}`)
-  return id
+  revalidatePath(`/boards/${boardId}`);
+  return id;
 }
 
 export async function getContributors(boardId: string) {
-  const password = await getBoardPasswordOptional(boardId)
+  const password = await getBoardPasswordOptional(boardId);
   if (!password) {
-    return []
+    return [];
   }
 
   const contributorsList = await db.query.contributors.findMany({
     where: eq(contributors.boardId, boardId),
-  })
+  });
 
-  return contributorsList
+  return contributorsList;
 }
 
 export async function addAssignee(taskId: string, contributorId: string, boardId: string) {
-  await requireBoardAccess(boardId)
+  await requireBoardAccess(boardId);
 
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
   if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found")
+    throw new Error("Task not found");
   }
 
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  const contributor = await db.query.contributors.findFirst({
+    where: eq(contributors.id, contributorId),
+  });
   if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found")
+    throw new Error("Contributor not found");
   }
 
   // Check if already assigned
   const existing = await db.query.taskAssignees.findFirst({
-    where: and(
-      eq(taskAssignees.taskId, taskId),
-      eq(taskAssignees.contributorId, contributorId)
-    ),
-  })
+    where: and(eq(taskAssignees.taskId, taskId), eq(taskAssignees.contributorId, contributorId)),
+  });
 
-  if (existing) return
+  if (existing) return;
 
   await db.insert(taskAssignees).values({
     taskId,
     contributorId,
-  })
+  });
 
-  revalidatePath(`/boards/${boardId}`)
+  revalidatePath(`/boards/${boardId}`);
 }
 
 export async function removeAssignee(taskId: string, contributorId: string, boardId: string) {
-  await requireBoardAccess(boardId)
+  await requireBoardAccess(boardId);
 
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
   if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found")
+    throw new Error("Task not found");
   }
 
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  const contributor = await db.query.contributors.findFirst({
+    where: eq(contributors.id, contributorId),
+  });
   if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found")
+    throw new Error("Contributor not found");
   }
 
-  await db.delete(taskAssignees).where(
-    and(
-      eq(taskAssignees.taskId, taskId),
-      eq(taskAssignees.contributorId, contributorId)
-    )
-  )
+  await db
+    .delete(taskAssignees)
+    .where(and(eq(taskAssignees.taskId, taskId), eq(taskAssignees.contributorId, contributorId)));
 
-  revalidatePath(`/boards/${boardId}`)
+  revalidatePath(`/boards/${boardId}`);
 }
 
 export async function createAndAssignContributor(
   taskId: string,
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor }
+  opts?: { id?: string; color?: ContributorColor },
 ) {
-  const contributorId = await createContributor(boardId, name, opts)
-  await addAssignee(taskId, contributorId, boardId)
-  return contributorId
+  const contributorId = await createContributor(boardId, name, opts);
+  await addAssignee(taskId, contributorId, boardId);
+  return contributorId;
 }
 
 export async function addStakeholder(taskId: string, contributorId: string, boardId: string) {
-  await requireBoardAccess(boardId)
+  await requireBoardAccess(boardId);
 
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
   if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found")
+    throw new Error("Task not found");
   }
 
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  const contributor = await db.query.contributors.findFirst({
+    where: eq(contributors.id, contributorId),
+  });
   if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found")
+    throw new Error("Contributor not found");
   }
 
   // Check if already a stakeholder
   const existing = await db.query.taskStakeholders.findFirst({
     where: and(
       eq(taskStakeholders.taskId, taskId),
-      eq(taskStakeholders.contributorId, contributorId)
+      eq(taskStakeholders.contributorId, contributorId),
     ),
-  })
+  });
 
-  if (existing) return
+  if (existing) return;
 
   await db.insert(taskStakeholders).values({
     taskId,
     contributorId,
-  })
+  });
 
-  revalidatePath(`/boards/${boardId}`)
+  revalidatePath(`/boards/${boardId}`);
 }
 
 export async function removeStakeholder(taskId: string, contributorId: string, boardId: string) {
-  await requireBoardAccess(boardId)
+  await requireBoardAccess(boardId);
 
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) })
+  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
   if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found")
+    throw new Error("Task not found");
   }
 
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, contributorId) })
+  const contributor = await db.query.contributors.findFirst({
+    where: eq(contributors.id, contributorId),
+  });
   if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found")
+    throw new Error("Contributor not found");
   }
 
-  await db.delete(taskStakeholders).where(
-    and(
-      eq(taskStakeholders.taskId, taskId),
-      eq(taskStakeholders.contributorId, contributorId)
-    )
-  )
+  await db
+    .delete(taskStakeholders)
+    .where(
+      and(eq(taskStakeholders.taskId, taskId), eq(taskStakeholders.contributorId, contributorId)),
+    );
 
-  revalidatePath(`/boards/${boardId}`)
+  revalidatePath(`/boards/${boardId}`);
 }
 
 export async function createAndAddStakeholder(
   taskId: string,
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor }
+  opts?: { id?: string; color?: ContributorColor },
 ) {
-  const contributorId = await createContributor(boardId, name, opts)
-  await addStakeholder(taskId, contributorId, boardId)
-  return contributorId
+  const contributorId = await createContributor(boardId, name, opts);
+  await addStakeholder(taskId, contributorId, boardId);
+  return contributorId;
 }
 
 export async function updateContributor(
   id: string,
   boardId: string,
-  updates: { name?: string; color?: ContributorColor }
+  updates: { name?: string; color?: ContributorColor },
 ) {
-  await requireBoardAccess(boardId)
+  await requireBoardAccess(boardId);
 
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) })
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) });
   if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found")
+    throw new Error("Contributor not found");
   }
 
-  const updateData: { name?: string; color?: ContributorColor } = {}
+  const updateData: { name?: string; color?: ContributorColor } = {};
   if (updates.color !== undefined) {
-    updateData.color = updates.color
+    updateData.color = updates.color;
   }
   if (updates.name !== undefined) {
-    updateData.name = updates.name
+    updateData.name = updates.name;
   }
 
-  await db.update(contributors)
-    .set(updateData)
-    .where(eq(contributors.id, id))
+  await db.update(contributors).set(updateData).where(eq(contributors.id, id));
 
-  revalidatePath(`/boards/${boardId}`)
+  revalidatePath(`/boards/${boardId}`);
 }
 
 export async function deleteContributor(id: string, boardId: string) {
-  await requireBoardAccess(boardId)
+  await requireBoardAccess(boardId);
 
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) })
+  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) });
   if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found")
+    throw new Error("Contributor not found");
   }
 
   // Check if contributor has any task assignments
@@ -214,10 +222,10 @@ export async function deleteContributor(id: string, boardId: string) {
     .select({ count: sql<number>`count(*)` })
     .from(taskAssignees)
     .where(eq(taskAssignees.contributorId, id))
-    .then(rows => rows[0]?.count ?? 0)
+    .then((rows) => rows[0]?.count ?? 0);
 
   if (assignmentCount > 0) {
-    throw new Error("Cannot delete contributor with task assignments")
+    throw new Error("Cannot delete contributor with task assignments");
   }
 
   // Check if contributor has any task stakeholder relationships
@@ -225,10 +233,10 @@ export async function deleteContributor(id: string, boardId: string) {
     .select({ count: sql<number>`count(*)` })
     .from(taskStakeholders)
     .where(eq(taskStakeholders.contributorId, id))
-    .then(rows => rows[0]?.count ?? 0)
+    .then((rows) => rows[0]?.count ?? 0);
 
   if (stakeholderCount > 0) {
-    throw new Error("Cannot delete contributor with task stakeholder relationships")
+    throw new Error("Cannot delete contributor with task stakeholder relationships");
   }
 
   // Check if contributor has any comments as author
@@ -236,10 +244,10 @@ export async function deleteContributor(id: string, boardId: string) {
     .select({ count: sql<number>`count(*)` })
     .from(comments)
     .where(eq(comments.authorId, id))
-    .then(rows => rows[0]?.count ?? 0)
+    .then((rows) => rows[0]?.count ?? 0);
 
   if (commentCount > 0) {
-    throw new Error("Cannot delete contributor with comments")
+    throw new Error("Cannot delete contributor with comments");
   }
 
   // Check if contributor is referenced as stakeholder in any comments
@@ -247,46 +255,46 @@ export async function deleteContributor(id: string, boardId: string) {
     .select({ count: sql<number>`count(*)` })
     .from(comments)
     .where(eq(comments.stakeholderId, id))
-    .then(rows => rows[0]?.count ?? 0)
+    .then((rows) => rows[0]?.count ?? 0);
 
   if (commentStakeholderCount > 0) {
-    throw new Error("Cannot delete contributor referenced as stakeholder in comments")
+    throw new Error("Cannot delete contributor referenced as stakeholder in comments");
   }
 
-  await db.delete(contributors).where(eq(contributors.id, id))
-  revalidatePath(`/boards/${boardId}`)
+  await db.delete(contributors).where(eq(contributors.id, id));
+  revalidatePath(`/boards/${boardId}`);
 }
 
 export type ContributorWithStats = {
-  id: string
-  name: string
-  color: ContributorColor
-  boardId: string
-  taskCount: number
-  commentCount: number
+  id: string;
+  name: string;
+  color: ContributorColor;
+  boardId: string;
+  taskCount: number;
+  commentCount: number;
   tasksByColumn: Array<{
-    columnId: string
-    columnName: string
-    count: number
-  }>
-}
+    columnId: string;
+    columnName: string;
+    count: number;
+  }>;
+};
 
 export async function getContributorsWithStats(boardId: string): Promise<ContributorWithStats[]> {
-  const password = await getBoardPasswordOptional(boardId)
+  const password = await getBoardPasswordOptional(boardId);
   if (!password) {
-    return []
+    return [];
   }
 
   // Get all contributors for this board
   const allContributors = await db.query.contributors.findMany({
     where: eq(contributors.boardId, boardId),
-  })
+  });
 
   // Get all columns for this board (for the breakdown)
   const boardColumns = await db.query.columns.findMany({
     where: eq(columns.boardId, boardId),
     orderBy: columns.position,
-  })
+  });
 
   // Get task assignments with task column info
   const assignmentsWithColumns = await db
@@ -296,7 +304,7 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
     })
     .from(taskAssignees)
     .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
-    .where(eq(tasks.boardId, boardId))
+    .where(eq(tasks.boardId, boardId));
 
   // Get comment counts per contributor
   const commentCounts = await db
@@ -306,23 +314,22 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
     })
     .from(comments)
     .where(eq(comments.boardId, boardId))
-    .groupBy(comments.authorId)
+    .groupBy(comments.authorId);
 
   // Build the result
-  return allContributors.map(contributor => {
-
+  return allContributors.map((contributor) => {
     // Count tasks per column for this contributor
     const contributorAssignments = assignmentsWithColumns.filter(
-      a => a.contributorId === contributor.id
-    )
+      (a) => a.contributorId === contributor.id,
+    );
 
-    const tasksByColumn = boardColumns.map(col => ({
+    const tasksByColumn = boardColumns.map((col) => ({
       columnId: col.id,
       columnName: col.name,
-      count: contributorAssignments.filter(a => a.columnId === col.id).length,
-    }))
+      count: contributorAssignments.filter((a) => a.columnId === col.id).length,
+    }));
 
-    const commentEntry = commentCounts.find(c => c.authorId === contributor.id)
+    const commentEntry = commentCounts.find((c) => c.authorId === contributor.id);
 
     return {
       id: contributor.id,
@@ -332,6 +339,6 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
       taskCount: contributorAssignments.length,
       commentCount: commentEntry?.count ?? 0,
       tasksByColumn,
-    }
-  })
+    };
+  });
 }

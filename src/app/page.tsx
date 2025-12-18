@@ -1,10 +1,9 @@
-import { Github } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { RecentBoards } from "@/components/recent-boards"
-import { CreateBoardButton } from "@/components/create-board-button"
+import { Github } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RecentBoards } from "@/components/recent-boards";
+import { CreateBoardButton } from "@/components/create-board-button";
 
 export default function Home() {
-
   return (
     <div className="flex min-h-screen flex-col gradient-mesh">
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
@@ -39,5 +38,5 @@ export default function Home() {
         </div>
       </main>
     </div>
-  )
+  );
 }

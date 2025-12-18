@@ -43,6 +43,7 @@ Contributors are people who can be assigned to tasks within a board. Each contri
 ## Implementation Notes
 
 Color utilities are centralized in `src/lib/contributor-colors.ts`:
+
 - `getRandomContributorColor()` — use when creating new contributors
 - `contributorColorStyles` — badge styles for each color
 - `contributorColorSwatches` — solid swatches for the color picker

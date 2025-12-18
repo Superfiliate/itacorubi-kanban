@@ -17,6 +17,7 @@ The client automatically selects the best method based on file size and environm
 ## Database Schema
 
 Files tracked in `uploaded_files` table with:
+
 - `board_id` - for quota calculations and cleanup
 - `comment_id` - for cascade deletion
 - `size` - for quota enforcement
@@ -53,6 +54,7 @@ Files tracked in `uploaded_files` table with:
 ## File Cleanup
 
 When a comment is deleted:
+
 1. Query `uploaded_files` for comment
 2. Delete from storage (Vercel Blob or local)
 3. Delete database records

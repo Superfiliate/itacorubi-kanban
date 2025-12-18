@@ -9,12 +9,14 @@ Comments allow team members to discuss tasks and track progress. Each comment ha
 Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. The toolbar provides the following formatting options:
 
 ### Text Formatting
+
 - **Bold** (Ctrl+B)
-- *Italic* (Ctrl+I)
+- _Italic_ (Ctrl+I)
 - ~~Strikethrough~~
 - `Inline code`
 
 ### Structure
+
 - Heading 1 (H1)
 - Heading 2 (H2)
 - Heading 3 (H3)
@@ -25,9 +27,11 @@ Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. Th
 - Horizontal rule
 
 ### Other
+
 - Undo/Redo (Ctrl+Z / Ctrl+Shift+Z)
 
 ### Technical Details
+
 - Content is stored as JSON (Tiptap's native format) in the database
 - The same editor component is used for creating, editing, and displaying comments
 - Display mode renders content as read-only without the toolbar
@@ -76,12 +80,14 @@ Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. Th
 ## Task Card Indicators
 
 Each task card displays:
+
 - Comment icon with count
 - Time since last comment ("X days ago")
 
 ### Color Coding
 
 The comment age indicator uses color to show urgency:
+
 - **Green (emerald)**: Recent comments (0-5 days)
 - **Yellow**: Comments aging (5-10 days)
 - **Amber/Orange**: Comments getting stale (10-20 days)
@@ -92,11 +98,13 @@ The comment age indicator uses color to show urgency:
 The task sidebar is divided into two columns:
 
 ### Left Column (70%)
+
 - Comments list (scrollable)
 - Empty state when no comments
 - Add comment form at the bottom
 
 ### Right Column (30%)
+
 - Task title (editable)
 - Status/column selector
 - Assignees selector

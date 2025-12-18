@@ -13,6 +13,7 @@ This prevents accidental data loss by forcing explicit deletion of related recor
 ### Why Not CASCADE?
 
 Using `onDelete: "cascade"` can lead to:
+
 - Silent data loss when deleting a parent record
 - Difficulty tracking what was deleted
 - Unintended side effects in complex relationship chains
@@ -40,6 +41,7 @@ if (assignmentCount > 0) {
 ### UI Implications
 
 When deletion is restricted:
+
 1. Check related record counts before attempting delete
 2. Disable delete buttons when deletion is not allowed
 3. Show clear explanation to users (e.g., "Cannot delete: has X tasks assigned")
@@ -50,4 +52,3 @@ When deletion is restricted:
 - **Positive**: No accidental data loss, explicit and predictable behavior
 - **Negative**: More code required to handle deletions properly
 - **Trade-off**: Users must manually clean up related records before deletion
-

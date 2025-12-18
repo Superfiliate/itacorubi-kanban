@@ -1,35 +1,35 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react"
-import { ArrowDownToLine, Trash2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
+import { ArrowDownToLine, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 /**
  * Format file size to human readable string
  */
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B"
-  const units = ["B", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  const size = bytes / Math.pow(1024, i)
-  return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const size = bytes / Math.pow(1024, i);
+  return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 /**
  * Get file icon based on content type
  */
 function getFileIcon(contentType: string): string {
-  if (contentType.startsWith("video/")) return "🎬"
-  if (contentType.startsWith("audio/")) return "🎵"
-  if (contentType === "application/pdf") return "📄"
-  if (contentType.includes("word") || contentType.includes("document")) return "📝"
-  if (contentType.includes("excel") || contentType.includes("spreadsheet")) return "📊"
-  if (contentType.includes("powerpoint") || contentType.includes("presentation")) return "📽️"
-  if (contentType.startsWith("text/")) return "📃"
-  if (contentType.includes("zip") || contentType.includes("archive")) return "📦"
-  return "📎"
+  if (contentType.startsWith("video/")) return "🎬";
+  if (contentType.startsWith("audio/")) return "🎵";
+  if (contentType === "application/pdf") return "📄";
+  if (contentType.includes("word") || contentType.includes("document")) return "📝";
+  if (contentType.includes("excel") || contentType.includes("spreadsheet")) return "📊";
+  if (contentType.includes("powerpoint") || contentType.includes("presentation")) return "📽️";
+  if (contentType.startsWith("text/")) return "📃";
+  if (contentType.includes("zip") || contentType.includes("archive")) return "📦";
+  return "📎";
 }
 
 /**
@@ -39,37 +39,37 @@ function getFileIcon(contentType: string): string {
  * Documents: card-style with hover overlay for download/delete
  */
 export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) {
-  const [isHovered, setIsHovered] = useState(false)
+  const [isHovered, setIsHovered] = useState(false);
 
   const { url, filename, contentType, size } = node.attrs as {
-    url: string
-    filename: string
-    contentType: string
-    size: number
-  }
+    url: string;
+    filename: string;
+    contentType: string;
+    size: number;
+  };
 
-  const isEditable = editor.isEditable
-  const isVideo = contentType?.startsWith("video/")
+  const isEditable = editor.isEditable;
+  const isVideo = contentType?.startsWith("video/");
 
   const handleDownload = () => {
-    const link = document.createElement("a")
-    link.href = url
-    link.download = filename || "file"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename || "file";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleDelete = () => {
-    deleteNode()
-  }
+    deleteNode();
+  };
 
   // Action buttons overlay
   const ActionButtons = () => (
     <div
       className={cn(
         "absolute top-2 right-2 flex items-center gap-1 transition-opacity duration-200",
-        isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+        isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
       )}
     >
       {/* Download button */}
@@ -100,7 +100,7 @@ export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) 
         </Button>
       )}
     </div>
-  )
+  );
 
   // Video rendering
   if (isVideo) {
@@ -111,23 +111,18 @@ export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) 
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <video
-            src={url}
-            controls
-            className="rounded-md max-w-full h-auto"
-            preload="metadata"
-          >
+          <video src={url} controls className="rounded-md max-w-full h-auto" preload="metadata">
             Your browser does not support the video tag.
           </video>
           <ActionButtons />
         </div>
       </NodeViewWrapper>
-    )
+    );
   }
 
   // Document/file rendering
-  const icon = getFileIcon(contentType || "")
-  const sizeStr = formatFileSize(size || 0)
+  const icon = getFileIcon(contentType || "");
+  const sizeStr = formatFileSize(size || 0);
 
   return (
     <NodeViewWrapper className="my-2">
@@ -135,7 +130,7 @@ export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) 
         className={cn(
           "relative inline-flex items-center gap-3 p-3 rounded-lg border border-border",
           "bg-muted/50 hover:bg-muted/70 transition-colors max-w-full",
-          isHovered && "ring-2 ring-ring ring-offset-2 ring-offset-background"
+          isHovered && "ring-2 ring-ring ring-offset-2 ring-offset-background",
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -161,7 +156,7 @@ export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) 
         <div
           className={cn(
             "absolute top-1/2 -translate-y-1/2 right-2 flex items-center gap-1 transition-opacity duration-200",
-            isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+            isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
         >
           <Button
@@ -192,5 +187,5 @@ export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) 
         </div>
       </div>
     </NodeViewWrapper>
-  )
+  );
 }

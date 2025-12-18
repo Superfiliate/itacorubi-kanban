@@ -39,11 +39,13 @@ Boards are the top-level container for organizing work. Each board has its own c
 - Share dialog shows two sections:
 
 **Share with Password:**
+
 - Board URL (copy button)
 - Password field (hidden by default, eye icon to reveal, copy button)
 - Password fetched from HTTP-only cookie via API
 
 **Public Link:**
+
 - URL format: `/boards/{uuid}/unlock?password={password}`
 - Clicking this link opens unlock page with password prefilled
 - User must still click "Unlock Board" button to access the board

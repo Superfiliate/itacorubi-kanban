@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Tag, Trash2, ChevronDown, ChevronRight, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useMemo, useState } from "react";
+import { Tag, Trash2, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,47 +10,37 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { EditableText } from "@/components/editable-text"
-import { cn } from "@/lib/utils"
-import { CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
-import {
-  type TagWithStats,
-} from "@/actions/tags"
-import { toast } from "sonner"
-import { useBoardStore, selectBoard } from "@/stores/board-store"
-import { flushBoardOutbox } from "@/lib/outbox/flush"
-import { useQueryClient } from "@tanstack/react-query"
-import { boardKeys, type BoardData } from "@/hooks/use-board"
-import {
-  tagColorStyles,
-  tagColorSwatches,
-  getRandomTagColor,
-} from "@/lib/tag-colors"
-import { ensureTagHasHash } from "@/lib/tag-utils"
+} from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { EditableText } from "@/components/editable-text";
+import { cn } from "@/lib/utils";
+import { CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema";
+import { type TagWithStats } from "@/actions/tags";
+import { toast } from "sonner";
+import { useBoardStore, selectBoard } from "@/stores/board-store";
+import { flushBoardOutbox } from "@/lib/outbox/flush";
+import { useQueryClient } from "@tanstack/react-query";
+import { boardKeys, type BoardData } from "@/hooks/use-board";
+import { tagColorStyles, tagColorSwatches, getRandomTagColor } from "@/lib/tag-colors";
+import { ensureTagHasHash } from "@/lib/tag-utils";
 
 interface TagsDialogProps {
-  boardId: string
-  tags: TagWithStats[]
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  boardId: string;
+  tags: TagWithStats[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 function ColorSelector({
   currentColor,
   onSelect,
 }: {
-  currentColor: ContributorColor
-  onSelect: (color: ContributorColor) => void
+  currentColor: ContributorColor;
+  onSelect: (color: ContributorColor) => void;
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -59,7 +49,7 @@ function ColorSelector({
           className={cn(
             "h-6 w-6 rounded-full ring-2 ring-offset-2 ring-offset-background transition-all hover:scale-110",
             tagColorSwatches[currentColor],
-            "ring-transparent hover:ring-muted-foreground/50"
+            "ring-transparent hover:ring-muted-foreground/50",
           )}
           title="Change color"
         />
@@ -70,13 +60,14 @@ function ColorSelector({
             <button
               key={color}
               onClick={() => {
-                onSelect(color)
-                setOpen(false)
+                onSelect(color);
+                setOpen(false);
               }}
               className={cn(
                 "h-6 w-6 rounded-full transition-all hover:scale-110",
                 tagColorSwatches[color],
-                currentColor === color && "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                currentColor === color &&
+                  "ring-2 ring-foreground ring-offset-2 ring-offset-background",
               )}
               title={color}
             />
@@ -84,118 +75,109 @@ function ColorSelector({
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }
 
-function TagRow({
-  tag,
-  boardId,
-}: {
-  tag: TagWithStats
-  boardId: string
-}) {
-  const queryClient = useQueryClient()
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
+function TagRow({ tag, boardId }: { tag: TagWithStats; boardId: string }) {
+  const queryClient = useQueryClient();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const canDelete = tag.taskCount === 0
-  const hasActivity = tag.taskCount > 0
-  const localBoard = useBoardStore(selectBoard(boardId))
-  const localTag = localBoard?.tagsById[tag.id]
+  const canDelete = tag.taskCount === 0;
+  const hasActivity = tag.taskCount > 0;
+  const localBoard = useBoardStore(selectBoard(boardId));
+  const localTag = localBoard?.tagsById[tag.id];
 
-  const displayName = localTag?.name ?? tag.name
-  const displayColor = localTag?.color ?? tag.color
+  const displayName = localTag?.name ?? tag.name;
+  const displayColor = localTag?.color ?? tag.color;
 
   const handleNameSave = async (name: string) => {
     // Ensure tag name starts with "#"
-    const normalizedName = ensureTagHasHash(name)
+    const normalizedName = ensureTagHasHash(name);
     // Update normalized store
-    useBoardStore.getState().updateTagLocal({ boardId, tagId: tag.id, name: normalizedName })
+    useBoardStore.getState().updateTagLocal({ boardId, tagId: tag.id, name: normalizedName });
 
     // Also update TanStack Query cache for tags list
     queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-      if (!old) return old
+      if (!old) return old;
       return {
         ...old,
         tags: old.tags.map((t) => (t.id === tag.id ? { ...t, name: normalizedName } : t)),
-      }
-    })
+      };
+    });
 
     useBoardStore.getState().enqueue({
       type: "updateTag",
       boardId,
       payload: { tagId: tag.id, name: normalizedName },
-    })
-    void flushBoardOutbox(boardId)
+    });
+    void flushBoardOutbox(boardId);
 
-    toast.success("Tag updated")
-  }
+    toast.success("Tag updated");
+  };
 
   const handleColorChange = async (color: ContributorColor) => {
     // Update normalized store
-    useBoardStore.getState().updateTagLocal({ boardId, tagId: tag.id, color })
+    useBoardStore.getState().updateTagLocal({ boardId, tagId: tag.id, color });
 
     // Also update TanStack Query cache for tags list
     queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-      if (!old) return old
+      if (!old) return old;
       return {
         ...old,
         tags: old.tags.map((t) => (t.id === tag.id ? { ...t, color } : t)),
-      }
-    })
+      };
+    });
 
     useBoardStore.getState().enqueue({
       type: "updateTag",
       boardId,
       payload: { tagId: tag.id, color },
-    })
-    void flushBoardOutbox(boardId)
+    });
+    void flushBoardOutbox(boardId);
 
-    toast.success("Tag updated")
-  }
+    toast.success("Tag updated");
+  };
 
   const handleDelete = async () => {
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
       // Update normalized store
-      useBoardStore.getState().deleteTagLocal({ boardId, tagId: tag.id })
+      useBoardStore.getState().deleteTagLocal({ boardId, tagId: tag.id });
 
       // Also update TanStack Query cache for tags list
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-        if (!old) return old
+        if (!old) return old;
         return {
           ...old,
           tags: old.tags.filter((t) => t.id !== tag.id),
-        }
-      })
+        };
+      });
 
       useBoardStore.getState().enqueue({
         type: "deleteTag",
         boardId,
         payload: { tagId: tag.id },
-      })
-      void flushBoardOutbox(boardId)
+      });
+      void flushBoardOutbox(boardId);
 
-      toast.success("Tag deleted")
-      setIsDeleteDialogOpen(false)
+      toast.success("Tag deleted");
+      setIsDeleteDialogOpen(false);
     } catch {
-      toast.error("Failed to delete tag")
+      toast.error("Failed to delete tag");
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
-  const statsText = `${tag.taskCount} task${tag.taskCount !== 1 ? "s" : ""}`
+  const statsText = `${tag.taskCount} task${tag.taskCount !== 1 ? "s" : ""}`;
 
   return (
     <div className="border-b border-border last:border-b-0">
       <div className="flex items-center gap-3 py-3">
         {/* Color selector */}
-        <ColorSelector
-          currentColor={displayColor}
-          onSelect={handleColorChange}
-        />
+        <ColorSelector currentColor={displayColor} onSelect={handleColorChange} />
 
         {/* Name (editable) */}
         <div className="flex-1 min-w-0">
@@ -204,7 +186,7 @@ function TagRow({
             onSave={handleNameSave}
             className={cn(
               "inline-flex items-center rounded-md px-2 py-0.5 text-sm font-medium",
-                tagColorStyles[displayColor]
+              tagColorStyles[displayColor],
             )}
             inputClassName="text-sm"
           />
@@ -234,11 +216,7 @@ function TagRow({
           className="h-8 w-8 text-muted-foreground hover:text-destructive"
           onClick={() => setIsDeleteDialogOpen(true)}
           disabled={!canDelete}
-          title={
-            canDelete
-              ? "Delete tag"
-              : "Cannot delete: has task assignments"
-          }
+          title={canDelete ? "Delete tag" : "Cannot delete: has task assignments"}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -263,8 +241,8 @@ function TagRow({
           <DialogHeader>
             <DialogTitle>Delete Tag</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{displayName}&quot;? This action
-              cannot be undone.
+              Are you sure you want to delete &quot;{displayName}&quot;? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -275,18 +253,14 @@ function TagRow({
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
               Delete
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
 
 function EmptyState() {
@@ -295,62 +269,60 @@ function EmptyState() {
       <Tag className="h-16 w-16 text-muted-foreground/50" />
       <div className="text-center">
         <h3 className="text-heading">No tags yet</h3>
-        <p className="mt-1 text-muted">
-          Add tags to categorize and organize your tasks
-        </p>
+        <p className="mt-1 text-muted">Add tags to categorize and organize your tasks</p>
       </div>
     </div>
-  )
+  );
 }
 
 function AddTagForm({ boardId }: { boardId: string }) {
-  const queryClient = useQueryClient()
-  const [name, setName] = useState("")
-  const [isAdding, setIsAdding] = useState(false)
+  const queryClient = useQueryClient();
+  const [name, setName] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmedName = name.trim()
-    if (!trimmedName) return
+    e.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
 
-    setIsAdding(true)
+    setIsAdding(true);
     try {
-      const tagId = crypto.randomUUID()
-      const color = getRandomTagColor()
+      const tagId = crypto.randomUUID();
+      const color = getRandomTagColor();
 
       // Ensure tag name starts with "#"
-      const normalizedName = ensureTagHasHash(trimmedName)
+      const normalizedName = ensureTagHasHash(trimmedName);
 
       useBoardStore.getState().createTagLocal({
         boardId,
         tagId,
         name: normalizedName,
         color,
-      })
+      });
 
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-        if (!old) return old
+        if (!old) return old;
         return {
           ...old,
           tags: [...old.tags, { id: tagId, boardId, name: normalizedName, color }],
-        }
-      })
+        };
+      });
 
       useBoardStore.getState().enqueue({
         type: "createTag",
         boardId,
         payload: { tagId, name: normalizedName, color },
-      })
-      void flushBoardOutbox(boardId)
+      });
+      void flushBoardOutbox(boardId);
 
-      setName("")
-      toast.success("Tag added")
+      setName("");
+      toast.success("Tag added");
     } catch {
-      toast.error("Failed to add tag")
+      toast.error("Failed to add tag");
     } finally {
-      setIsAdding(false)
+      setIsAdding(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex gap-2 pt-4 border-t border-border">
@@ -366,28 +338,23 @@ function AddTagForm({ boardId }: { boardId: string }) {
         Add
       </Button>
     </form>
-  )
+  );
 }
 
-export type { TagWithStats }
+export type { TagWithStats };
 
-export function TagsDialog({
-  boardId,
-  tags,
-  open,
-  onOpenChange,
-}: TagsDialogProps) {
-  const localBoard = useBoardStore(selectBoard(boardId))
+export function TagsDialog({ boardId, tags, open, onOpenChange }: TagsDialogProps) {
+  const localBoard = useBoardStore(selectBoard(boardId));
 
   const displayTags = useMemo<TagWithStats[]>(() => {
-    const byId = new Map<string, TagWithStats>()
+    const byId = new Map<string, TagWithStats>();
 
     // Compute task counts from local store's tagIdsByTaskId
-    const tagTaskCounts = new Map<string, number>()
+    const tagTaskCounts = new Map<string, number>();
     if (localBoard?.tagIdsByTaskId) {
       for (const tagIds of Object.values(localBoard.tagIdsByTaskId)) {
         for (const tagId of tagIds) {
-          tagTaskCounts.set(tagId, (tagTaskCounts.get(tagId) ?? 0) + 1)
+          tagTaskCounts.set(tagId, (tagTaskCounts.get(tagId) ?? 0) + 1);
         }
       }
     }
@@ -395,22 +362,22 @@ export function TagsDialog({
     // Start from server-provided stats, but overlay name/color from local store if present.
     // Use computed taskCount from local store for real-time updates.
     for (const t of tags) {
-      const local = localBoard?.tagsById[t.id]
-      const localTaskCount = tagTaskCounts.get(t.id)
+      const local = localBoard?.tagsById[t.id];
+      const localTaskCount = tagTaskCounts.get(t.id);
       byId.set(t.id, {
         ...t,
         name: local?.name ?? t.name,
         color: local?.color ?? t.color,
         // Use local count if available, otherwise fall back to server count
         taskCount: localTaskCount !== undefined ? localTaskCount : t.taskCount,
-      })
+      });
     }
 
     // Append local-only tags (created locally) with computed task counts.
     for (const id of localBoard?.tagOrder ?? []) {
-      if (byId.has(id)) continue
-      const t = localBoard?.tagsById[id]
-      if (!t) continue
+      if (byId.has(id)) continue;
+      const t = localBoard?.tagsById[id];
+      if (!t) continue;
       byId.set(id, {
         id: t.id,
         name: t.name,
@@ -418,11 +385,11 @@ export function TagsDialog({
         boardId,
         taskCount: tagTaskCounts.get(id) ?? 0,
         tasksByColumn: [],
-      })
+      });
     }
 
-    return Array.from(byId.values())
-  }, [tags, localBoard, boardId])
+    return Array.from(byId.values());
+  }, [tags, localBoard, boardId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -433,8 +400,8 @@ export function TagsDialog({
             Tags
           </DialogTitle>
           <DialogDescription>
-            Manage the tags for this board. Tags can be assigned to tasks to
-            categorize and organize your work.
+            Manage the tags for this board. Tags can be assigned to tasks to categorize and organize
+            your work.
           </DialogDescription>
         </DialogHeader>
 
@@ -443,11 +410,7 @@ export function TagsDialog({
         ) : (
           <ScrollArea className="max-h-[400px] -mx-6 px-6">
             {displayTags.map((tag) => (
-              <TagRow
-                key={tag.id}
-                tag={tag}
-                boardId={boardId}
-              />
+              <TagRow key={tag.id} tag={tag} boardId={boardId} />
             ))}
           </ScrollArea>
         )}
@@ -455,5 +418,5 @@ export function TagsDialog({
         <AddTagForm boardId={boardId} />
       </DialogContent>
     </Dialog>
-  )
+  );
 }

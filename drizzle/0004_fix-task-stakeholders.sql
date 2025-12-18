@@ -5,3 +5,4 @@ CREATE TABLE IF NOT EXISTS `task_stakeholders` (
 	FOREIGN KEY (`task_id`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`contributor_id`) REFERENCES `contributors`(`id`) ON UPDATE no action ON DELETE restrict
 );
+

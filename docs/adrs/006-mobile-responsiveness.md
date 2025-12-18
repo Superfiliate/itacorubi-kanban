@@ -10,6 +10,7 @@ Mobile-first layouts with Tailwind breakpoints; use `lg` for multi-panel/side-by
 ## Examples
 
 Layout:
+
 ```tsx
 <div className="flex flex-col lg:flex-row">
   <div className="flex-none lg:flex-[3]">Details</div>
@@ -18,6 +19,7 @@ Layout:
 ```
 
 Cheatsheet:
+
 - Mobile default: 0+
 - `sm`: 640px
 - `md`: 768px
@@ -25,4 +27,5 @@ Cheatsheet:
 - `xl`: 1280px (desktop sanity check)
 
 ## Links
+
 - Tailwind breakpoints: `tailwind.config.*` (if customized) and usage in `src/styles/globals.css`

@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-import { Button } from "@/components/ui/button"
-import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor"
+import { useState } from "react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -18,95 +18,101 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ContributorBadge } from "@/components/contributor-badge"
-import { AuthorSelect } from "./author-select"
-import { ContributorSelect } from "./contributor-select"
-import { useUpdateComment, useDeleteComment } from "@/hooks/use-task"
-import { toast } from "sonner"
-import type { ContributorColor } from "@/db/schema"
+} from "@/components/ui/dialog";
+import { ContributorBadge } from "@/components/contributor-badge";
+import { AuthorSelect } from "./author-select";
+import { ContributorSelect } from "./contributor-select";
+import { useUpdateComment, useDeleteComment } from "@/hooks/use-task";
+import { toast } from "sonner";
+import type { ContributorColor } from "@/db/schema";
 
 interface CommentItemProps {
   comment: {
-    id: string
-    content: string
-    createdAt: Date | null
+    id: string;
+    content: string;
+    createdAt: Date | null;
     author: {
-      id: string
-      name: string
-      color: ContributorColor
-    }
+      id: string;
+      name: string;
+      color: ContributorColor;
+    };
     stakeholder?: {
-      id: string
-      name: string
-      color: ContributorColor
-    } | null
-  }
-  taskId: string
-  boardId: string
+      id: string;
+      name: string;
+      color: ContributorColor;
+    } | null;
+  };
+  taskId: string;
+  boardId: string;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
 }
 
 export function CommentItem({ comment, taskId, boardId, contributors }: CommentItemProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editContent, setEditContent] = useState(comment.content)
-  const [editAuthorId, setEditAuthorId] = useState(comment.author.id)
-  const [editStakeholderId, setEditStakeholderId] = useState<string | null>(comment.stakeholder?.id ?? null)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+  const [editAuthorId, setEditAuthorId] = useState(comment.author.id);
+  const [editStakeholderId, setEditStakeholderId] = useState<string | null>(
+    comment.stakeholder?.id ?? null,
+  );
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Mutations
-  const updateCommentMutation = useUpdateComment(boardId)
-  const deleteCommentMutation = useDeleteComment(boardId)
+  const updateCommentMutation = useUpdateComment(boardId);
+  const deleteCommentMutation = useDeleteComment(boardId);
 
   const handleSave = () => {
-    if (isRichTextEmpty(editContent)) return
+    if (isRichTextEmpty(editContent)) return;
 
     updateCommentMutation.mutate(
-      { commentId: comment.id, taskId, authorId: editAuthorId, content: editContent, stakeholderId: editStakeholderId },
+      {
+        commentId: comment.id,
+        taskId,
+        authorId: editAuthorId,
+        content: editContent,
+        stakeholderId: editStakeholderId,
+      },
       {
         onSuccess: () => {
-          setIsEditing(false)
+          setIsEditing(false);
         },
         onError: () => {
-          toast.error("Failed to update comment")
+          toast.error("Failed to update comment");
         },
-      }
-    )
-  }
+      },
+    );
+  };
 
   const handleCancel = () => {
-    setEditContent(comment.content)
-    setEditAuthorId(comment.author.id)
-    setEditStakeholderId(comment.stakeholder?.id ?? null)
-    setIsEditing(false)
-  }
+    setEditContent(comment.content);
+    setEditAuthorId(comment.author.id);
+    setEditStakeholderId(comment.stakeholder?.id ?? null);
+    setIsEditing(false);
+  };
 
   const handleDelete = () => {
     deleteCommentMutation.mutate(
       { commentId: comment.id, taskId },
       {
         onSuccess: () => {
-          toast.success("Comment deleted")
-          setIsDeleteDialogOpen(false)
+          toast.success("Comment deleted");
+          setIsDeleteDialogOpen(false);
         },
         onError: () => {
-          toast.error("Failed to delete comment")
+          toast.error("Failed to delete comment");
         },
-      }
-    )
-  }
+      },
+    );
+  };
 
   const formattedDate = comment.createdAt
     ? formatDistanceToNow(comment.createdAt, { addSuffix: true })
-    : "Unknown date"
+    : "Unknown date";
 
-  const localTime = comment.createdAt
-    ? comment.createdAt.toLocaleString()
-    : ""
+  const localTime = comment.createdAt ? comment.createdAt.toLocaleString() : "";
 
   if (isEditing) {
     return (
@@ -157,7 +163,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -165,10 +171,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
       <div className="group rounded-lg border border-border/50 bg-card p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <ContributorBadge
-              name={comment.author.name}
-              color={comment.author.color}
-            />
+            <ContributorBadge name={comment.author.name} color={comment.author.color} />
             {comment.stakeholder && (
               <>
                 <span className="text-xs text-muted-foreground">as</span>
@@ -178,10 +181,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
                 />
               </>
             )}
-            <span
-              className="text-xs text-muted-foreground"
-              title={localTime}
-            >
+            <span className="text-xs text-muted-foreground" title={localTime}>
               {formattedDate}
             </span>
           </div>
@@ -244,5 +244,5 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

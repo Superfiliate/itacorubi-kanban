@@ -1,12 +1,12 @@
-import { CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema"
+import { CONTRIBUTOR_COLORS, type ContributorColor } from "@/db/schema";
 
 /**
  * Get a random contributor color from the full palette.
  * Used when creating new contributors to ensure visual variety.
  */
 export function getRandomContributorColor(): ContributorColor {
-  const index = Math.floor(Math.random() * CONTRIBUTOR_COLORS.length)
-  return CONTRIBUTOR_COLORS[index]
+  const index = Math.floor(Math.random() * CONTRIBUTOR_COLORS.length);
+  return CONTRIBUTOR_COLORS[index];
 }
 
 /**
@@ -31,7 +31,7 @@ export const contributorColorStyles: Record<ContributorColor, string> = {
   amber: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   orange: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
   red: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-}
+};
 
 /**
  * Solid color swatches for the color picker UI.
@@ -55,4 +55,4 @@ export const contributorColorSwatches: Record<ContributorColor, string> = {
   amber: "bg-amber-500",
   orange: "bg-orange-500",
   red: "bg-red-500",
-}
+};

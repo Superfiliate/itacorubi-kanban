@@ -88,13 +88,9 @@
         "columns_board_id_boards_id_fk": {
           "name": "columns_board_id_boards_id_fk",
           "tableFrom": "columns",
-          "columnsFrom": [
-            "board_id"
-          ],
+          "columnsFrom": ["board_id"],
           "tableTo": "boards",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         }
@@ -154,39 +150,27 @@
         "comments_task_id_tasks_id_fk": {
           "name": "comments_task_id_tasks_id_fk",
           "tableFrom": "comments",
-          "columnsFrom": [
-            "task_id"
-          ],
+          "columnsFrom": ["task_id"],
           "tableTo": "tasks",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         },
         "comments_board_id_boards_id_fk": {
           "name": "comments_board_id_boards_id_fk",
           "tableFrom": "comments",
-          "columnsFrom": [
-            "board_id"
-          ],
+          "columnsFrom": ["board_id"],
           "tableTo": "boards",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         },
         "comments_author_id_contributors_id_fk": {
           "name": "comments_author_id_contributors_id_fk",
           "tableFrom": "comments",
-          "columnsFrom": [
-            "author_id"
-          ],
+          "columnsFrom": ["author_id"],
           "tableTo": "contributors",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         }
@@ -232,13 +216,9 @@
         "contributors_board_id_boards_id_fk": {
           "name": "contributors_board_id_boards_id_fk",
           "tableFrom": "contributors",
-          "columnsFrom": [
-            "board_id"
-          ],
+          "columnsFrom": ["board_id"],
           "tableTo": "boards",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         }
@@ -270,36 +250,25 @@
         "task_assignees_task_id_tasks_id_fk": {
           "name": "task_assignees_task_id_tasks_id_fk",
           "tableFrom": "task_assignees",
-          "columnsFrom": [
-            "task_id"
-          ],
+          "columnsFrom": ["task_id"],
           "tableTo": "tasks",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         },
         "task_assignees_contributor_id_contributors_id_fk": {
           "name": "task_assignees_contributor_id_contributors_id_fk",
           "tableFrom": "task_assignees",
-          "columnsFrom": [
-            "contributor_id"
-          ],
+          "columnsFrom": ["contributor_id"],
           "tableTo": "contributors",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {
         "task_assignees_task_id_contributor_id_pk": {
-          "columns": [
-            "task_id",
-            "contributor_id"
-          ],
+          "columns": ["task_id", "contributor_id"],
           "name": "task_assignees_task_id_contributor_id_pk"
         }
       },
@@ -357,26 +326,18 @@
         "tasks_board_id_boards_id_fk": {
           "name": "tasks_board_id_boards_id_fk",
           "tableFrom": "tasks",
-          "columnsFrom": [
-            "board_id"
-          ],
+          "columnsFrom": ["board_id"],
           "tableTo": "boards",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         },
         "tasks_column_id_columns_id_fk": {
           "name": "tasks_column_id_columns_id_fk",
           "tableFrom": "tasks",
-          "columnsFrom": [
-            "column_id"
-          ],
+          "columnsFrom": ["column_id"],
           "tableTo": "columns",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "restrict"
         }

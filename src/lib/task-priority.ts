@@ -1,17 +1,17 @@
-import React from "react"
-import type { LucideIcon } from "lucide-react"
-import { CircleDashed, Flame, SignalHigh } from "lucide-react"
-import type { TaskPriority } from "@/db/schema"
-import { SignalLowWithBackground, SignalMediumWithBackground } from "@/components/priority-icons"
+import React from "react";
+import type { LucideIcon } from "lucide-react";
+import { CircleDashed, Flame, SignalHigh } from "lucide-react";
+import type { TaskPriority } from "@/db/schema";
+import { SignalLowWithBackground, SignalMediumWithBackground } from "@/components/priority-icons";
 
 export type TaskPriorityMeta = {
-  value: TaskPriority
-  label: string
-  Icon: LucideIcon | React.ComponentType<{ className?: string }>
-  iconClassName: string
+  value: TaskPriority;
+  label: string;
+  Icon: LucideIcon | React.ComponentType<{ className?: string }>;
+  iconClassName: string;
   /** Combined card styling: border accent + optional background tint */
-  cardClassName: string
-}
+  cardClassName: string;
+};
 
 export const TASK_PRIORITY_META: Record<TaskPriority, TaskPriorityMeta> = {
   none: {
@@ -49,7 +49,7 @@ export const TASK_PRIORITY_META: Record<TaskPriority, TaskPriorityMeta> = {
     iconClassName: "text-red-500",
     cardClassName: "border-l-2 border-l-red-500/80 bg-red-500/8",
   },
-}
+};
 
 export const TASK_PRIORITY_OPTIONS: TaskPriorityMeta[] = [
   TASK_PRIORITY_META.none,
@@ -57,4 +57,4 @@ export const TASK_PRIORITY_OPTIONS: TaskPriorityMeta[] = [
   TASK_PRIORITY_META.medium,
   TASK_PRIORITY_META.high,
   TASK_PRIORITY_META.urgent,
-]
+];

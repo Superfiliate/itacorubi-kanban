@@ -23,6 +23,7 @@ We use Playwright for end-to-end testing of high-level user flows.
 3. A "passing" test suite with workarounds is a lie
 
 **Example:** If a test fails because navigating away before sync completes causes data loss:
+
 - **WRONG:** Simplify the test to avoid the navigation scenario
 - **RIGHT:** Fix the app to ensure sync completes or data persists locally
 
@@ -34,10 +35,10 @@ Workarounds in tests that mask real app issues are technical debt. They let bugs
 
 Retries help distinguish failure types. Both are bugs requiring different debugging approaches:
 
-| Failure Type | Behavior | Debugging Approach |
-|--------------|----------|-------------------|
-| **Flaky** | Fails initially, passes on retry | Race conditions, timing issues, async patterns, missing waits |
-| **Hard** | Fails all retries | Logic bugs, broken selectors, missing elements, real regressions |
+| Failure Type | Behavior                         | Debugging Approach                                               |
+| ------------ | -------------------------------- | ---------------------------------------------------------------- |
+| **Flaky**    | Fails initially, passes on retry | Race conditions, timing issues, async patterns, missing waits    |
+| **Hard**     | Fails all retries                | Logic bugs, broken selectors, missing elements, real regressions |
 
 ## Test Organization
 
@@ -108,10 +109,12 @@ Before adding a new test, ask:
 **Example - Password Change Feature:**
 
 Good (2 tests):
+
 - Happy path: change password, verify success, stays logged in
 - Security: old password fails after change, new password works
 
 Avoid (8+ separate tests):
+
 - Cancel button, empty validation, mismatch validation, redirect scenarios, etc.
 
 ## Best Practices
@@ -167,6 +170,7 @@ If the UI swaps an optimistic entity ID for a server ID, it can detach nodes Pla
 ### Drag and drop needs explicit handles
 
 For DnD (dnd-kit):
+
 - Provide a dedicated drag handle button with listeners
 - Don't attach drag listeners to large interactive regions
 - Use pointer-based dragging that matches the app's sensor/activation constraints

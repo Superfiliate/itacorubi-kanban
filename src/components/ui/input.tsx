@@ -1,6 +1,6 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 function Input({ className, type = "text", ...props }: React.ComponentProps<"input">) {
   return (
@@ -12,11 +12,11 @@ function Input({ className, type = "text", ...props }: React.ComponentProps<"inp
         "hover:bg-white/60 dark:hover:bg-white/10 hover:border-border",
         "focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:bg-white/70 dark:focus-visible:bg-white/15",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Input }
+export { Input };

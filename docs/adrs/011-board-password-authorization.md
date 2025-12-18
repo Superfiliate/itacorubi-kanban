@@ -40,6 +40,7 @@ All text fields are stored in plaintext (not encrypted):
 ### Public Links
 
 Public links allow sharing a board with password prefilled:
+
 - URL format: `/boards/{id}/unlock?password={password}`
 - Redirects to unlock page with password prefilled in the form
 - User must still click "Unlock Board" button (no auto-unlock)
@@ -67,11 +68,13 @@ Public links allow sharing a board with password prefilled:
 ### Server Actions Pattern
 
 **Read Operations:**
+
 1. Fetch data from database
 2. Verify access via `requireBoardAccess(boardId)`
 3. Return data
 
 **Write Operations:**
+
 1. Verify access via `requireBoardAccess(boardId)`
 2. Verify record ownership (e.g. task/comment/column belongs to board)
 3. Insert/update plaintext data

@@ -14,6 +14,7 @@ TanStack Query may still be used for **one-time hydration**, **polling/revalidat
 ## Examples (optional)
 
 Local-first skeleton:
+
 ```ts
 applyLocalChange()
 enqueueOutboxMutation()
@@ -21,6 +22,7 @@ flushOutboxInBackground()
 ```
 
 ## Links
+
 - Store/outbox decision: `docs/adrs/016-local-first-store-and-outbox.md`
 - Query plumbing (when used): `src/lib/query-client.tsx`
 - Sync indicator: `src/components/sync-indicator.tsx`

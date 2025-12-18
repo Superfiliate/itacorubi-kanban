@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import * as LabelPrimitive from "@radix-ui/react-label";
+import { cn } from "@/lib/utils";
 
 /**
  * Label component for form fields.
@@ -24,11 +24,11 @@ const Label = React.forwardRef<
     className={cn(
       "text-xs text-muted-foreground",
       "peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-      className
+      className,
     )}
     {...props}
   />
-))
-Label.displayName = LabelPrimitive.Root.displayName
+));
+Label.displayName = LabelPrimitive.Root.displayName;
 
-export { Label }
+export { Label };

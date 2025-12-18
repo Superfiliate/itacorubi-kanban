@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { XIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { XIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ImageLightboxProps {
-  src: string
-  alt?: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  src: string;
+  alt?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 /**
@@ -25,7 +25,7 @@ export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxPro
           className={cn(
             "fixed inset-0 z-50 bg-black/90",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           )}
         />
         <DialogPrimitive.Content
@@ -33,12 +33,12 @@ export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxPro
             "fixed inset-0 z-50 flex items-center justify-center p-4",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           )}
           // Close on backdrop click
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              onOpenChange(false)
+              onOpenChange(false);
             }
           }}
         >
@@ -48,7 +48,7 @@ export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxPro
               "absolute top-4 right-4 z-50",
               "rounded-full p-2 bg-black/50 text-white",
               "hover:bg-black/70 transition-colors",
-              "focus:outline-none focus:ring-2 focus:ring-white/50"
+              "focus:outline-none focus:ring-2 focus:ring-white/50",
             )}
           >
             <XIcon className="h-6 w-6" />
@@ -65,5 +65,5 @@ export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxPro
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
-  )
+  );
 }

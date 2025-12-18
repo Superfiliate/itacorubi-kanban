@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,45 +10,41 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { ContributorBadge } from "@/components/contributor-badge"
-import { useQueryClient } from "@tanstack/react-query"
-import { boardKeys, type BoardData } from "@/hooks/use-board"
-import type { ContributorColor } from "@/db/schema"
-import { getRandomContributorColor } from "@/lib/contributor-colors"
-import { useBoardStore } from "@/stores/board-store"
-import { flushBoardOutbox } from "@/lib/outbox/flush"
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { ContributorBadge } from "@/components/contributor-badge";
+import { useQueryClient } from "@tanstack/react-query";
+import { boardKeys, type BoardData } from "@/hooks/use-board";
+import type { ContributorColor } from "@/db/schema";
+import { getRandomContributorColor } from "@/lib/contributor-colors";
+import { useBoardStore } from "@/stores/board-store";
+import { flushBoardOutbox } from "@/lib/outbox/flush";
 
 function getStorageKey(boardId: string) {
-  return `kanban-author-${boardId}`
+  return `kanban-author-${boardId}`;
 }
 
 export function getRememberedAuthor(boardId: string): string | null {
-  if (typeof window === "undefined") return null
-  return localStorage.getItem(getStorageKey(boardId))
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(getStorageKey(boardId));
 }
 
 export function setRememberedAuthor(boardId: string, authorId: string) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(getStorageKey(boardId), authorId)
+  if (typeof window === "undefined") return;
+  localStorage.setItem(getStorageKey(boardId), authorId);
 }
 
 interface AuthorSelectProps {
-  boardId: string
-  selectedAuthorId: string | null
-  onAuthorChange: (authorId: string) => void
+  boardId: string;
+  selectedAuthorId: string | null;
+  onAuthorChange: (authorId: string) => void;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
-  placeholder?: string
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
+  placeholder?: string;
 }
 
 export function AuthorSelect({
@@ -58,59 +54,55 @@ export function AuthorSelect({
   contributors,
   placeholder = "Select author...",
 }: AuthorSelectProps) {
-  const [open, setOpen] = useState(false)
-  const [inputValue, setInputValue] = useState("")
-  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const queryClient = useQueryClient();
 
-  const selectedContributor = contributors.find((c) => c.id === selectedAuthorId)
+  const selectedContributor = contributors.find((c) => c.id === selectedAuthorId);
 
   const handleSelect = (contributorId: string) => {
-    onAuthorChange(contributorId)
-    setRememberedAuthor(boardId, contributorId)
-    setOpen(false)
-  }
+    onAuthorChange(contributorId);
+    setRememberedAuthor(boardId, contributorId);
+    setOpen(false);
+  };
 
   const handleCreateNew = async () => {
-    const name = inputValue.trim()
+    const name = inputValue.trim();
     if (name) {
-      const contributorId = crypto.randomUUID()
-      const color = getRandomContributorColor()
+      const contributorId = crypto.randomUUID();
+      const color = getRandomContributorColor();
 
-      useBoardStore.getState().createContributorLocal({ boardId, contributorId, name, color })
+      useBoardStore.getState().createContributorLocal({ boardId, contributorId, name, color });
 
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-        if (!old) return old
+        if (!old) return old;
         return {
           ...old,
           contributors: [...old.contributors, { id: contributorId, boardId, name, color }],
-        }
-      })
+        };
+      });
 
       useBoardStore.getState().enqueue({
         type: "createContributor",
         boardId,
         payload: { contributorId, name, color },
-      })
-      void flushBoardOutbox(boardId)
+      });
+      void flushBoardOutbox(boardId);
 
-      onAuthorChange(contributorId)
-      setRememberedAuthor(boardId, contributorId)
-      setInputValue("")
-      setOpen(false)
+      onAuthorChange(contributorId);
+      setRememberedAuthor(boardId, contributorId);
+      setInputValue("");
+      setOpen(false);
     }
-  }
+  };
 
   const filteredContributors = inputValue
-    ? contributors.filter((c) =>
-        c.name.toLowerCase().includes(inputValue.toLowerCase())
-      )
-    : contributors
+    ? contributors.filter((c) => c.name.toLowerCase().includes(inputValue.toLowerCase()))
+    : contributors;
 
   const showCreateOption =
     inputValue.trim() &&
-    !contributors.some(
-      (c) => c.name.toLowerCase() === inputValue.trim().toLowerCase()
-    )
+    !contributors.some((c) => c.name.toLowerCase() === inputValue.trim().toLowerCase());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -124,10 +116,7 @@ export function AuthorSelect({
           className="w-full justify-between"
         >
           {selectedContributor ? (
-            <ContributorBadge
-              name={selectedContributor.name}
-              color={selectedContributor.color}
-            />
+            <ContributorBadge name={selectedContributor.name} color={selectedContributor.color} />
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
@@ -164,15 +153,10 @@ export function AuthorSelect({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedAuthorId === contributor.id
-                        ? "opacity-100"
-                        : "opacity-0"
+                      selectedAuthorId === contributor.id ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <ContributorBadge
-                    name={contributor.name}
-                    color={contributor.color}
-                  />
+                  <ContributorBadge name={contributor.name} color={contributor.color} />
                 </CommandItem>
               ))}
               {showCreateOption && (
@@ -191,5 +175,5 @@ export function AuthorSelect({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

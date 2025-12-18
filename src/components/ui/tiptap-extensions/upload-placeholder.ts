@@ -1,7 +1,7 @@
-import { Node, mergeAttributes } from "@tiptap/core"
+import { Node, mergeAttributes } from "@tiptap/core";
 
 export interface UploadPlaceholderOptions {
-  HTMLAttributes: Record<string, unknown>
+  HTMLAttributes: Record<string, unknown>;
 }
 
 declare module "@tiptap/core" {
@@ -10,15 +10,12 @@ declare module "@tiptap/core" {
       /**
        * Insert an upload placeholder at a specific position
        */
-      setUploadPlaceholder: (options: {
-        uploadId: string
-        filename: string
-      }) => ReturnType
+      setUploadPlaceholder: (options: { uploadId: string; filename: string }) => ReturnType;
       /**
        * Remove an upload placeholder by its uploadId
        */
-      removeUploadPlaceholder: (uploadId: string) => ReturnType
-    }
+      removeUploadPlaceholder: (uploadId: string) => ReturnType;
+    };
   }
 }
 
@@ -36,7 +33,7 @@ export const UploadPlaceholder = Node.create<UploadPlaceholderOptions>({
   addOptions() {
     return {
       HTMLAttributes: {},
-    }
+    };
   },
 
   addAttributes() {
@@ -47,19 +44,19 @@ export const UploadPlaceholder = Node.create<UploadPlaceholderOptions>({
       filename: {
         default: null,
       },
-    }
+    };
   },
 
   parseHTML() {
     return [
       {
-        tag: 'div[data-upload-placeholder]',
+        tag: "div[data-upload-placeholder]",
       },
-    ]
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { filename } = HTMLAttributes
+    const { filename } = HTMLAttributes;
 
     return [
       "div",
@@ -72,7 +69,8 @@ export const UploadPlaceholder = Node.create<UploadPlaceholderOptions>({
       [
         "div",
         {
-          class: "h-5 w-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin",
+          class:
+            "h-5 w-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin",
         },
       ],
       // Filename and status
@@ -84,13 +82,9 @@ export const UploadPlaceholder = Node.create<UploadPlaceholderOptions>({
           { class: "font-medium text-foreground block truncate" },
           filename || "Uploading...",
         ],
-        [
-          "span",
-          { class: "text-xs text-muted-foreground" },
-          "Uploading...",
-        ],
+        ["span", { class: "text-xs text-muted-foreground" }, "Uploading..."],
       ],
-    ]
+    ];
   },
 
   addCommands() {
@@ -101,27 +95,27 @@ export const UploadPlaceholder = Node.create<UploadPlaceholderOptions>({
           return commands.insertContent({
             type: this.name,
             attrs: options,
-          })
+          });
         },
       removeUploadPlaceholder:
         (uploadId) =>
         ({ tr, state, dispatch }) => {
-          const { doc } = state
-          let found = false
+          const { doc } = state;
+          let found = false;
 
           doc.descendants((node, pos) => {
             if (node.type.name === "uploadPlaceholder" && node.attrs.uploadId === uploadId) {
               if (dispatch) {
-                tr.delete(pos, pos + node.nodeSize)
+                tr.delete(pos, pos + node.nodeSize);
               }
-              found = true
-              return false // Stop searching
+              found = true;
+              return false; // Stop searching
             }
-            return true
-          })
+            return true;
+          });
 
-          return found
+          return found;
         },
-    }
+    };
   },
-})
+});

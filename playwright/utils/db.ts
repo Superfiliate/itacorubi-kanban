@@ -1,9 +1,9 @@
-import { execSync } from "child_process"
-import { existsSync, unlinkSync } from "fs"
-import path from "path"
+import { execSync } from "child_process";
+import { existsSync, unlinkSync } from "fs";
+import path from "path";
 
-const TEST_DB_PATH = path.join(process.cwd(), "test.db")
-const TEST_DB_JOURNAL_PATH = path.join(process.cwd(), "test.db-journal")
+const TEST_DB_PATH = path.join(process.cwd(), "test.db");
+const TEST_DB_JOURNAL_PATH = path.join(process.cwd(), "test.db-journal");
 
 /**
  * Resets the test database by deleting it and running migrations
@@ -14,14 +14,14 @@ export function resetTestDb() {
   // Delete test database if it exists
   try {
     if (existsSync(TEST_DB_PATH)) {
-      unlinkSync(TEST_DB_PATH)
+      unlinkSync(TEST_DB_PATH);
     }
     if (existsSync(TEST_DB_JOURNAL_PATH)) {
-      unlinkSync(TEST_DB_JOURNAL_PATH)
+      unlinkSync(TEST_DB_JOURNAL_PATH);
     }
   } catch (error) {
     // Ignore errors if file is locked or doesn't exist
-    console.warn("Could not delete test database:", error)
+    console.warn("Could not delete test database:", error);
   }
 
   // Run database migrations to create fresh schema
@@ -33,10 +33,10 @@ export function resetTestDb() {
       },
       stdio: "pipe",
       cwd: process.cwd(),
-    })
+    });
   } catch (error) {
-    console.error("Failed to initialize test database:", error)
-    throw error
+    console.error("Failed to initialize test database:", error);
+    throw error;
   }
 }
 
@@ -45,10 +45,10 @@ export function resetTestDb() {
  */
 export function cleanupTestDb() {
   if (existsSync(TEST_DB_PATH)) {
-    unlinkSync(TEST_DB_PATH)
+    unlinkSync(TEST_DB_PATH);
   }
   if (existsSync(TEST_DB_JOURNAL_PATH)) {
-    unlinkSync(TEST_DB_JOURNAL_PATH)
+    unlinkSync(TEST_DB_JOURNAL_PATH);
   }
 }
 
@@ -57,5 +57,5 @@ export function cleanupTestDb() {
  */
 export function setupTestDb() {
   // Ensure test database is clean
-  resetTestDb()
+  resetTestDb();
 }

@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Trash2 } from "lucide-react"
-import { EditableText } from "@/components/editable-text"
-import { StatusSelect } from "./status-select"
-import { AssigneesSelect } from "./assignees-select"
-import { StakeholdersSelect } from "./stakeholders-select"
-import { TagsSelect } from "./tags-select"
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
+import { EditableText } from "@/components/editable-text";
+import { StatusSelect } from "./status-select";
+import { AssigneesSelect } from "./assignees-select";
+import { StakeholdersSelect } from "./stakeholders-select";
+import { TagsSelect } from "./tags-select";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { DatePicker } from "@/components/ui/date-picker"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -23,109 +23,103 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   useUpdateTaskTitle,
   useUpdateTaskPriority,
   useUpdateTaskCreatedAt,
   useDeleteTask,
-} from "@/hooks/use-task"
-import type { ContributorColor, TaskPriority } from "@/db/schema"
-import { TASK_PRIORITY_OPTIONS, TASK_PRIORITY_META } from "@/lib/task-priority"
-import { cn } from "@/lib/utils"
+} from "@/hooks/use-task";
+import type { ContributorColor, TaskPriority } from "@/db/schema";
+import { TASK_PRIORITY_OPTIONS, TASK_PRIORITY_META } from "@/lib/task-priority";
+import { cn } from "@/lib/utils";
 
 interface TaskDetailsProps {
   task: {
-    id: string
-    title: string
-    priority: TaskPriority
-    columnId: string
-    boardId: string
-    createdAt: Date | null
+    id: string;
+    title: string;
+    priority: TaskPriority;
+    columnId: string;
+    boardId: string;
+    createdAt: Date | null;
     assignees: Array<{
       contributor: {
-        id: string
-        name: string
-        color: ContributorColor
-      }
-    }>
+        id: string;
+        name: string;
+        color: ContributorColor;
+      };
+    }>;
     stakeholders?: Array<{
       contributor: {
-        id: string
-        name: string
-        color: ContributorColor
-      }
-    }>
+        id: string;
+        name: string;
+        color: ContributorColor;
+      };
+    }>;
     tags?: Array<{
       tag: {
-        id: string
-        name: string
-        color: ContributorColor
-      }
-    }>
-  }
+        id: string;
+        name: string;
+        color: ContributorColor;
+      };
+    }>;
+  };
   columns: Array<{
-    id: string
-    name: string
-  }>
+    id: string;
+    name: string;
+  }>;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
   tags: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
-  onClose: () => void
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
+  onClose: () => void;
 }
 
-export function TaskDetails({
-  task,
-  columns,
-  contributors,
-  tags,
-  onClose,
-}: TaskDetailsProps) {
-  const router = useRouter()
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+export function TaskDetails({ task, columns, contributors, tags, onClose }: TaskDetailsProps) {
+  const router = useRouter();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Mutations
-  const updateTitleMutation = useUpdateTaskTitle(task.boardId)
-  const updatePriorityMutation = useUpdateTaskPriority(task.boardId)
-  const updateCreatedAtMutation = useUpdateTaskCreatedAt(task.boardId)
-  const deleteTaskMutation = useDeleteTask(task.boardId)
+  const updateTitleMutation = useUpdateTaskTitle(task.boardId);
+  const updatePriorityMutation = useUpdateTaskPriority(task.boardId);
+  const updateCreatedAtMutation = useUpdateTaskCreatedAt(task.boardId);
+  const deleteTaskMutation = useDeleteTask(task.boardId);
 
   const handleTitleSave = (title: string) => {
-    updateTitleMutation.mutate({ taskId: task.id, title })
-  }
+    updateTitleMutation.mutate({ taskId: task.id, title });
+  };
 
   const handleCreatedAtChange = (date: Date | undefined) => {
     if (date) {
-      updateCreatedAtMutation.mutate({ taskId: task.id, createdAt: date })
+      updateCreatedAtMutation.mutate({ taskId: task.id, createdAt: date });
     }
-  }
+  };
 
   const handlePriorityChange = (priority: string) => {
-    updatePriorityMutation.mutate({ taskId: task.id, priority: priority as TaskPriority })
-  }
+    updatePriorityMutation.mutate({ taskId: task.id, priority: priority as TaskPriority });
+  };
 
   const handleDelete = () => {
     deleteTaskMutation.mutate(task.id, {
       onSuccess: () => {
-        setIsDeleteDialogOpen(false)
-        toast.success("Task deleted")
-        onClose()
-        router.replace(`/boards/${task.boardId}`)
+        setIsDeleteDialogOpen(false);
+        toast.success("Task deleted");
+        onClose();
+        router.replace(`/boards/${task.boardId}`);
       },
       onError: () => {
-        toast.error("Failed to delete task")
+        toast.error("Failed to delete task");
       },
-    })
-  }
+    });
+  };
 
   return (
     <div className="flex flex-col gap-5 p-6">
@@ -153,14 +147,16 @@ export function TaskDetails({
 
       {/* Priority */}
       <div className="space-y-2">
-        <label htmlFor="priority-select" className="text-label">Priority</label>
+        <label htmlFor="priority-select" className="text-label">
+          Priority
+        </label>
         <Select value={task.priority} onValueChange={handlePriorityChange}>
           <SelectTrigger id="priority-select" className="w-full" aria-label="Priority">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {TASK_PRIORITY_OPTIONS.map((opt) => {
-              const { Icon, iconClassName } = TASK_PRIORITY_META[opt.value]
+              const { Icon, iconClassName } = TASK_PRIORITY_META[opt.value];
               return (
                 <SelectItem key={opt.value} value={opt.value}>
                   <span className="flex items-center gap-2">
@@ -168,7 +164,7 @@ export function TaskDetails({
                     <span>{opt.label}</span>
                   </span>
                 </SelectItem>
-              )
+              );
             })}
           </SelectContent>
         </Select>
@@ -191,12 +187,7 @@ export function TaskDetails({
       />
 
       {/* Tags */}
-      <TagsSelect
-        taskId={task.id}
-        boardId={task.boardId}
-        tags={task.tags ?? []}
-        allTags={tags}
-      />
+      <TagsSelect taskId={task.id} boardId={task.boardId} tags={task.tags ?? []} allTags={tags} />
 
       {/* Created At */}
       <div className="space-y-2">
@@ -248,5 +239,5 @@ export function TaskDetails({
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

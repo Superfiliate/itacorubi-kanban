@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { cn } from "@/lib/utils"
-import { tagColorStyles } from "@/lib/tag-colors"
-import type { ContributorColor } from "@/db/schema"
+import { cn } from "@/lib/utils";
+import { tagColorStyles } from "@/lib/tag-colors";
+import type { ContributorColor } from "@/db/schema";
 
 interface TagBadgeProps {
-  name: string
-  color: ContributorColor
-  variant?: "default" | "compact"
-  className?: string
-  onRemove?: () => void
+  name: string;
+  color: ContributorColor;
+  variant?: "default" | "compact";
+  className?: string;
+  onRemove?: () => void;
 }
 
 export function TagBadge({ name, color, variant = "default", className, onRemove }: TagBadgeProps) {
@@ -19,7 +19,7 @@ export function TagBadge({ name, color, variant = "default", className, onRemove
         "inline-flex min-w-0 items-center gap-1 rounded-md text-xs font-medium",
         variant === "compact" ? "px-1.5 py-0" : "px-2 py-0.5",
         tagColorStyles[color],
-        className
+        className,
       )}
       title={name}
     >
@@ -48,5 +48,5 @@ export function TagBadge({ name, color, variant = "default", className, onRemove
         </button>
       )}
     </span>
-  )
+  );
 }

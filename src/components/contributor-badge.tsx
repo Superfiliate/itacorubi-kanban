@@ -1,25 +1,31 @@
-"use client"
+"use client";
 
-import { cn } from "@/lib/utils"
-import { contributorColorStyles } from "@/lib/contributor-colors"
-import type { ContributorColor } from "@/db/schema"
+import { cn } from "@/lib/utils";
+import { contributorColorStyles } from "@/lib/contributor-colors";
+import type { ContributorColor } from "@/db/schema";
 
 interface ContributorBadgeProps {
-  name: string
-  color: ContributorColor
-  variant?: "default" | "compact"
-  className?: string
-  onRemove?: () => void
+  name: string;
+  color: ContributorColor;
+  variant?: "default" | "compact";
+  className?: string;
+  onRemove?: () => void;
 }
 
-export function ContributorBadge({ name, color, variant = "default", className, onRemove }: ContributorBadgeProps) {
+export function ContributorBadge({
+  name,
+  color,
+  variant = "default",
+  className,
+  onRemove,
+}: ContributorBadgeProps) {
   return (
     <span
       className={cn(
         "inline-flex min-w-0 items-center gap-1 rounded-md text-xs font-medium",
         variant === "compact" ? "px-1.5 py-0" : "px-2 py-0.5",
         contributorColorStyles[color],
-        className
+        className,
       )}
       title={name}
     >
@@ -48,5 +54,5 @@ export function ContributorBadge({ name, color, variant = "default", className, 
         </button>
       )}
     </span>
-  )
+  );
 }

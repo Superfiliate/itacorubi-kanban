@@ -1,69 +1,69 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Share2, Copy, Check, KeyRound } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Share2, Copy, Check, KeyRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { PasswordInput } from "@/components/ui/password-input"
-import { ChangePasswordDialog } from "./change-password-dialog"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { ChangePasswordDialog } from "./change-password-dialog";
 
 interface ShareDialogProps {
-  boardId: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  boardId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
-  const [password, setPassword] = useState<string | null>(null)
-  const [copiedField, setCopiedField] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
+  const [password, setPassword] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   useEffect(() => {
     if (open && !password) {
-      fetchPassword()
+      fetchPassword();
     }
-  }, [open, password])
+  }, [open, password]);
 
   const fetchPassword = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await fetch(`/api/boards/${boardId}/password`)
+      const response = await fetch(`/api/boards/${boardId}/password`);
       if (response.ok) {
-        const data = await response.json()
-        setPassword(data.password)
+        const data = await response.json();
+        setPassword(data.password);
       }
     } catch (error) {
-      console.error("Failed to fetch password:", error)
+      console.error("Failed to fetch password:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const boardUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/boards/${boardId}`
-    : ""
+  const boardUrl =
+    typeof window !== "undefined" ? `${window.location.origin}/boards/${boardId}` : "";
 
-  const publicUrl = typeof window !== "undefined" && password
-    ? `${window.location.origin}/boards/${boardId}/unlock?password=${encodeURIComponent(password)}`
-    : ""
+  const publicUrl =
+    typeof window !== "undefined" && password
+      ? `${window.location.origin}/boards/${boardId}/unlock?password=${encodeURIComponent(password)}`
+      : "";
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopiedField(field)
-      setTimeout(() => setCopiedField(null), 2000)
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
     } catch (error) {
-      console.error("Failed to copy:", error)
+      console.error("Failed to copy:", error);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,7 +85,9 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
 
             {/* Board URL */}
             <div className="space-y-1">
-              <label htmlFor="board-url-input" className="text-label">Board URL</label>
+              <label htmlFor="board-url-input" className="text-label">
+                Board URL
+              </label>
               <div className="flex gap-2">
                 <Input
                   id="board-url-input"
@@ -112,7 +114,9 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
 
             {/* Password */}
             <div className="space-y-1">
-              <label htmlFor="board-password-input" className="text-label">Password</label>
+              <label htmlFor="board-password-input" className="text-label">
+                Password
+              </label>
               <div className="flex gap-2">
                 <PasswordInput
                   id="board-password-input"
@@ -144,11 +148,14 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
           <div className="space-y-3 border-t border-border pt-6">
             <h3 className="text-heading-sm">Public Link</h3>
             <p className="text-label">
-              Anyone with this link will have the password prefilled and automatically unlock the board.
+              Anyone with this link will have the password prefilled and automatically unlock the
+              board.
             </p>
 
             <div className="space-y-1">
-              <label htmlFor="public-url-input" className="text-label">Public URL</label>
+              <label htmlFor="public-url-input" className="text-label">
+                Public URL
+              </label>
               <div className="flex gap-2">
                 <Input
                   id="public-url-input"
@@ -180,14 +187,15 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
           <div className="space-y-3 border-t border-border pt-6">
             <h3 className="text-heading-sm">Change Password</h3>
             <p className="text-label">
-              Change the board password. Anyone with the old password will need to enter the new password to access the board.
+              Change the board password. Anyone with the old password will need to enter the new
+              password to access the board.
             </p>
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                onOpenChange(false)
-                setIsChangePasswordOpen(true)
+                onOpenChange(false);
+                setIsChangePasswordOpen(true);
               }}
               className="w-full"
             >
@@ -204,5 +212,5 @@ export function ShareDialog({ boardId, open, onOpenChange }: ShareDialogProps) {
         onOpenChange={setIsChangePasswordOpen}
       />
     </Dialog>
-  )
+  );
 }

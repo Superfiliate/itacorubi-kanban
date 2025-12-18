@@ -27,6 +27,7 @@ New boards, columns, and tasks are prefixed with a random emoji from a curated l
 ### Contributor Management
 
 Contributors are managed via a modal accessible from the board header (Users icon). Features:
+
 - View all contributors with usage stats (tasks assigned, comments made)
 - Add new contributors (also possible inline when assigning tasks or adding stakeholders)
 - Edit contributor name and color
@@ -53,6 +54,7 @@ The app uses a light glassmorphism aesthetic (soft blur, translucent surfaces, s
 ### Mobile Responsiveness
 
 The app is fully responsive and usable on mobile devices:
+
 - Board view works on narrow screens
 - Task sidebar stacks vertically on mobile (details first, then comments)
 - See `docs/adrs/006-mobile-responsiveness.md` for patterns

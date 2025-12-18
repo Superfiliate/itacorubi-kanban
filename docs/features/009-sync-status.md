@@ -14,6 +14,7 @@ Show a small, unobtrusive indicator of sync state so users know when optimistic 
 ## Implementation
 
 The `SyncIndicator` component:
+
 - **Requires `boardId` prop** to scope to the correct board's outbox state
 - Reads from `useBoardStore(selectOutboxStatus(boardId))` (NOT TanStack Query's `useIsMutating`)
 - This aligns with ADR 010's local-first architecture where the store is the source of truth
@@ -21,6 +22,7 @@ The `SyncIndicator` component:
 ## Usage Locations
 
 The indicator appears in:
+
 - **Board header** (`src/components/board/board-header.tsx`)
 - **Task sidebar header** (`src/components/task-sidebar/task-sidebar.tsx`)
 
@@ -32,5 +34,6 @@ When modifying the component interface, update ALL usage locations.
 - Keep copy concise; avoid stacking multiple status elements
 
 ## Links
+
 - Component: `src/components/sync-indicator.tsx`
 - Architecture: `docs/adrs/010-offline-first-data-layer.md`

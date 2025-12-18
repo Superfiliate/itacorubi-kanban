@@ -1,416 +1,439 @@
-"use client"
+"use client";
 
-import { create } from "zustand"
-import type { ContributorColor, TaskPriority } from "@/db/schema"
-import type { BoardData, BoardTask, BoardColumn } from "@/hooks/use-board"
-import type { TaskComment, TaskWithComments } from "@/hooks/use-task"
-import { ensureTagHasHash } from "@/lib/tag-utils"
-import { saveOutbox, loadOutbox } from "@/lib/outbox/persistence"
+import { create } from "zustand";
+import type { ContributorColor, TaskPriority } from "@/db/schema";
+import type { BoardData } from "@/hooks/use-board";
+import type { TaskComment, TaskWithComments } from "@/hooks/use-task";
+import { ensureTagHasHash } from "@/lib/tag-utils";
+import { saveOutbox, loadOutbox } from "@/lib/outbox/persistence";
 
 export type ColumnEntity = {
-  id: string
-  name: string
-  position: number
-  isCollapsed: boolean
-}
+  id: string;
+  name: string;
+  position: number;
+  isCollapsed: boolean;
+};
 
 export type TaskEntity = {
-  id: string
-  title: string
-  priority: TaskPriority
-  columnId: string
-  createdAt: Date | null
-}
+  id: string;
+  title: string;
+  priority: TaskPriority;
+  columnId: string;
+  createdAt: Date | null;
+};
 
 export type ContributorEntity = {
-  id: string
-  name: string
-  color: ContributorColor
-}
+  id: string;
+  name: string;
+  color: ContributorColor;
+};
 
 export type TagEntity = {
-  id: string
-  name: string
-  color: ContributorColor
-}
+  id: string;
+  name: string;
+  color: ContributorColor;
+};
 
 export type CommentMeta = {
-  count: number
-  lastCreatedAt: Date | null
-}
+  count: number;
+  lastCreatedAt: Date | null;
+};
 
 export type OutboxItem =
   | {
-      id: string
-      type: "createTask"
-      boardId: string
-      payload: { taskId: string; columnId: string; title: string; createdAt: Date | null }
-      createdAt: number
+      id: string;
+      type: "createTask";
+      boardId: string;
+      payload: { taskId: string; columnId: string; title: string; createdAt: Date | null };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "createAndAssignContributor"
-      boardId: string
+      id: string;
+      type: "createAndAssignContributor";
+      boardId: string;
       payload: {
-        taskId: string
-        contributorId: string
-        name: string
-        color: ContributorColor
-      }
-      createdAt: number
+        taskId: string;
+        contributorId: string;
+        name: string;
+        color: ContributorColor;
+      };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "createComment"
-      boardId: string
-      payload: { taskId: string; commentId: string; authorId: string; content: string; createdAt: Date; stakeholderId?: string | null }
-      createdAt: number
+      id: string;
+      type: "createComment";
+      boardId: string;
+      payload: {
+        taskId: string;
+        commentId: string;
+        authorId: string;
+        content: string;
+        createdAt: Date;
+        stakeholderId?: string | null;
+      };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "updateComment"
-      boardId: string
-      payload: { taskId: string; commentId: string; authorId: string; content: string; stakeholderId?: string | null }
-      createdAt: number
+      id: string;
+      type: "updateComment";
+      boardId: string;
+      payload: {
+        taskId: string;
+        commentId: string;
+        authorId: string;
+        content: string;
+        stakeholderId?: string | null;
+      };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "deleteComment"
-      boardId: string
-      payload: { taskId: string; commentId: string }
-      createdAt: number
+      id: string;
+      type: "deleteComment";
+      boardId: string;
+      payload: { taskId: string; commentId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "updateContributor"
-      boardId: string
-      payload: { contributorId: string; name?: string; color?: ContributorColor }
-      createdAt: number
+      id: string;
+      type: "updateContributor";
+      boardId: string;
+      payload: { contributorId: string; name?: string; color?: ContributorColor };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "createContributor"
-      boardId: string
-      payload: { contributorId: string; name: string; color: ContributorColor }
-      createdAt: number
+      id: string;
+      type: "createContributor";
+      boardId: string;
+      payload: { contributorId: string; name: string; color: ContributorColor };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "deleteContributor"
-      boardId: string
-      payload: { contributorId: string }
-      createdAt: number
+      id: string;
+      type: "deleteContributor";
+      boardId: string;
+      payload: { contributorId: string };
+      createdAt: number;
     }
   // Board operations
   | {
-      id: string
-      type: "updateBoardTitle"
-      boardId: string
-      payload: { title: string }
-      createdAt: number
+      id: string;
+      type: "updateBoardTitle";
+      boardId: string;
+      payload: { title: string };
+      createdAt: number;
     }
   // Column operations
   | {
-      id: string
-      type: "createColumn"
-      boardId: string
-      payload: { columnId: string }
-      createdAt: number
+      id: string;
+      type: "createColumn";
+      boardId: string;
+      payload: { columnId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "updateColumnName"
-      boardId: string
-      payload: { columnId: string; name: string }
-      createdAt: number
+      id: string;
+      type: "updateColumnName";
+      boardId: string;
+      payload: { columnId: string; name: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "toggleColumnCollapsed"
-      boardId: string
-      payload: { columnId: string }
-      createdAt: number
+      id: string;
+      type: "toggleColumnCollapsed";
+      boardId: string;
+      payload: { columnId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "deleteColumn"
-      boardId: string
-      payload: { columnId: string }
-      createdAt: number
+      id: string;
+      type: "deleteColumn";
+      boardId: string;
+      payload: { columnId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "reorderColumns"
-      boardId: string
-      payload: { columnId: string; newPosition: number }
-      createdAt: number
+      id: string;
+      type: "reorderColumns";
+      boardId: string;
+      payload: { columnId: string; newPosition: number };
+      createdAt: number;
     }
   // Task operations
   | {
-      id: string
-      type: "updateTaskTitle"
-      boardId: string
-      payload: { taskId: string; title: string }
-      createdAt: number
+      id: string;
+      type: "updateTaskTitle";
+      boardId: string;
+      payload: { taskId: string; title: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "updateTaskPriority"
-      boardId: string
-      payload: { taskId: string; priority: TaskPriority }
-      createdAt: number
+      id: string;
+      type: "updateTaskPriority";
+      boardId: string;
+      payload: { taskId: string; priority: TaskPriority };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "updateTaskCreatedAt"
-      boardId: string
-      payload: { taskId: string; createdAt: Date }
-      createdAt: number
+      id: string;
+      type: "updateTaskCreatedAt";
+      boardId: string;
+      payload: { taskId: string; createdAt: Date };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "updateTaskColumn"
-      boardId: string
-      payload: { taskId: string; columnId: string; position?: number }
-      createdAt: number
+      id: string;
+      type: "updateTaskColumn";
+      boardId: string;
+      payload: { taskId: string; columnId: string; position?: number };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "deleteTask"
-      boardId: string
-      payload: { taskId: string }
-      createdAt: number
+      id: string;
+      type: "deleteTask";
+      boardId: string;
+      payload: { taskId: string };
+      createdAt: number;
     }
   // Assignee operations
   | {
-      id: string
-      type: "addAssignee"
-      boardId: string
-      payload: { taskId: string; contributorId: string }
-      createdAt: number
+      id: string;
+      type: "addAssignee";
+      boardId: string;
+      payload: { taskId: string; contributorId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "removeAssignee"
-      boardId: string
-      payload: { taskId: string; contributorId: string }
-      createdAt: number
+      id: string;
+      type: "removeAssignee";
+      boardId: string;
+      payload: { taskId: string; contributorId: string };
+      createdAt: number;
     }
   // Stakeholder operations
   | {
-      id: string
-      type: "addStakeholder"
-      boardId: string
-      payload: { taskId: string; contributorId: string }
-      createdAt: number
+      id: string;
+      type: "addStakeholder";
+      boardId: string;
+      payload: { taskId: string; contributorId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "removeStakeholder"
-      boardId: string
-      payload: { taskId: string; contributorId: string }
-      createdAt: number
+      id: string;
+      type: "removeStakeholder";
+      boardId: string;
+      payload: { taskId: string; contributorId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "createAndAddStakeholder"
-      boardId: string
+      id: string;
+      type: "createAndAddStakeholder";
+      boardId: string;
       payload: {
-        taskId: string
-        contributorId: string
-        name: string
-        color: ContributorColor
-      }
-      createdAt: number
+        taskId: string;
+        contributorId: string;
+        name: string;
+        color: ContributorColor;
+      };
+      createdAt: number;
     }
   // Tag operations
   | {
-      id: string
-      type: "createTag"
-      boardId: string
-      payload: { tagId: string; name: string; color: ContributorColor }
-      createdAt: number
+      id: string;
+      type: "createTag";
+      boardId: string;
+      payload: { tagId: string; name: string; color: ContributorColor };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "updateTag"
-      boardId: string
-      payload: { tagId: string; name?: string; color?: ContributorColor }
-      createdAt: number
+      id: string;
+      type: "updateTag";
+      boardId: string;
+      payload: { tagId: string; name?: string; color?: ContributorColor };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "deleteTag"
-      boardId: string
-      payload: { tagId: string }
-      createdAt: number
+      id: string;
+      type: "deleteTag";
+      boardId: string;
+      payload: { tagId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "addTag"
-      boardId: string
-      payload: { taskId: string; tagId: string }
-      createdAt: number
+      id: string;
+      type: "addTag";
+      boardId: string;
+      payload: { taskId: string; tagId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "removeTag"
-      boardId: string
-      payload: { taskId: string; tagId: string }
-      createdAt: number
+      id: string;
+      type: "removeTag";
+      boardId: string;
+      payload: { taskId: string; tagId: string };
+      createdAt: number;
     }
   | {
-      id: string
-      type: "createAndAddTag"
-      boardId: string
+      id: string;
+      type: "createAndAddTag";
+      boardId: string;
       payload: {
-        taskId: string
-        tagId: string
-        name: string
-        color: ContributorColor
-      }
-      createdAt: number
-    }
+        taskId: string;
+        tagId: string;
+        name: string;
+        color: ContributorColor;
+      };
+      createdAt: number;
+    };
 
 export type NormalizedBoardState = {
-  boardId: string
+  boardId: string;
 
-  columnsById: Record<string, ColumnEntity>
-  columnOrder: string[]
+  columnsById: Record<string, ColumnEntity>;
+  columnOrder: string[];
 
-  tasksById: Record<string, TaskEntity>
-  tasksByColumnId: Record<string, string[]>
+  tasksById: Record<string, TaskEntity>;
+  tasksByColumnId: Record<string, string[]>;
 
-  contributorsById: Record<string, ContributorEntity>
-  contributorOrder: string[]
+  contributorsById: Record<string, ContributorEntity>;
+  contributorOrder: string[];
 
-  tagsById: Record<string, TagEntity>
-  tagOrder: string[]
+  tagsById: Record<string, TagEntity>;
+  tagOrder: string[];
 
-  assigneeIdsByTaskId: Record<string, string[]>
-  stakeholderIdsByTaskId: Record<string, string[]>
-  tagIdsByTaskId: Record<string, string[]>
-  commentMetaByTaskId: Record<string, CommentMeta>
-  taskDetailsById: Record<string, TaskWithComments>
+  assigneeIdsByTaskId: Record<string, string[]>;
+  stakeholderIdsByTaskId: Record<string, string[]>;
+  tagIdsByTaskId: Record<string, string[]>;
+  commentMetaByTaskId: Record<string, CommentMeta>;
+  taskDetailsById: Record<string, TaskWithComments>;
 
-  outbox: OutboxItem[]
-  isFlushing: boolean
+  outbox: OutboxItem[];
+  isFlushing: boolean;
 
-  lastLocalActivityAt: number
-  lastRemoteHydrateAt: number
-}
+  lastLocalActivityAt: number;
+  lastRemoteHydrateAt: number;
+};
 
-type BoardsById = Record<string, NormalizedBoardState | undefined>
+type BoardsById = Record<string, NormalizedBoardState | undefined>;
 
 // Tracks a task that should open immediately (bypasses router.push delay)
-export type PendingOpenTask = { boardId: string; taskId: string } | null
+export type PendingOpenTask = { boardId: string; taskId: string } | null;
 
 type BoardStoreState = {
-  boardsById: BoardsById
+  boardsById: BoardsById;
 
   // Instant sidebar open - set before router.push, cleared when URL updates
-  pendingOpenTask: PendingOpenTask
-  setPendingOpenTask: (task: PendingOpenTask) => void
+  pendingOpenTask: PendingOpenTask;
+  setPendingOpenTask: (task: PendingOpenTask) => void;
 
-  ensureBoard: (boardId: string) => NormalizedBoardState
+  ensureBoard: (boardId: string) => NormalizedBoardState;
 
-  hydrateBoardFromServer: (boardId: string, boardData: BoardData) => void
-  hydrateTaskFromServer: (boardId: string, task: TaskWithComments) => void
+  hydrateBoardFromServer: (boardId: string, boardData: BoardData) => void;
+  hydrateTaskFromServer: (boardId: string, task: TaskWithComments) => void;
 
-  touch: (boardId: string) => void
+  touch: (boardId: string) => void;
 
   // Local-first mutations - Board
-  updateBoardTitleLocal: (args: { boardId: string; title: string }) => void
+  updateBoardTitleLocal: (args: { boardId: string; title: string }) => void;
 
   // Local-first mutations - Column
-  createColumnLocal: (args: { boardId: string; columnId: string; name: string }) => void
-  updateColumnNameLocal: (args: { boardId: string; columnId: string; name: string }) => void
-  toggleColumnCollapsedLocal: (args: { boardId: string; columnId: string }) => void
-  deleteColumnLocal: (args: { boardId: string; columnId: string }) => void
-  reorderColumnsLocal: (args: { boardId: string; columnId: string; toIndex: number }) => void
+  createColumnLocal: (args: { boardId: string; columnId: string; name: string }) => void;
+  updateColumnNameLocal: (args: { boardId: string; columnId: string; name: string }) => void;
+  toggleColumnCollapsedLocal: (args: { boardId: string; columnId: string }) => void;
+  deleteColumnLocal: (args: { boardId: string; columnId: string }) => void;
+  reorderColumnsLocal: (args: { boardId: string; columnId: string; toIndex: number }) => void;
 
   // Local-first mutations - Task
   createTaskLocal: (args: {
-    boardId: string
-    taskId: string
-    columnId: string
-    title: string
-    priority?: TaskPriority
-    createdAt: Date | null
-  }) => void
-  updateTaskTitleLocal: (args: { boardId: string; taskId: string; title: string }) => void
-  updateTaskPriorityLocal: (args: { boardId: string; taskId: string; priority: TaskPriority }) => void
-  updateTaskCreatedAtLocal: (args: { boardId: string; taskId: string; createdAt: Date }) => void
+    boardId: string;
+    taskId: string;
+    columnId: string;
+    title: string;
+    priority?: TaskPriority;
+    createdAt: Date | null;
+  }) => void;
+  updateTaskTitleLocal: (args: { boardId: string; taskId: string; title: string }) => void;
+  updateTaskPriorityLocal: (args: {
+    boardId: string;
+    taskId: string;
+    priority: TaskPriority;
+  }) => void;
+  updateTaskCreatedAtLocal: (args: { boardId: string; taskId: string; createdAt: Date }) => void;
   moveTaskLocal: (args: {
-    boardId: string
-    taskId: string
-    toColumnId: string
-    toIndex: number
-  }) => void
-  deleteTaskLocal: (args: { boardId: string; taskId: string }) => void
+    boardId: string;
+    taskId: string;
+    toColumnId: string;
+    toIndex: number;
+  }) => void;
+  deleteTaskLocal: (args: { boardId: string; taskId: string }) => void;
 
   // Local-first mutations - Contributor
   createContributorLocal: (args: {
-    boardId: string
-    contributorId: string
-    name: string
-    color: ContributorColor
-  }) => void
+    boardId: string;
+    contributorId: string;
+    name: string;
+    color: ContributorColor;
+  }) => void;
   updateContributorLocal: (args: {
-    boardId: string
-    contributorId: string
-    name?: string
-    color?: ContributorColor
-  }) => void
-  deleteContributorLocal: (args: { boardId: string; contributorId: string }) => void
+    boardId: string;
+    contributorId: string;
+    name?: string;
+    color?: ContributorColor;
+  }) => void;
+  deleteContributorLocal: (args: { boardId: string; contributorId: string }) => void;
 
   // Local-first mutations - Tag
   createTagLocal: (args: {
-    boardId: string
-    tagId: string
-    name: string
-    color: ContributorColor
-  }) => void
+    boardId: string;
+    tagId: string;
+    name: string;
+    color: ContributorColor;
+  }) => void;
   updateTagLocal: (args: {
-    boardId: string
-    tagId: string
-    name?: string
-    color?: ContributorColor
-  }) => void
-  deleteTagLocal: (args: { boardId: string; tagId: string }) => void
+    boardId: string;
+    tagId: string;
+    name?: string;
+    color?: ContributorColor;
+  }) => void;
+  deleteTagLocal: (args: { boardId: string; tagId: string }) => void;
 
   // Local-first mutations - Assignee
-  addAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
-  removeAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
+  addAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void;
+  removeAssigneeLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void;
 
   // Local-first mutations - Stakeholder
-  addStakeholderLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
-  removeStakeholderLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void
+  addStakeholderLocal: (args: { boardId: string; taskId: string; contributorId: string }) => void;
+  removeStakeholderLocal: (args: {
+    boardId: string;
+    taskId: string;
+    contributorId: string;
+  }) => void;
 
   // Local-first mutations - Tag assignment
-  addTagLocal: (args: { boardId: string; taskId: string; tagId: string }) => void
-  removeTagLocal: (args: { boardId: string; taskId: string; tagId: string }) => void
+  addTagLocal: (args: { boardId: string; taskId: string; tagId: string }) => void;
+  removeTagLocal: (args: { boardId: string; taskId: string; tagId: string }) => void;
 
   // Local-first mutations - Comment
-  createCommentLocal: (args: { boardId: string; taskId: string; comment: TaskComment }) => void
+  createCommentLocal: (args: { boardId: string; taskId: string; comment: TaskComment }) => void;
   updateCommentLocal: (args: {
-    boardId: string
-    taskId: string
-    commentId: string
-    author?: { id: string; name: string; color: ContributorColor }
-    stakeholder?: { id: string; name: string; color: ContributorColor } | null
-    content: string
-  }) => void
-  deleteCommentLocal: (args: { boardId: string; taskId: string; commentId: string }) => void
+    boardId: string;
+    taskId: string;
+    commentId: string;
+    author?: { id: string; name: string; color: ContributorColor };
+    stakeholder?: { id: string; name: string; color: ContributorColor } | null;
+    content: string;
+  }) => void;
+  deleteCommentLocal: (args: { boardId: string; taskId: string; commentId: string }) => void;
 
   // Outbox
-  enqueue: (item: Omit<OutboxItem, "id" | "createdAt"> & { id?: string; createdAt?: number }) => void
-  popOutbox: (boardId: string, itemId: string) => void
-  setFlushing: (boardId: string, isFlushing: boolean) => void
-}
+  enqueue: (
+    item: Omit<OutboxItem, "id" | "createdAt"> & { id?: string; createdAt?: number },
+  ) => void;
+  popOutbox: (boardId: string, itemId: string) => void;
+  setFlushing: (boardId: string, isFlushing: boolean) => void;
+};
 
 function makeEmptyBoard(boardId: string): NormalizedBoardState {
-  const now = Date.now()
+  const now = Date.now();
   return {
     boardId,
     columnsById: {},
@@ -430,36 +453,36 @@ function makeEmptyBoard(boardId: string): NormalizedBoardState {
     isFlushing: false,
     lastLocalActivityAt: now,
     lastRemoteHydrateAt: 0,
-  }
+  };
 }
 
 function normalizeBoard(boardId: string, board: BoardData): NormalizedBoardState {
-  const state = makeEmptyBoard(boardId)
-  state.lastRemoteHydrateAt = Date.now()
+  const state = makeEmptyBoard(boardId);
+  state.lastRemoteHydrateAt = Date.now();
 
   // Contributors
   for (const c of board.contributors) {
-    state.contributorsById[c.id] = { id: c.id, name: c.name, color: c.color }
-    state.contributorOrder.push(c.id)
+    state.contributorsById[c.id] = { id: c.id, name: c.name, color: c.color };
+    state.contributorOrder.push(c.id);
   }
 
   // Tags
   for (const t of board.tags ?? []) {
-    state.tagsById[t.id] = { id: t.id, name: t.name, color: t.color }
-    state.tagOrder.push(t.id)
+    state.tagsById[t.id] = { id: t.id, name: t.name, color: t.color };
+    state.tagOrder.push(t.id);
   }
 
   // Columns + tasks
   for (const col of board.columns) {
-    const colCollapsed = col.isCollapsed ?? false
+    const colCollapsed = col.isCollapsed ?? false;
     state.columnsById[col.id] = {
       id: col.id,
       name: col.name,
       position: col.position,
       isCollapsed: colCollapsed,
-    }
-    state.columnOrder.push(col.id)
-    state.tasksByColumnId[col.id] = []
+    };
+    state.columnOrder.push(col.id);
+    state.tasksByColumnId[col.id] = [];
 
     for (const t of col.tasks) {
       state.tasksById[t.id] = {
@@ -468,64 +491,69 @@ function normalizeBoard(boardId: string, board: BoardData): NormalizedBoardState
         priority: t.priority ?? "none",
         columnId: col.id,
         createdAt: t.createdAt,
-      }
-      state.tasksByColumnId[col.id].push(t.id)
+      };
+      state.tasksByColumnId[col.id].push(t.id);
 
       // Assignees
-      state.assigneeIdsByTaskId[t.id] = t.assignees.map((a) => a.contributor.id)
+      state.assigneeIdsByTaskId[t.id] = t.assignees.map((a) => a.contributor.id);
 
       // Stakeholders
-      state.stakeholderIdsByTaskId[t.id] = (t.stakeholders ?? []).map((s) => s.contributor.id)
+      state.stakeholderIdsByTaskId[t.id] = (t.stakeholders ?? []).map((s) => s.contributor.id);
 
       // Tags
-      state.tagIdsByTaskId[t.id] = (t.tags ?? []).map((tag) => tag.tag.id)
+      state.tagIdsByTaskId[t.id] = (t.tags ?? []).map((tag) => tag.tag.id);
 
       // Comment meta for cards
-      const count = t.comments.length
-      const lastCreatedAt = count > 0 ? t.comments[0]?.createdAt ?? null : null
-      state.commentMetaByTaskId[t.id] = { count, lastCreatedAt }
+      const count = t.comments.length;
+      const lastCreatedAt = count > 0 ? (t.comments[0]?.createdAt ?? null) : null;
+      state.commentMetaByTaskId[t.id] = { count, lastCreatedAt };
     }
   }
 
   // Ensure deterministic ordering
-  state.columnOrder.sort((a, b) => (state.columnsById[a]?.position ?? 0) - (state.columnsById[b]?.position ?? 0))
+  state.columnOrder.sort(
+    (a, b) => (state.columnsById[a]?.position ?? 0) - (state.columnsById[b]?.position ?? 0),
+  );
   for (const colId of state.columnOrder) {
-    const ids = state.tasksByColumnId[colId] ?? []
+    const ids = state.tasksByColumnId[colId] ?? [];
     ids.sort((a, b) => {
-      const ta = state.tasksById[a]
-      const tb = state.tasksById[b]
+      const ta = state.tasksById[a];
+      const tb = state.tasksById[b];
       // Preserve existing relative order if unknown
-      if (!ta || !tb) return 0
+      if (!ta || !tb) return 0;
       // We don't persist full position here; board query already ordered by position.
       // Keep current array order as-is.
-      return 0
-    })
+      return 0;
+    });
   }
 
-  return state
+  return state;
 }
 
-function buildTaskDetails(board: NormalizedBoardState, taskId: string): TaskWithComments | undefined {
-  const task = board.tasksById[taskId]
-  if (!task) return undefined
-  const col = board.columnsById[task.columnId]
-  const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
+function buildTaskDetails(
+  board: NormalizedBoardState,
+  taskId: string,
+): TaskWithComments | undefined {
+  const task = board.tasksById[taskId];
+  if (!task) return undefined;
+  const col = board.columnsById[task.columnId];
+  const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? [];
   const assignees = assigneeIds
     .map((cid) => board.contributorsById[cid])
     .filter(Boolean)
-    .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+    .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }));
 
-  const stakeholderIds = board.stakeholderIdsByTaskId[taskId] ?? []
+  const stakeholderIds = board.stakeholderIdsByTaskId[taskId] ?? [];
   const stakeholders = stakeholderIds
     .map((cid) => board.contributorsById[cid])
     .filter(Boolean)
-    .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+    .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }));
 
-  const tagIds = board.tagIdsByTaskId[taskId] ?? []
+  const tagIds = board.tagIdsByTaskId[taskId] ?? [];
   const tags = tagIds
     .map((tid) => board.tagsById[tid])
     .filter(Boolean)
-    .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }))
+    .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }));
 
   return {
     id: task.id,
@@ -539,7 +567,7 @@ function buildTaskDetails(board: NormalizedBoardState, taskId: string): TaskWith
     stakeholders,
     tags,
     comments: [],
-  }
+  };
 }
 
 export const useBoardStore = create<BoardStoreState>((set, get) => ({
@@ -550,62 +578,62 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
   setPendingOpenTask: (task) => set({ pendingOpenTask: task }),
 
   ensureBoard: (boardId) => {
-    const existing = get().boardsById[boardId]
-    if (existing) return existing
+    const existing = get().boardsById[boardId];
+    if (existing) return existing;
 
     // Create new board state and restore any persisted outbox items
-    const created = makeEmptyBoard(boardId)
-    const persistedOutbox = loadOutbox(boardId)
+    const created = makeEmptyBoard(boardId);
+    const persistedOutbox = loadOutbox(boardId);
     if (persistedOutbox.length > 0) {
-      created.outbox = persistedOutbox
+      created.outbox = persistedOutbox;
     }
 
-    set((s) => ({ boardsById: { ...s.boardsById, [boardId]: created } }))
-    return created
+    set((s) => ({ boardsById: { ...s.boardsById, [boardId]: created } }));
+    return created;
   },
 
   hydrateBoardFromServer: (boardId, boardData) => {
     // First ensure the board exists (this restores any persisted outbox items)
-    const ensuredBoard = get().ensureBoard(boardId)
-    const restoredOutbox = ensuredBoard.outbox
+    const ensuredBoard = get().ensureBoard(boardId);
+    const restoredOutbox = ensuredBoard.outbox;
 
     set((s) => {
-      const current = s.boardsById[boardId]
+      const current = s.boardsById[boardId];
 
       // If flush is in progress, don't overwrite to avoid race conditions
       if (current && current.isFlushing) {
-        return s
+        return s;
       }
 
       // Normalize server data
-      const normalized = normalizeBoard(boardId, boardData)
+      const normalized = normalizeBoard(boardId, boardData);
 
       // Preserve taskDetailsById from previous state - these are fetched separately
       // and should not be wiped when board polling refreshes board-level data
       if (current?.taskDetailsById && Object.keys(current.taskDetailsById).length > 0) {
-        normalized.taskDetailsById = { ...current.taskDetailsById }
+        normalized.taskDetailsById = { ...current.taskDetailsById };
       }
 
       // Preserve restored outbox items - they need to be flushed
       if (restoredOutbox.length > 0) {
-        normalized.outbox = restoredOutbox
+        normalized.outbox = restoredOutbox;
       }
 
-      return { boardsById: { ...s.boardsById, [boardId]: normalized } }
-    })
+      return { boardsById: { ...s.boardsById, [boardId]: normalized } };
+    });
   },
 
   hydrateTaskFromServer: (boardId, task) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
       // Same reconcile rule: don't overwrite while dirty
       if (board.isFlushing || board.outbox.length > 0) {
-        return { boardsById: { ...s.boardsById, [boardId]: board } }
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       }
       // Update stakeholder IDs in normalized store
-      const stakeholderIds = (task.stakeholders ?? []).map((s) => s.contributor.id)
+      const stakeholderIds = (task.stakeholders ?? []).map((s) => s.contributor.id);
       // Update tag IDs in normalized store
-      const tagIds = (task.tags ?? []).map((t) => t.tag.id)
+      const tagIds = (task.tags ?? []).map((t) => t.tag.id);
       return {
         boardsById: {
           ...s.boardsById,
@@ -623,33 +651,33 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastRemoteHydrateAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   touch: (boardId) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
       return {
         boardsById: {
           ...s.boardsById,
           [boardId]: { ...board, lastLocalActivityAt: Date.now() },
         },
-      }
-    })
+      };
+    });
   },
 
   // Board mutations
-  updateBoardTitleLocal: ({ boardId, title }) => {
+  updateBoardTitleLocal: ({ boardId, title: _title }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
       return {
         boardsById: {
           ...s.boardsById,
           [boardId]: { ...board, lastLocalActivityAt: Date.now() },
         },
-      }
-    })
+      };
+    });
     // Note: Board title is not stored in the normalized state since the board
     // data comes from TanStack Query cache. The store only handles entity data.
   },
@@ -657,8 +685,8 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
   // Column mutations
   createColumnLocal: ({ boardId, columnId, name }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const position = board.columnOrder.length
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const position = board.columnOrder.length;
       return {
         boardsById: {
           ...s.boardsById,
@@ -673,15 +701,15 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   updateColumnNameLocal: ({ boardId, columnId, name }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const column = board.columnsById[columnId]
-      if (!column) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const column = board.columnsById[columnId];
+      if (!column) return { boardsById: { ...s.boardsById, [boardId]: board } };
       return {
         boardsById: {
           ...s.boardsById,
@@ -694,15 +722,15 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   toggleColumnCollapsedLocal: ({ boardId, columnId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const column = board.columnsById[columnId]
-      if (!column) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const column = board.columnsById[columnId];
+      if (!column) return { boardsById: { ...s.boardsById, [boardId]: board } };
       return {
         boardsById: {
           ...s.boardsById,
@@ -715,17 +743,18 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   deleteColumnLocal: ({ boardId, columnId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      if (!board.columnsById[columnId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      if (!board.columnsById[columnId])
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
 
-      const { [columnId]: _deleted, ...restColumns } = board.columnsById
-      const { [columnId]: _deletedTasks, ...restTasksByColumn } = board.tasksByColumnId
+      const { [columnId]: _deleted, ...restColumns } = board.columnsById;
+      const { [columnId]: _deletedTasks, ...restTasksByColumn } = board.tasksByColumnId;
 
       return {
         boardsById: {
@@ -738,18 +767,18 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   // Task mutations
   createTaskLocal: ({ boardId, taskId, columnId, title, priority, createdAt }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const tasksByColumn = { ...board.tasksByColumnId }
-      const existingIds = tasksByColumn[columnId] ? [...tasksByColumn[columnId]] : []
-      if (!existingIds.includes(taskId)) existingIds.push(taskId)
-      tasksByColumn[columnId] = existingIds
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const tasksByColumn = { ...board.tasksByColumnId };
+      const existingIds = tasksByColumn[columnId] ? [...tasksByColumn[columnId]] : [];
+      if (!existingIds.includes(taskId)) existingIds.push(taskId);
+      tasksByColumn[columnId] = existingIds;
 
       return {
         boardsById: {
@@ -761,21 +790,30 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
               [taskId]: { id: taskId, title, priority: priority ?? "none", columnId, createdAt },
             },
             tasksByColumnId: tasksByColumn,
-            assigneeIdsByTaskId: { ...board.assigneeIdsByTaskId, [taskId]: board.assigneeIdsByTaskId[taskId] ?? [] },
-            tagIdsByTaskId: { ...board.tagIdsByTaskId, [taskId]: board.tagIdsByTaskId[taskId] ?? [] },
-            commentMetaByTaskId: { ...board.commentMetaByTaskId, [taskId]: { count: 0, lastCreatedAt: null } },
+            assigneeIdsByTaskId: {
+              ...board.assigneeIdsByTaskId,
+              [taskId]: board.assigneeIdsByTaskId[taskId] ?? [],
+            },
+            tagIdsByTaskId: {
+              ...board.tagIdsByTaskId,
+              [taskId]: board.tagIdsByTaskId[taskId] ?? [],
+            },
+            commentMetaByTaskId: {
+              ...board.commentMetaByTaskId,
+              [taskId]: { count: 0, lastCreatedAt: null },
+            },
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   updateContributorLocal: ({ boardId, contributorId, name, color }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const existing = board.contributorsById[contributorId]
-      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const existing = board.contributorsById[contributorId];
+      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } };
       return {
         boardsById: {
           ...s.boardsById,
@@ -792,14 +830,15 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   createContributorLocal: ({ boardId, contributorId, name, color }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      if (board.contributorsById[contributorId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      if (board.contributorsById[contributorId])
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       return {
         boardsById: {
           ...s.boardsById,
@@ -813,19 +852,20 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   deleteContributorLocal: ({ boardId, contributorId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      if (!board.contributorsById[contributorId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      if (!board.contributorsById[contributorId])
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
 
-      const { [contributorId]: _deleted, ...rest } = board.contributorsById
-      const assigneeIdsByTaskId: Record<string, string[]> = {}
+      const { [contributorId]: _deleted, ...rest } = board.contributorsById;
+      const assigneeIdsByTaskId: Record<string, string[]> = {};
       for (const [taskId, ids] of Object.entries(board.assigneeIdsByTaskId)) {
-        assigneeIdsByTaskId[taskId] = ids.filter((id) => id !== contributorId)
+        assigneeIdsByTaskId[taskId] = ids.filter((id) => id !== contributorId);
       }
 
       return {
@@ -839,16 +879,16 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   createTagLocal: ({ boardId, tagId, name, color }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      if (board.tagsById[tagId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      if (board.tagsById[tagId]) return { boardsById: { ...s.boardsById, [boardId]: board } };
       // Ensure tag name starts with "#"
-      const normalizedName = ensureTagHasHash(name)
+      const normalizedName = ensureTagHasHash(name);
       return {
         boardsById: {
           ...s.boardsById,
@@ -862,17 +902,17 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   updateTagLocal: ({ boardId, tagId, name, color }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const existing = board.tagsById[tagId]
-      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const existing = board.tagsById[tagId];
+      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } };
       // Ensure tag name starts with "#" if name is being updated
-      const normalizedName = name !== undefined ? ensureTagHasHash(name) : undefined
+      const normalizedName = name !== undefined ? ensureTagHasHash(name) : undefined;
       return {
         boardsById: {
           ...s.boardsById,
@@ -889,19 +929,19 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   deleteTagLocal: ({ boardId, tagId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      if (!board.tagsById[tagId]) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      if (!board.tagsById[tagId]) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
-      const { [tagId]: _deleted, ...rest } = board.tagsById
-      const tagIdsByTaskId: Record<string, string[]> = {}
+      const { [tagId]: _deleted, ...rest } = board.tagsById;
+      const tagIdsByTaskId: Record<string, string[]> = {};
       for (const [taskId, ids] of Object.entries(board.tagIdsByTaskId)) {
-        tagIdsByTaskId[taskId] = ids.filter((id) => id !== tagId)
+        tagIdsByTaskId[taskId] = ids.filter((id) => id !== tagId);
       }
 
       return {
@@ -915,31 +955,33 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   addAssigneeLocal: ({ boardId, taskId, contributorId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const current = board.assigneeIdsByTaskId[taskId] ?? []
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const current = board.assigneeIdsByTaskId[taskId] ?? [];
       if (current.includes(contributorId)) {
-        return { boardsById: { ...s.boardsById, [boardId]: board } }
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       }
-      const contributor = board.contributorsById[contributorId]
+      const contributor = board.contributorsById[contributorId];
 
       // Also update taskDetailsById if it exists (so sidebar shows new assignee)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails && contributor) {
-        const newAssignee = { contributor: { id: contributor.id, name: contributor.name, color: contributor.color } }
+        const newAssignee = {
+          contributor: { id: contributor.id, name: contributor.name, color: contributor.color },
+        };
         updatedTaskDetails = {
           ...board.taskDetailsById,
           [taskId]: {
             ...existingDetails,
             assignees: [...existingDetails.assignees, newAssignee],
           },
-        }
+        };
       }
 
       return {
@@ -955,24 +997,24 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   updateTaskTitleLocal: ({ boardId, taskId, title }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const task = board.tasksById[taskId]
-      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const task = board.tasksById[taskId];
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
       // Also update taskDetailsById if it exists (so sidebar shows new title)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails) {
         updatedTaskDetails = {
           ...board.taskDetailsById,
           [taskId]: { ...existingDetails, title },
-        }
+        };
       }
 
       return {
@@ -985,24 +1027,24 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   updateTaskPriorityLocal: ({ boardId, taskId, priority }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const task = board.tasksById[taskId]
-      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const task = board.tasksById[taskId];
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
       // Also update taskDetailsById if it exists (so sidebar shows updated priority)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails) {
         updatedTaskDetails = {
           ...board.taskDetailsById,
           [taskId]: { ...existingDetails, priority },
-        }
+        };
       }
 
       return {
@@ -1015,24 +1057,24 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   updateTaskCreatedAtLocal: ({ boardId, taskId, createdAt }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const task = board.tasksById[taskId]
-      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const task = board.tasksById[taskId];
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
       // Also update taskDetailsById if it exists
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails) {
         updatedTaskDetails = {
           ...board.taskDetailsById,
           [taskId]: { ...existingDetails, createdAt },
-        }
+        };
       }
 
       return {
@@ -1045,27 +1087,27 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   deleteTaskLocal: ({ boardId, taskId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const task = board.tasksById[taskId]
-      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const task = board.tasksById[taskId];
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
-      const { [taskId]: _deletedTask, ...restTasks } = board.tasksById
-      const { [taskId]: _deletedAssignees, ...restAssignees } = board.assigneeIdsByTaskId
-      const { [taskId]: _deletedStakeholders, ...restStakeholders } = board.stakeholderIdsByTaskId
-      const { [taskId]: _deletedTags, ...restTags } = board.tagIdsByTaskId
-      const { [taskId]: _deletedMeta, ...restMeta } = board.commentMetaByTaskId
-      const { [taskId]: _deletedDetails, ...restDetails } = board.taskDetailsById
+      const { [taskId]: _deletedTask, ...restTasks } = board.tasksById;
+      const { [taskId]: _deletedAssignees, ...restAssignees } = board.assigneeIdsByTaskId;
+      const { [taskId]: _deletedStakeholders, ...restStakeholders } = board.stakeholderIdsByTaskId;
+      const { [taskId]: _deletedTags, ...restTags } = board.tagIdsByTaskId;
+      const { [taskId]: _deletedMeta, ...restMeta } = board.commentMetaByTaskId;
+      const { [taskId]: _deletedDetails, ...restDetails } = board.taskDetailsById;
 
       // Remove from column
-      const tasksByColumnId = { ...board.tasksByColumnId }
-      const columnTasks = tasksByColumnId[task.columnId] ?? []
-      tasksByColumnId[task.columnId] = columnTasks.filter((id) => id !== taskId)
+      const tasksByColumnId = { ...board.tasksByColumnId };
+      const columnTasks = tasksByColumnId[task.columnId] ?? [];
+      tasksByColumnId[task.columnId] = columnTasks.filter((id) => id !== taskId);
 
       return {
         boardsById: {
@@ -1082,39 +1124,39 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   moveTaskLocal: ({ boardId, taskId, toColumnId, toIndex }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const task = board.tasksById[taskId]
-      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const task = board.tasksById[taskId];
+      if (!task) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
-      const fromColumnId = task.columnId
-      const tasksByColumnId = { ...board.tasksByColumnId }
+      const fromColumnId = task.columnId;
+      const tasksByColumnId = { ...board.tasksByColumnId };
 
       // Remove from source column
-      const sourceIds = [...(tasksByColumnId[fromColumnId] ?? [])]
-      const sourceIndex = sourceIds.indexOf(taskId)
+      const sourceIds = [...(tasksByColumnId[fromColumnId] ?? [])];
+      const sourceIndex = sourceIds.indexOf(taskId);
       if (sourceIndex !== -1) {
-        sourceIds.splice(sourceIndex, 1)
+        sourceIds.splice(sourceIndex, 1);
       }
-      tasksByColumnId[fromColumnId] = sourceIds
+      tasksByColumnId[fromColumnId] = sourceIds;
 
       // Add to target column at specified index
-      const targetIds = [...(tasksByColumnId[toColumnId] ?? [])]
+      const targetIds = [...(tasksByColumnId[toColumnId] ?? [])];
       // If moving within same column and target index is after source, adjust
       if (fromColumnId === toColumnId && sourceIndex < toIndex) {
-        targetIds.splice(toIndex, 0, taskId)
+        targetIds.splice(toIndex, 0, taskId);
       } else {
-        targetIds.splice(toIndex, 0, taskId)
+        targetIds.splice(toIndex, 0, taskId);
       }
-      tasksByColumnId[toColumnId] = targetIds
+      tasksByColumnId[toColumnId] = targetIds;
 
       // Update task's columnId
-      const updatedTask = { ...task, columnId: toColumnId }
+      const updatedTask = { ...task, columnId: toColumnId };
 
       return {
         boardsById: {
@@ -1126,21 +1168,21 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   reorderColumnsLocal: ({ boardId, columnId, toIndex }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const columnOrder = [...board.columnOrder]
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const columnOrder = [...board.columnOrder];
 
-      const fromIndex = columnOrder.indexOf(columnId)
-      if (fromIndex === -1) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const fromIndex = columnOrder.indexOf(columnId);
+      if (fromIndex === -1) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
       // Remove from current position and insert at new position
-      columnOrder.splice(fromIndex, 1)
-      columnOrder.splice(toIndex, 0, columnId)
+      columnOrder.splice(fromIndex, 1);
+      columnOrder.splice(toIndex, 0, columnId);
 
       return {
         boardsById: {
@@ -1151,21 +1193,21 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   removeAssigneeLocal: ({ boardId, taskId, contributorId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const current = board.assigneeIdsByTaskId[taskId] ?? []
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const current = board.assigneeIdsByTaskId[taskId] ?? [];
       if (!current.includes(contributorId)) {
-        return { boardsById: { ...s.boardsById, [boardId]: board } }
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       }
 
       // Also update taskDetailsById if it exists (so sidebar reflects removal)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails) {
         updatedTaskDetails = {
           ...board.taskDetailsById,
@@ -1173,7 +1215,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             ...existingDetails,
             assignees: existingDetails.assignees.filter((a) => a.contributor.id !== contributorId),
           },
-        }
+        };
       }
 
       return {
@@ -1189,31 +1231,33 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   addStakeholderLocal: ({ boardId, taskId, contributorId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const current = board.stakeholderIdsByTaskId[taskId] ?? []
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const current = board.stakeholderIdsByTaskId[taskId] ?? [];
       if (current.includes(contributorId)) {
-        return { boardsById: { ...s.boardsById, [boardId]: board } }
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       }
-      const contributor = board.contributorsById[contributorId]
+      const contributor = board.contributorsById[contributorId];
 
       // Also update taskDetailsById if it exists (so sidebar shows new stakeholder)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails && contributor) {
-        const newStakeholder = { contributor: { id: contributor.id, name: contributor.name, color: contributor.color } }
+        const newStakeholder = {
+          contributor: { id: contributor.id, name: contributor.name, color: contributor.color },
+        };
         updatedTaskDetails = {
           ...board.taskDetailsById,
           [taskId]: {
             ...existingDetails,
             stakeholders: [...(existingDetails.stakeholders ?? []), newStakeholder],
           },
-        }
+        };
       }
 
       return {
@@ -1229,29 +1273,31 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   removeStakeholderLocal: ({ boardId, taskId, contributorId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const current = board.stakeholderIdsByTaskId[taskId] ?? []
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const current = board.stakeholderIdsByTaskId[taskId] ?? [];
       if (!current.includes(contributorId)) {
-        return { boardsById: { ...s.boardsById, [boardId]: board } }
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       }
 
       // Also update taskDetailsById if it exists (so sidebar reflects removal)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails) {
         updatedTaskDetails = {
           ...board.taskDetailsById,
           [taskId]: {
             ...existingDetails,
-            stakeholders: (existingDetails.stakeholders ?? []).filter((s) => s.contributor.id !== contributorId),
+            stakeholders: (existingDetails.stakeholders ?? []).filter(
+              (s) => s.contributor.id !== contributorId,
+            ),
           },
-        }
+        };
       }
 
       return {
@@ -1267,31 +1313,31 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   addTagLocal: ({ boardId, taskId, tagId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const current = board.tagIdsByTaskId[taskId] ?? []
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const current = board.tagIdsByTaskId[taskId] ?? [];
       if (current.includes(tagId)) {
-        return { boardsById: { ...s.boardsById, [boardId]: board } }
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       }
-      const tag = board.tagsById[tagId]
+      const tag = board.tagsById[tagId];
 
       // Also update taskDetailsById if it exists (so sidebar shows new tag)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails && tag) {
-        const newTag = { tag: { id: tag.id, name: tag.name, color: tag.color } }
+        const newTag = { tag: { id: tag.id, name: tag.name, color: tag.color } };
         updatedTaskDetails = {
           ...board.taskDetailsById,
           [taskId]: {
             ...existingDetails,
             tags: [...(existingDetails.tags ?? []), newTag],
           },
-        }
+        };
       }
 
       return {
@@ -1307,21 +1353,21 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   removeTagLocal: ({ boardId, taskId, tagId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const current = board.tagIdsByTaskId[taskId] ?? []
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const current = board.tagIdsByTaskId[taskId] ?? [];
       if (!current.includes(tagId)) {
-        return { boardsById: { ...s.boardsById, [boardId]: board } }
+        return { boardsById: { ...s.boardsById, [boardId]: board } };
       }
 
       // Also update taskDetailsById if it exists (so sidebar reflects removal)
-      let updatedTaskDetails = board.taskDetailsById
-      const existingDetails = board.taskDetailsById[taskId]
+      let updatedTaskDetails = board.taskDetailsById;
+      const existingDetails = board.taskDetailsById[taskId];
       if (existingDetails) {
         updatedTaskDetails = {
           ...board.taskDetailsById,
@@ -1329,7 +1375,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             ...existingDetails,
             tags: (existingDetails.tags ?? []).filter((t) => t.tag.id !== tagId),
           },
-        }
+        };
       }
 
       return {
@@ -1345,38 +1391,38 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   createCommentLocal: ({ boardId, taskId, comment }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const existing = board.taskDetailsById[taskId] ?? buildTaskDetails(board, taskId)
-      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const existing = board.taskDetailsById[taskId] ?? buildTaskDetails(board, taskId);
+      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
       // Keep comments ordered ASC (getTask returns ASC)
       const comments = [...existing.comments, comment].sort((a, b) => {
-        if (!a.createdAt || !b.createdAt) return 0
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      })
+        if (!a.createdAt || !b.createdAt) return 0;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
 
-      const prevMeta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null }
+      const prevMeta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null };
       const nextMeta: CommentMeta = {
         count: prevMeta.count + 1,
         lastCreatedAt: comment.createdAt ?? prevMeta.lastCreatedAt,
-      }
+      };
 
       // Move task to top of its column (Feature 006: adding a comment moves task to top)
-      const task = board.tasksById[taskId]
-      let tasksByColumnId = board.tasksByColumnId
+      const task = board.tasksById[taskId];
+      let tasksByColumnId = board.tasksByColumnId;
       if (task) {
-        const columnTasks = board.tasksByColumnId[task.columnId] ?? []
-        const taskIndex = columnTasks.indexOf(taskId)
+        const columnTasks = board.tasksByColumnId[task.columnId] ?? [];
+        const taskIndex = columnTasks.indexOf(taskId);
         if (taskIndex > 0) {
           // Only move if not already at top
-          const newColumnTasks = [taskId, ...columnTasks.filter((id) => id !== taskId)]
-          tasksByColumnId = { ...board.tasksByColumnId, [task.columnId]: newColumnTasks }
+          const newColumnTasks = [taskId, ...columnTasks.filter((id) => id !== taskId)];
+          tasksByColumnId = { ...board.tasksByColumnId, [task.columnId]: newColumnTasks };
         }
       }
 
@@ -1391,15 +1437,15 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   updateCommentLocal: ({ boardId, taskId, commentId, author, stakeholder, content }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const existing = board.taskDetailsById[taskId]
-      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const existing = board.taskDetailsById[taskId];
+      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
       const comments = existing.comments.map((c) =>
         c.id === commentId
@@ -1409,8 +1455,8 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
               author: author ?? c.author,
               stakeholder: stakeholder !== undefined ? stakeholder : c.stakeholder,
             }
-          : c
-      )
+          : c,
+      );
 
       return {
         boardsById: {
@@ -1421,23 +1467,24 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   deleteCommentLocal: ({ boardId, taskId, commentId }) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
-      const existing = board.taskDetailsById[taskId]
-      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } }
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const existing = board.taskDetailsById[taskId];
+      if (!existing) return { boardsById: { ...s.boardsById, [boardId]: board } };
 
-      const comments = existing.comments.filter((c) => c.id !== commentId)
-      const lastCreatedAt = comments.length > 0 ? comments[comments.length - 1]?.createdAt ?? null : null
-      const prevMeta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null }
+      const comments = existing.comments.filter((c) => c.id !== commentId);
+      const lastCreatedAt =
+        comments.length > 0 ? (comments[comments.length - 1]?.createdAt ?? null) : null;
+      const prevMeta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null };
       const nextMeta: CommentMeta = {
         count: Math.max(0, prevMeta.count - 1),
         lastCreatedAt,
-      }
+      };
 
       return {
         boardsById: {
@@ -1449,22 +1496,22 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   enqueue: (item) => {
-    const boardId = item.boardId
+    const boardId = item.boardId;
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
       const outboxItem: OutboxItem = {
         ...(item as any),
         id: item.id ?? crypto.randomUUID(),
         createdAt: item.createdAt ?? Date.now(),
-      }
-      const newOutbox = [...board.outbox, outboxItem]
+      };
+      const newOutbox = [...board.outbox, outboxItem];
       // Persist to localStorage for navigation resilience
-      saveOutbox(boardId, newOutbox)
+      saveOutbox(boardId, newOutbox);
       return {
         boardsById: {
           ...s.boardsById,
@@ -1474,80 +1521,80 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             lastLocalActivityAt: Date.now(),
           },
         },
-      }
-    })
+      };
+    });
   },
 
   popOutbox: (boardId, itemId) => {
     set((s) => {
-      const board = s.boardsById[boardId]
-      if (!board) return s
-      const newOutbox = board.outbox.filter((i) => i.id !== itemId)
+      const board = s.boardsById[boardId];
+      if (!board) return s;
+      const newOutbox = board.outbox.filter((i) => i.id !== itemId);
       // Persist to localStorage for navigation resilience
-      saveOutbox(boardId, newOutbox)
+      saveOutbox(boardId, newOutbox);
       return {
         boardsById: {
           ...s.boardsById,
           [boardId]: { ...board, outbox: newOutbox },
         },
-      }
-    })
+      };
+    });
   },
 
   setFlushing: (boardId, isFlushing) => {
     set((s) => {
-      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
       return {
         boardsById: {
           ...s.boardsById,
           [boardId]: { ...board, isFlushing },
         },
-      }
-    })
+      };
+    });
   },
-}))
+}));
 
 // ---------- Selector helpers ----------
 
 export type TaskCardVM = {
-  id: string
-  title: string
-  priority: TaskPriority
-  assignees: Array<{ id: string; name: string; color: ContributorColor }>
-  commentCount: number
-  lastCommentCreatedAt: Date | null
-}
+  id: string;
+  title: string;
+  priority: TaskPriority;
+  assignees: Array<{ id: string; name: string; color: ContributorColor }>;
+  commentCount: number;
+  lastCommentCreatedAt: Date | null;
+};
 
 export type ColumnVM = {
-  id: string
-  name: string
-  isCollapsed: boolean
-  tasks: TaskCardVM[]
-}
+  id: string;
+  name: string;
+  isCollapsed: boolean;
+  tasks: TaskCardVM[];
+};
 
 export function selectBoard(boardId: string) {
-  return (s: BoardStoreState) => s.boardsById[boardId]
+  return (s: BoardStoreState) => s.boardsById[boardId];
 }
 
 export function selectColumnsVM(boardId: string) {
   return (s: BoardStoreState): ColumnVM[] => {
-    const board = s.boardsById[boardId]
-    if (!board) return []
+    const board = s.boardsById[boardId];
+    if (!board) return [];
 
     return board.columnOrder.map((colId) => {
-      const col = board.columnsById[colId]
-      const taskIds = board.tasksByColumnId[colId] ?? []
+      const col = board.columnsById[colId];
+      const taskIds = board.tasksByColumnId[colId] ?? [];
       const tasks: TaskCardVM[] = taskIds
         .map((taskId) => {
-          const task = board.tasksById[taskId]
-          if (!task) return null
-          const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
+          const task = board.tasksById[taskId];
+          if (!task) return null;
+          const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? [];
           const assignees = assigneeIds
             .map((cid) => board.contributorsById[cid])
             .filter(Boolean)
-            .map((c) => ({ id: c.id, name: c.name, color: c.color }))
+            .map((c) => ({ id: c.id, name: c.name, color: c.color }));
 
-          const meta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null }
+          const meta = board.commentMetaByTaskId[taskId] ?? { count: 0, lastCreatedAt: null };
           return {
             id: task.id,
             title: task.title,
@@ -1555,30 +1602,30 @@ export function selectColumnsVM(boardId: string) {
             assignees,
             commentCount: meta.count,
             lastCommentCreatedAt: meta.lastCreatedAt,
-          }
+          };
         })
-        .filter((x): x is TaskCardVM => x !== null)
+        .filter((x): x is TaskCardVM => x !== null);
 
-      return { id: colId, name: col?.name ?? "", isCollapsed: col?.isCollapsed ?? false, tasks }
-    })
-  }
+      return { id: colId, name: col?.name ?? "", isCollapsed: col?.isCollapsed ?? false, tasks };
+    });
+  };
 }
 
 export function selectTaskDetails(boardId: string, taskId: string | null) {
   return (s: BoardStoreState) => {
-    if (!taskId) return undefined
-    const board = s.boardsById[boardId]
-    return board?.taskDetailsById[taskId]
-  }
+    if (!taskId) return undefined;
+    const board = s.boardsById[boardId];
+    return board?.taskDetailsById[taskId];
+  };
 }
 
 export function selectOutboxStatus(boardId: string) {
   return (s: BoardStoreState) => {
-    const board = s.boardsById[boardId]
+    const board = s.boardsById[boardId];
     return {
       pending: (board?.outbox.length ?? 0) > 0,
       isFlushing: board?.isFlushing ?? false,
       lastLocalActivityAt: board?.lastLocalActivityAt ?? 0,
-    }
-  }
+    };
+  };
 }

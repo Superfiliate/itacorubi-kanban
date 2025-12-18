@@ -1,81 +1,81 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { CommentsSection } from "./comments-section"
-import { TaskDetails } from "./task-details"
-import { useTaskQuery } from "@/hooks/use-task"
-import { SyncIndicator } from "@/components/sync-indicator"
-import { Button } from "@/components/ui/button"
-import type { ContributorColor } from "@/db/schema"
-import { ChevronLeft, Loader2 } from "lucide-react"
-import { selectBoard, selectTaskDetails, useBoardStore } from "@/stores/board-store"
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { CommentsSection } from "./comments-section";
+import { TaskDetails } from "./task-details";
+import { useTaskQuery } from "@/hooks/use-task";
+import { SyncIndicator } from "@/components/sync-indicator";
+import { Button } from "@/components/ui/button";
+import type { ContributorColor } from "@/db/schema";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { selectBoard, selectTaskDetails, useBoardStore } from "@/stores/board-store";
 
 interface TaskSidebarProps {
-  taskId: string
-  boardId: string
+  taskId: string;
+  boardId: string;
   columns: Array<{
-    id: string
-    name: string
-  }>
+    id: string;
+    name: string;
+  }>;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
   tags: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
 }
 
 export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: TaskSidebarProps) {
-  const router = useRouter()
-  const [isOpen, setIsOpen] = useState(true)
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(true);
 
-  const board = useBoardStore(selectBoard(boardId))
-  const localTaskEntity = board?.tasksById[taskId]
+  const board = useBoardStore(selectBoard(boardId));
+  const localTaskEntity = board?.tasksById[taskId];
   const pendingCreate = (board?.outbox ?? []).some(
-    (i) => i.type === "createTask" && i.payload.taskId === taskId
-  )
+    (i) => i.type === "createTask" && i.payload.taskId === taskId,
+  );
 
   // Task details from local store (includes comments if previously fetched/created)
-  const hydratedTaskDetails = useBoardStore(selectTaskDetails(boardId, taskId))
+  const hydratedTaskDetails = useBoardStore(selectTaskDetails(boardId, taskId));
 
   // Fetch server task details when:
   // - We don't have hydrated task details (which includes comments), AND
   // - There's no pending create for this task (local-first creates don't need server fetch)
-  const needsServerFetch = !hydratedTaskDetails && !pendingCreate
+  const needsServerFetch = !hydratedTaskDetails && !pendingCreate;
   const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(
-    needsServerFetch ? taskId : null
-  )
+    needsServerFetch ? taskId : null,
+  );
 
   const taskForUI = useMemo(() => {
     // Start with hydrated task details or server task as base
-    const baseTask = hydratedTaskDetails ?? serverTask
+    const baseTask = hydratedTaskDetails ?? serverTask;
 
     // If we have a local task entity and board, derive assignees and stakeholders from normalized store
     // This ensures contributor updates (name, color) are immediately reflected
     if (localTaskEntity && board) {
-      const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? []
+      const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? [];
       const assignees = assigneeIds
         .map((cid) => board.contributorsById[cid])
         .filter(Boolean)
-        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }));
 
-      const stakeholderIds = board.stakeholderIdsByTaskId[taskId] ?? []
+      const stakeholderIds = board.stakeholderIdsByTaskId[taskId] ?? [];
       const stakeholders = stakeholderIds
         .map((cid) => board.contributorsById[cid])
         .filter(Boolean)
-        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }));
 
-      const tagIds = board.tagIdsByTaskId[taskId] ?? []
+      const tagIds = board.tagIdsByTaskId[taskId] ?? [];
       const tags = tagIds
         .map((tid) => board.tagsById[tid])
         .filter(Boolean)
-        .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }))
+        .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }));
 
       return {
         id: localTaskEntity.id,
@@ -84,88 +84,94 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
         columnId: localTaskEntity.columnId,
         boardId,
         createdAt: localTaskEntity.createdAt,
-        column: { id: localTaskEntity.columnId, name: columns.find((c) => c.id === localTaskEntity.columnId)?.name ?? "" },
+        column: {
+          id: localTaskEntity.columnId,
+          name: columns.find((c) => c.id === localTaskEntity.columnId)?.name ?? "",
+        },
         assignees,
         stakeholders,
         tags,
         comments: baseTask?.comments ?? [],
-      }
+      };
     }
 
     // Fallback: if we have a base task but no local entity, still derive assignees and stakeholders from normalized store
     // when available to ensure contributor color updates are reflected
     if (baseTask && board) {
-      const assigneeIds = board.assigneeIdsByTaskId[taskId] ?? baseTask.assignees.map((a) => a.contributor.id)
+      const assigneeIds =
+        board.assigneeIdsByTaskId[taskId] ?? baseTask.assignees.map((a) => a.contributor.id);
       const assignees = assigneeIds
         .map((cid) => board.contributorsById[cid])
         .filter(Boolean)
-        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }));
 
-      const stakeholderIds = board.stakeholderIdsByTaskId[taskId] ?? (baseTask.stakeholders ?? []).map((s) => s.contributor.id)
+      const stakeholderIds =
+        board.stakeholderIdsByTaskId[taskId] ??
+        (baseTask.stakeholders ?? []).map((s) => s.contributor.id);
       const stakeholders = stakeholderIds
         .map((cid) => board.contributorsById[cid])
         .filter(Boolean)
-        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }))
+        .map((c) => ({ contributor: { id: c.id, name: c.name, color: c.color } }));
 
-      const tagIds = board.tagIdsByTaskId[taskId] ?? (baseTask.tags ?? []).map((t) => t.tag.id)
+      const tagIds = board.tagIdsByTaskId[taskId] ?? (baseTask.tags ?? []).map((t) => t.tag.id);
       const tags = tagIds
         .map((tid) => board.tagsById[tid])
         .filter(Boolean)
-        .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }))
+        .map((t) => ({ tag: { id: t.id, name: t.name, color: t.color } }));
 
       return {
         ...baseTask,
         assignees,
         stakeholders,
         tags,
-      }
+      };
     }
 
-    return baseTask
-  }, [hydratedTaskDetails, localTaskEntity, board, taskId, boardId, columns, serverTask])
+    return baseTask;
+  }, [hydratedTaskDetails, localTaskEntity, board, taskId, boardId, columns, serverTask]);
 
   const currentContributors = useMemo(() => {
     if (board) {
       return board.contributorOrder
         .map((id) => board.contributorsById[id])
         .filter(Boolean)
-        .map((c) => ({ id: c.id, name: c.name, color: c.color }))
+        .map((c) => ({ id: c.id, name: c.name, color: c.color }));
     }
-    return contributors
-  }, [board, contributors])
+    return contributors;
+  }, [board, contributors]);
 
   const currentTags = useMemo(() => {
     if (board) {
       return board.tagOrder
         .map((id) => board.tagsById[id])
         .filter(Boolean)
-        .map((t) => ({ id: t.id, name: t.name, color: t.color }))
+        .map((t) => ({ id: t.id, name: t.name, color: t.color }));
     }
-    return tags
-  }, [board, tags])
+    return tags;
+  }, [board, tags]);
 
   const handleClose = () => {
-    setIsOpen(false)
+    setIsOpen(false);
     // Clear pending task to ensure clean state for reopening
-    useBoardStore.getState().setPendingOpenTask(null)
+    useBoardStore.getState().setPendingOpenTask(null);
     // Update URL
-    router.replace(`/boards/${boardId}`)
-  }
+    router.replace(`/boards/${boardId}`);
+  };
 
   // Hydrate server task into local store when it arrives
   useEffect(() => {
     if (serverTask && !hydratedTaskDetails) {
-      useBoardStore.getState().hydrateTaskFromServer(boardId, serverTask)
+      useBoardStore.getState().hydrateTaskFromServer(boardId, serverTask);
     }
-  }, [serverTask, hydratedTaskDetails, boardId])
+  }, [serverTask, hydratedTaskDetails, boardId]);
 
   useEffect(() => {
     // If the task is truly missing (deep-link to invalid id), close gracefully.
     // For local-first creates, we never close while the create is pending.
     if (!pendingCreate && !localTaskEntity && !isServerLoading && !taskForUI) {
-      handleClose()
+      handleClose();
     }
-  }, [pendingCreate, localTaskEntity, isServerLoading, taskForUI])
+  }, [pendingCreate, localTaskEntity, isServerLoading, taskForUI]);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -174,7 +180,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
           <SheetTitle>Edit Task</SheetTitle>
         </SheetHeader>
 
-        {(!taskForUI || (isServerLoading && !localTaskEntity && !hydratedTaskDetails)) ? (
+        {!taskForUI || (isServerLoading && !localTaskEntity && !hydratedTaskDetails) ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
@@ -228,43 +234,43 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 interface TaskSidebarHostProps {
-  boardId: string
-  columns: Array<{ id: string; name: string }>
-  contributors: Array<{ id: string; name: string; color: ContributorColor }>
-  tags: Array<{ id: string; name: string; color: ContributorColor }>
+  boardId: string;
+  columns: Array<{ id: string; name: string }>;
+  contributors: Array<{ id: string; name: string; color: ContributorColor }>;
+  tags: Array<{ id: string; name: string; color: ContributorColor }>;
 }
 
 export function TaskSidebarHost({ boardId, columns, contributors, tags }: TaskSidebarHostProps) {
-  const searchParams = useSearchParams()
-  const urlTaskId = searchParams.get("task")
-  const [openCount, setOpenCount] = useState(0)
+  const searchParams = useSearchParams();
+  const urlTaskId = searchParams.get("task");
+  const [openCount, setOpenCount] = useState(0);
 
   // Use pending task from zustand for instant sidebar (bypasses router.push delay)
-  const pendingOpenTask = useBoardStore((s) => s.pendingOpenTask)
-  const pendingTaskId = pendingOpenTask?.boardId === boardId ? pendingOpenTask.taskId : null
+  const pendingOpenTask = useBoardStore((s) => s.pendingOpenTask);
+  const pendingTaskId = pendingOpenTask?.boardId === boardId ? pendingOpenTask.taskId : null;
 
   // Prefer pending task (local-first), fall back to URL (for direct links/refreshes)
-  const taskId = pendingTaskId ?? urlTaskId
+  const taskId = pendingTaskId ?? urlTaskId;
 
   // Track when a new sidebar opens (increment counter for unique key)
   useEffect(() => {
     if (taskId) {
-      setOpenCount((c) => c + 1)
+      setOpenCount((c) => c + 1);
     }
-  }, [taskId])
+  }, [taskId]);
 
   // Clear pending task once URL catches up
   useEffect(() => {
     if (urlTaskId && pendingTaskId && urlTaskId === pendingTaskId) {
-      useBoardStore.getState().setPendingOpenTask(null)
+      useBoardStore.getState().setPendingOpenTask(null);
     }
-  }, [urlTaskId, pendingTaskId])
+  }, [urlTaskId, pendingTaskId]);
 
-  if (!taskId) return null
+  if (!taskId) return null;
 
   return (
     <TaskSidebar
@@ -275,5 +281,5 @@ export function TaskSidebarHost({ boardId, columns, contributors, tags }: TaskSi
       contributors={contributors}
       tags={tags}
     />
-  )
+  );
 }

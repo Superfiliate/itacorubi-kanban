@@ -12,9 +12,11 @@ Keep implementation minimal: prefer built-in extensions, keep the toolbar lean, 
 ## Examples
 
 Storage format:
+
 ```json
 {"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello"}]}]}
 ```
 
 ## Links
+
 - Component: `src/components/ui/rich-text-editor.tsx`

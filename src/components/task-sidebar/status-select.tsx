@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Select,
@@ -6,36 +6,33 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useUpdateTaskColumn } from "@/hooks/use-task"
+} from "@/components/ui/select";
+import { useUpdateTaskColumn } from "@/hooks/use-task";
 
 interface StatusSelectProps {
-  taskId: string
-  boardId: string
-  currentColumnId: string
+  taskId: string;
+  boardId: string;
+  currentColumnId: string;
   columns: Array<{
-    id: string
-    name: string
-  }>
+    id: string;
+    name: string;
+  }>;
 }
 
-export function StatusSelect({
-  taskId,
-  boardId,
-  currentColumnId,
-  columns,
-}: StatusSelectProps) {
-  const updateTaskColumnMutation = useUpdateTaskColumn(boardId)
+export function StatusSelect({ taskId, boardId, currentColumnId, columns }: StatusSelectProps) {
+  const updateTaskColumnMutation = useUpdateTaskColumn(boardId);
 
   const handleValueChange = (columnId: string) => {
     if (columnId !== currentColumnId) {
-      updateTaskColumnMutation.mutate({ taskId, newColumnId: columnId })
+      updateTaskColumnMutation.mutate({ taskId, newColumnId: columnId });
     }
-  }
+  };
 
   return (
     <div className="space-y-2">
-      <label htmlFor="status-select" className="text-label">Status</label>
+      <label htmlFor="status-select" className="text-label">
+        Status
+      </label>
       <Select value={currentColumnId} onValueChange={handleValueChange}>
         <SelectTrigger id="status-select" className="w-full" aria-label="Status">
           <SelectValue />
@@ -49,5 +46,5 @@ export function StatusSelect({
         </SelectContent>
       </Select>
     </div>
-  )
+  );
 }

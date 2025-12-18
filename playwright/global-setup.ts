@@ -1,8 +1,8 @@
-import { resetTestDb } from "./utils/db"
+import { resetTestDb } from "./utils/db";
 
 async function globalSetup() {
   // Reset test database before all tests run
-  resetTestDb()
+  resetTestDb();
 }
 
-export default globalSetup
+export default globalSetup;

@@ -10,8 +10,10 @@ Define stable data ordering for TanStack Query to avoid UX drift.
 ## Examples
 
 Comment ordering:
+
 - Sidebar data: append and sort ASC
 - Card data: prepend and sort DESC for “last comment” freshness
 
 ## Links
+
 - Board/task cache updates: `src/hooks/use-board.ts`, `src/hooks/use-task.ts`

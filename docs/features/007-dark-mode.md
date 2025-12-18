@@ -31,12 +31,14 @@ The application supports light, dark, and system-based themes. Users can toggle 
 ## Visual Design
 
 ### Light Theme
+
 - White/light gray backgrounds
 - Dark text for readability
 - Glass backgrounds: `bg-white/40` to `bg-white/80`
 - Borders need higher opacity to be visible (avoid `border-border/30` or lower)
 
 ### Dark Theme
+
 - Dark gray/black backgrounds
 - Light text for contrast
 - Adjusted accent colors for visibility

@@ -53,6 +53,7 @@ Tags are labels that can be assigned to tasks within a board. Each tag has a nam
 ## Implementation Notes
 
 Color utilities are centralized in `src/lib/tag-colors.ts`:
+
 - `getRandomTagColor()` — use when creating new tags
 - `tagColorStyles` — badge styles for each color (reuses contributor colors)
 - `tagColorSwatches` — solid swatches for the color picker (reuses contributor colors)
@@ -60,5 +61,6 @@ Color utilities are centralized in `src/lib/tag-colors.ts`:
 The palette itself is defined in `src/db/schema.ts` as `CONTRIBUTOR_COLORS` (shared with contributors).
 
 Tag name normalization is handled by `src/lib/tag-utils.ts`:
+
 - `ensureTagHasHash(name)` — ensures tag name starts with "#" (used in all create/update operations)
 - `removeTagHash(name)` — helper to remove "#" prefix if needed

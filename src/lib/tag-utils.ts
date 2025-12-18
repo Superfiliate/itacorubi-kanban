@@ -4,11 +4,11 @@
  * Otherwise, prepends "#" to the name.
  */
 export function ensureTagHasHash(name: string): string {
-  const trimmed = name.trim()
+  const trimmed = name.trim();
   if (trimmed.startsWith("#")) {
-    return trimmed
+    return trimmed;
   }
-  return `#${trimmed}`
+  return `#${trimmed}`;
 }
 
 /**
@@ -16,5 +16,5 @@ export function ensureTagHasHash(name: string): string {
  * Useful for display or editing where you might want to show/edit without the hash.
  */
 export function removeTagHash(name: string): string {
-  return name.startsWith("#") ? name.slice(1) : name
+  return name.startsWith("#") ? name.slice(1) : name;
 }

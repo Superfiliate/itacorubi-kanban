@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,36 +10,32 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { ContributorBadge } from "@/components/contributor-badge"
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { ContributorBadge } from "@/components/contributor-badge";
 import {
   useAddStakeholder,
   useRemoveStakeholder,
   useCreateAndAddStakeholder,
-} from "@/hooks/use-task"
-import type { ContributorColor } from "@/db/schema"
+} from "@/hooks/use-task";
+import type { ContributorColor } from "@/db/schema";
 
 interface StakeholdersSelectProps {
-  taskId: string
-  boardId: string
+  taskId: string;
+  boardId: string;
   stakeholders: Array<{
     contributor: {
-      id: string
-      name: string
-      color: ContributorColor
-    }
-  }>
+      id: string;
+      name: string;
+      color: ContributorColor;
+    };
+  }>;
   contributors: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
 }
 
 export function StakeholdersSelect({
@@ -48,47 +44,43 @@ export function StakeholdersSelect({
   stakeholders,
   contributors,
 }: StakeholdersSelectProps) {
-  const [open, setOpen] = useState(false)
-  const [inputValue, setInputValue] = useState("")
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
 
   // Mutations
-  const addStakeholderMutation = useAddStakeholder(boardId)
-  const removeStakeholderMutation = useRemoveStakeholder(boardId)
-  const createAndAddMutation = useCreateAndAddStakeholder(boardId)
+  const addStakeholderMutation = useAddStakeholder(boardId);
+  const removeStakeholderMutation = useRemoveStakeholder(boardId);
+  const createAndAddMutation = useCreateAndAddStakeholder(boardId);
 
-  const stakeholderIds = new Set(stakeholders.map((s) => s.contributor.id))
+  const stakeholderIds = new Set(stakeholders.map((s) => s.contributor.id));
 
   const handleSelect = (contributorId: string) => {
     if (stakeholderIds.has(contributorId)) {
-      removeStakeholderMutation.mutate({ taskId, contributorId })
+      removeStakeholderMutation.mutate({ taskId, contributorId });
     } else {
-      addStakeholderMutation.mutate({ taskId, contributorId })
+      addStakeholderMutation.mutate({ taskId, contributorId });
     }
     // Close after selecting to avoid focus/escape closing the whole sidebar (Sheet)
-    setOpen(false)
-    setInputValue("")
-  }
+    setOpen(false);
+    setInputValue("");
+  };
 
   const handleCreateNew = () => {
-    const name = inputValue.trim()
+    const name = inputValue.trim();
     if (name) {
-      createAndAddMutation.mutate({ taskId, name })
-      setInputValue("")
-      setOpen(false)
+      createAndAddMutation.mutate({ taskId, name });
+      setInputValue("");
+      setOpen(false);
     }
-  }
+  };
 
   const filteredContributors = inputValue
-    ? contributors.filter((c) =>
-        c.name.toLowerCase().includes(inputValue.toLowerCase())
-      )
-    : contributors
+    ? contributors.filter((c) => c.name.toLowerCase().includes(inputValue.toLowerCase()))
+    : contributors;
 
   const showCreateOption =
     inputValue.trim() &&
-    !contributors.some(
-      (c) => c.name.toLowerCase() === inputValue.trim().toLowerCase()
-    )
+    !contributors.some((c) => c.name.toLowerCase() === inputValue.trim().toLowerCase());
 
   return (
     <div className="space-y-2">
@@ -154,15 +146,10 @@ export function StakeholdersSelect({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        stakeholderIds.has(contributor.id)
-                          ? "opacity-100"
-                          : "opacity-0"
+                        stakeholderIds.has(contributor.id) ? "opacity-100" : "opacity-0",
                       )}
                     />
-                    <ContributorBadge
-                      name={contributor.name}
-                      color={contributor.color}
-                    />
+                    <ContributorBadge name={contributor.name} color={contributor.color} />
                   </CommandItem>
                 ))}
                 {showCreateOption && (
@@ -182,5 +169,5 @@ export function StakeholdersSelect({
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useOutboxGuard } from "@/hooks/use-outbox-guard"
+import { useOutboxGuard } from "@/hooks/use-outbox-guard";
 
 interface OutboxGuardProps {
-  boardId: string
+  boardId: string;
 }
 
 /**
@@ -17,6 +17,6 @@ interface OutboxGuardProps {
  */
 export function OutboxGuard({ boardId }: OutboxGuardProps) {
   // The hook handles all the beforeunload logic
-  useOutboxGuard(boardId)
-  return null
+  useOutboxGuard(boardId);
+  return null;
 }

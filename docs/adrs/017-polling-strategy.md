@@ -8,12 +8,12 @@ Use **adaptive polling with exponential backoff** to sync board data from the se
 
 ## Backoff Behavior
 
-| User State | Polling Interval |
-|------------|------------------|
-| Active + visible (within 60s of activity) | 1-3s |
-| Visible but idle | Gradual backoff: 5s → 10s → 30s → ... → 10min |
-| Hidden or unfocused tab | Immediately ≥60s, then backoff |
-| Tab becomes visible/focused | Reset to 1s |
+| User State                                | Polling Interval                              |
+| ----------------------------------------- | --------------------------------------------- |
+| Active + visible (within 60s of activity) | 1-3s                                          |
+| Visible but idle                          | Gradual backoff: 5s → 10s → 30s → ... → 10min |
+| Hidden or unfocused tab                   | Immediately ≥60s, then backoff                |
+| Tab becomes visible/focused               | Reset to 1s                                   |
 
 ## Current Backoff Steps
 
@@ -26,6 +26,7 @@ The repeated early steps (1s, 1s, 2s, 2s, 3s, 3s) ensure active users stay at fa
 ## Activity Detection
 
 Activity is tracked via:
+
 - `pointerdown`, `keydown`, `scroll` events
 - Local mutations (outbox enqueues update `lastLocalActivityAt`)
 - Window `focus` and `visibilitychange` events

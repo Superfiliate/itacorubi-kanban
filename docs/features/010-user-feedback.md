@@ -16,4 +16,5 @@ Ensure users understand the outcome of their actions (create, update, delete) wi
 - Destructive dialog: destructive button, disabled while pending, message explains the irreversible action
 
 ## Links
+
 - Toast host: `src/components/ui/sonner.tsx`

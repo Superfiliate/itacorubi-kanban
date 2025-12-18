@@ -13,6 +13,7 @@ If a new text style emerges repeatedly, add one semantic utility instead of inli
 **Use semantic utilities** when the pattern couples size + color + weight (e.g., `text-label` for form labels, `text-muted` for secondary body text).
 
 **Use raw Tailwind size classes** (`text-xs`, `text-sm`, etc.) when color comes from elsewhere:
+
 - Badge text (color from badge background styles)
 - Metadata with dynamic colors (e.g., comment age indicators)
 
@@ -21,6 +22,7 @@ Avoid arbitrary values like `text-[11px]` — stick to Tailwind's default scale.
 ## Examples
 
 Cheatsheet:
+
 - `text-body`: default body (`text-sm`)
 - `text-body-lg`: larger body (`text-base`)
 - `text-muted`: secondary info (`text-sm text-muted-foreground`)
@@ -36,4 +38,5 @@ Cheatsheet:
   ```
 
 ## Links
+
 - Utilities defined in: `src/styles/typography.css`

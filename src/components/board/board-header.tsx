@@ -1,33 +1,36 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Users, Share2, Tag } from "lucide-react"
-import { EditableText } from "@/components/editable-text"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
-import { SyncIndicator } from "@/components/sync-indicator"
-import { ContributorsDialog, type ContributorWithStats } from "@/components/board/contributors-dialog"
-import { TagsDialog, type TagWithStats } from "@/components/board/tags-dialog"
-import { ShareDialog } from "@/components/board/share-dialog"
-import { useUpdateBoardTitle } from "@/hooks/use-board"
+import { useState } from "react";
+import { Users, Share2, Tag } from "lucide-react";
+import { EditableText } from "@/components/editable-text";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { SyncIndicator } from "@/components/sync-indicator";
+import {
+  ContributorsDialog,
+  type ContributorWithStats,
+} from "@/components/board/contributors-dialog";
+import { TagsDialog, type TagWithStats } from "@/components/board/tags-dialog";
+import { ShareDialog } from "@/components/board/share-dialog";
+import { useUpdateBoardTitle } from "@/hooks/use-board";
 
 interface BoardHeaderProps {
-  boardId: string
-  title: string
-  contributors: ContributorWithStats[]
-  tags: TagWithStats[]
+  boardId: string;
+  title: string;
+  contributors: ContributorWithStats[];
+  tags: TagWithStats[];
 }
 
 export function BoardHeader({ boardId, title, contributors, tags }: BoardHeaderProps) {
-  const [isContributorsOpen, setIsContributorsOpen] = useState(false)
-  const [isTagsOpen, setIsTagsOpen] = useState(false)
-  const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isContributorsOpen, setIsContributorsOpen] = useState(false);
+  const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
-  const updateTitleMutation = useUpdateBoardTitle(boardId)
+  const updateTitleMutation = useUpdateBoardTitle(boardId);
 
   const handleSave = (newTitle: string) => {
-    updateTitleMutation.mutate(newTitle)
-  }
+    updateTitleMutation.mutate(newTitle);
+  };
 
   return (
     <header className="flex items-center gap-4 border-b glass glass-strong rounded-none px-6 py-4">
@@ -73,23 +76,14 @@ export function BoardHeader({ boardId, title, contributors, tags }: BoardHeaderP
         <ThemeToggle boardId={boardId} />
       </div>
 
-      <ShareDialog
-        boardId={boardId}
-        open={isShareOpen}
-        onOpenChange={setIsShareOpen}
-      />
+      <ShareDialog boardId={boardId} open={isShareOpen} onOpenChange={setIsShareOpen} />
       <ContributorsDialog
         boardId={boardId}
         contributors={contributors}
         open={isContributorsOpen}
         onOpenChange={setIsContributorsOpen}
       />
-      <TagsDialog
-        boardId={boardId}
-        tags={tags}
-        open={isTagsOpen}
-        onOpenChange={setIsTagsOpen}
-      />
+      <TagsDialog boardId={boardId} tags={tags} open={isTagsOpen} onOpenChange={setIsTagsOpen} />
     </header>
-  )
+  );
 }

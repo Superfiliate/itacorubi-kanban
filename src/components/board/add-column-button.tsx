@@ -1,27 +1,30 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
-import { useCreateColumn } from "@/hooks/use-board"
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useCreateColumn } from "@/hooks/use-board";
 
 interface AddColumnButtonProps {
-  boardId: string
+  boardId: string;
 }
 
 export function AddColumnButton({ boardId }: AddColumnButtonProps) {
-  const createColumnMutation = useCreateColumn(boardId)
+  const createColumnMutation = useCreateColumn(boardId);
 
   const handleClick = () => {
-    const id = crypto.randomUUID()
-    createColumnMutation.mutate({ id }, {
-      onSuccess: () => {
-        toast.success("Column created")
+    const id = crypto.randomUUID();
+    createColumnMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast.success("Column created");
+        },
+        onError: () => {
+          toast.error("Failed to create column");
+        },
       },
-      onError: () => {
-        toast.error("Failed to create column")
-      },
-    })
-  }
+    );
+  };
 
   return (
     <Button
@@ -47,5 +50,5 @@ export function AddColumnButton({ boardId }: AddColumnButtonProps) {
         <path d="M12 5v14" />
       </svg>
     </Button>
-  )
+  );
 }

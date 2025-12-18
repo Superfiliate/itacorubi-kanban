@@ -18,5 +18,6 @@ We use a light glassmorphism aesthetic (soft blur, translucent surfaces, subtle 
 - Test in light/dark themes to ensure borders and text remain legible
 
 ## Links
+
 - Utilities: `src/styles/glassmorphism.css`
 - Variables: `src/styles/theme.css`

@@ -66,7 +66,7 @@ The build process automatically runs database migrations, so your schema stays i
 
 When deploying with Turso via Vercel Marketplace, these are automatically configured:
 
-| Variable | Description |
-|----------|-------------|
-| `TURSO_DATABASE_URL` | Your Turso database URL |
-| `TURSO_AUTH_TOKEN` | Authentication token for Turso |
+| Variable             | Description                    |
+| -------------------- | ------------------------------ |
+| `TURSO_DATABASE_URL` | Your Turso database URL        |
+| `TURSO_AUTH_TOKEN`   | Authentication token for Turso |

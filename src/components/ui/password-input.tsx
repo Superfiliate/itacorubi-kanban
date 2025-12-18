@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Eye, EyeOff } from "lucide-react"
-import { Input } from "./input"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { Input } from "./input";
+import { cn } from "@/lib/utils";
 
 interface PasswordInputProps extends Omit<React.ComponentProps<typeof Input>, "type"> {
-  showToggle?: boolean
+  showToggle?: boolean;
 }
 
 export function PasswordInput({
@@ -15,7 +15,7 @@ export function PasswordInput({
   disabled,
   ...props
 }: PasswordInputProps) {
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="relative">
@@ -33,13 +33,9 @@ export function PasswordInput({
           title={showPassword ? "Hide password" : "Show password"}
           disabled={disabled}
         >
-          {showPassword ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
+          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       )}
     </div>
-  )
+  );
 }

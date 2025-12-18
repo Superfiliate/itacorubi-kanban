@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -19,35 +19,35 @@ function makeQueryClient() {
         retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000),
       },
     },
-  })
+  });
 }
 
 // Singleton for browser
-let browserQueryClient: QueryClient | undefined = undefined
+let browserQueryClient: QueryClient | undefined = undefined;
 
 function getQueryClient() {
   if (typeof window === "undefined") {
     // Server: always create a new query client
-    return makeQueryClient()
+    return makeQueryClient();
   }
   // Browser: reuse existing client or create new one
   if (!browserQueryClient) {
-    browserQueryClient = makeQueryClient()
+    browserQueryClient = makeQueryClient();
   }
-  return browserQueryClient
+  return browserQueryClient;
 }
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   // Use useState to ensure the same client is used across renders
-  const [queryClient] = useState(getQueryClient)
+  const [queryClient] = useState(getQueryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
       {children}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
-  )
+  );
 }
 
 // Export for direct access in hooks
-export { getQueryClient }
+export { getQueryClient };

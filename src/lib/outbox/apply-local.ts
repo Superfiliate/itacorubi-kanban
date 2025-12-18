@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useBoardStore, type OutboxItem } from "@/stores/board-store"
+import { useBoardStore, type OutboxItem } from "@/stores/board-store";
 
 /**
  * Apply an outbox item as a local-first mutation.
@@ -10,52 +10,52 @@ import { useBoardStore, type OutboxItem } from "@/stores/board-store"
  * Update/delete items don't need reconstruction since the base data comes from server.
  */
 export function applyOutboxItemLocally(item: OutboxItem): void {
-  const store = useBoardStore.getState()
+  const store = useBoardStore.getState();
 
   switch (item.type) {
     case "createTask": {
-      const { taskId, columnId, title, createdAt } = item.payload
+      const { taskId, columnId, title, createdAt } = item.payload;
       store.createTaskLocal({
         boardId: item.boardId,
         taskId,
         columnId,
         title,
         createdAt,
-      })
-      break
+      });
+      break;
     }
     case "createColumn": {
       store.createColumnLocal({
         boardId: item.boardId,
         columnId: item.payload.columnId,
         name: "New Column", // Default name, will be updated from server after flush
-      })
-      break
+      });
+      break;
     }
     case "createContributor": {
-      const { contributorId, name, color } = item.payload
+      const { contributorId, name, color } = item.payload;
       store.createContributorLocal({
         boardId: item.boardId,
         contributorId,
         name,
         color,
-      })
-      break
+      });
+      break;
     }
     case "createTag": {
-      const { tagId, name, color } = item.payload
+      const { tagId, name, color } = item.payload;
       store.createTagLocal({
         boardId: item.boardId,
         tagId,
         name,
         color,
-      })
-      break
+      });
+      break;
     }
     // Update/delete operations don't need local reconstruction
     // since the base state comes from server hydration
     default:
-      break
+      break;
   }
 }
 
@@ -64,10 +64,10 @@ export function applyOutboxItemLocally(item: OutboxItem): void {
  * Called after restoring outbox from localStorage and hydrating from server.
  */
 export function applyAllOutboxItemsLocally(boardId: string): void {
-  const board = useBoardStore.getState().boardsById[boardId]
-  if (!board) return
+  const board = useBoardStore.getState().boardsById[boardId];
+  if (!board) return;
 
   for (const item of board.outbox) {
-    applyOutboxItemLocally(item)
+    applyOutboxItemLocally(item);
   }
 }

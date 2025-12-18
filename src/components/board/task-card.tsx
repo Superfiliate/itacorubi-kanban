@@ -1,33 +1,33 @@
-"use client"
+"use client";
 
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { useRouter } from "next/navigation"
-import { MessageSquare, User } from "lucide-react"
-import { ContributorBadge } from "@/components/contributor-badge"
-import { TagBadge } from "@/components/tag-badge"
-import { cn } from "@/lib/utils"
-import type { ContributorColor, TaskPriority } from "@/db/schema"
-import { TASK_PRIORITY_META } from "@/lib/task-priority"
-import { useBoardStore } from "@/stores/board-store"
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useRouter } from "next/navigation";
+import { MessageSquare, User } from "lucide-react";
+import { ContributorBadge } from "@/components/contributor-badge";
+import { TagBadge } from "@/components/tag-badge";
+import { cn } from "@/lib/utils";
+import type { ContributorColor, TaskPriority } from "@/db/schema";
+import { TASK_PRIORITY_META } from "@/lib/task-priority";
+import { useBoardStore } from "@/stores/board-store";
 
 interface TaskCardProps {
-  id: string
-  boardId: string
-  title: string
-  priority: TaskPriority
+  id: string;
+  boardId: string;
+  title: string;
+  priority: TaskPriority;
   assignees: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
   tags?: Array<{
-    id: string
-    name: string
-    color: ContributorColor
-  }>
-  commentCount: number
-  lastCommentCreatedAt: Date | null
+    id: string;
+    name: string;
+    color: ContributorColor;
+  }>;
+  commentCount: number;
+  lastCommentCreatedAt: Date | null;
 }
 
 function getCommentAgeColor(daysSinceLastComment: number): string {
@@ -35,103 +35,110 @@ function getCommentAgeColor(daysSinceLastComment: number): string {
   // Using more granular steps for smoother visual transition
 
   if (daysSinceLastComment <= 0) {
-    return "text-emerald-600"
+    return "text-emerald-600";
   }
   if (daysSinceLastComment <= 2) {
-    return "text-emerald-500"
+    return "text-emerald-500";
   }
   if (daysSinceLastComment <= 4) {
-    return "text-green-500"
+    return "text-green-500";
   }
   if (daysSinceLastComment <= 6) {
-    return "text-lime-500"
+    return "text-lime-500";
   }
   if (daysSinceLastComment <= 8) {
-    return "text-yellow-500"
+    return "text-yellow-500";
   }
   if (daysSinceLastComment <= 10) {
-    return "text-yellow-600"
+    return "text-yellow-600";
   }
   if (daysSinceLastComment <= 12) {
-    return "text-amber-500"
+    return "text-amber-500";
   }
   if (daysSinceLastComment <= 14) {
-    return "text-amber-600"
+    return "text-amber-600";
   }
   if (daysSinceLastComment <= 16) {
-    return "text-orange-500"
+    return "text-orange-500";
   }
   if (daysSinceLastComment <= 18) {
-    return "text-orange-600"
+    return "text-orange-600";
   }
   if (daysSinceLastComment <= 20) {
-    return "text-red-500"
+    return "text-red-500";
   }
   // >20 days: deep red
-  return "text-red-600"
+  return "text-red-600";
 }
 
 function getDaysSinceLastComment(lastCommentCreatedAt: Date | null): number | null {
-  if (!lastCommentCreatedAt) return null
+  if (!lastCommentCreatedAt) return null;
 
-  const now = new Date()
-  const lastCommentDate = new Date(lastCommentCreatedAt)
-  const diffTime = now.getTime() - lastCommentDate.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  const now = new Date();
+  const lastCommentDate = new Date(lastCommentCreatedAt);
+  const diffTime = now.getTime() - lastCommentDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  return diffDays
+  return diffDays;
 }
 
-export function TaskCard({ id, boardId, title, priority, assignees, tags, commentCount, lastCommentCreatedAt }: TaskCardProps) {
-  const router = useRouter()
-  const displayTags = tags ?? []
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id, data: { type: "task" } })
+export function TaskCard({
+  id,
+  boardId,
+  title,
+  priority,
+  assignees,
+  tags,
+  commentCount,
+  lastCommentCreatedAt,
+}: TaskCardProps) {
+  const router = useRouter();
+  const displayTags = tags ?? [];
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    data: { type: "task" },
+  });
 
   const openTask = () => {
     // Set pending open task for instant sidebar (bypasses router delay)
-    useBoardStore.getState().setPendingOpenTask({ boardId, taskId: id })
+    useBoardStore.getState().setPendingOpenTask({ boardId, taskId: id });
     // Navigate to the task
-    const newUrl = `/boards/${boardId}?task=${id}`
-    window.history.pushState(window.history.state, "", newUrl)
-    router.push(newUrl, { scroll: false })
-  }
+    const newUrl = `/boards/${boardId}?task=${id}`;
+    window.history.pushState(window.history.state, "", newUrl);
+    router.push(newUrl, { scroll: false });
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     // Prevent click when dragging
     if (isDragging) {
-      e.preventDefault()
-      return
+      e.preventDefault();
+      return;
     }
-    e.preventDefault()
-    openTask()
-  }
+    e.preventDefault();
+    openTask();
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  }
+  };
 
-  const daysSinceLastComment = getDaysSinceLastComment(lastCommentCreatedAt)
-  const commentAgeColor = daysSinceLastComment !== null
-    ? getCommentAgeColor(daysSinceLastComment)
-    : "text-muted-foreground"
+  const daysSinceLastComment = getDaysSinceLastComment(lastCommentCreatedAt);
+  const commentAgeColor =
+    daysSinceLastComment !== null
+      ? getCommentAgeColor(daysSinceLastComment)
+      : "text-muted-foreground";
 
-  const commentAgeText = daysSinceLastComment !== null
-    ? daysSinceLastComment === 0
-      ? "today"
-      : daysSinceLastComment === 1
-        ? "1 day ago"
-        : `${daysSinceLastComment} days ago`
-    : null
+  const commentAgeText =
+    daysSinceLastComment !== null
+      ? daysSinceLastComment === 0
+        ? "today"
+        : daysSinceLastComment === 1
+          ? "1 day ago"
+          : `${daysSinceLastComment} days ago`
+      : null;
 
-  const { cardClassName, Icon: PriorityIcon, iconClassName } = TASK_PRIORITY_META[priority]
+  const { cardClassName, Icon: PriorityIcon, iconClassName } = TASK_PRIORITY_META[priority];
 
   return (
     <div
@@ -140,7 +147,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
       className={cn(
         "group relative glass rounded-lg px-3 py-2 transition-all hover:shadow-lg hover:scale-[1.01]",
         isDragging && "opacity-50 shadow-xl scale-[1.03]",
-        cardClassName
+        cardClassName,
       )}
       {...attributes}
       {...listeners}
@@ -151,9 +158,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
         onClick={handleClick}
         aria-label={`Open task ${title}`}
       />
-      <h4 className="text-heading-sm text-foreground leading-snug">
-        {title}
-      </h4>
+      <h4 className="text-heading-sm text-foreground leading-snug">{title}</h4>
 
       {/* Priority + comments meta row */}
       <div className="mt-1.5 flex items-center gap-2">
@@ -163,9 +168,7 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
           <div className={cn("flex min-w-0 items-center gap-1 text-xs", commentAgeColor)}>
             <MessageSquare className="h-3 w-3 shrink-0" />
             <span className="shrink-0">{commentCount}</span>
-            {commentAgeText && (
-              <span className="truncate opacity-80">· {commentAgeText}</span>
-            )}
+            {commentAgeText && <span className="truncate opacity-80">· {commentAgeText}</span>}
           </div>
         ) : (
           <div className="flex items-center gap-1 text-xs text-muted-foreground/50">
@@ -200,16 +203,11 @@ export function TaskCard({ id, boardId, title, priority, assignees, tags, commen
         <div className="mt-1 flex items-start justify-end">
           <div className="flex flex-wrap justify-end gap-1">
             {displayTags.map((tag) => (
-              <TagBadge
-                key={tag.id}
-                name={tag.name}
-                color={tag.color}
-                variant="compact"
-              />
+              <TagBadge key={tag.id} name={tag.name} color={tag.color} variant="compact" />
             ))}
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }

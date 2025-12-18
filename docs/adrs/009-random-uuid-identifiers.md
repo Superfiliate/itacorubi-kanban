@@ -16,6 +16,7 @@ Without authentication, the primary defense against unauthorized access is **obs
 **All entity identifiers MUST be random UUIDs generated using `crypto.randomUUID()`.**
 
 This applies to:
+
 - Boards
 - Columns
 - Tasks
@@ -53,10 +54,10 @@ const id = slugify(title)        // ❌ Guessable
 
 Since the UUID acts as both an identifier and an access token:
 
-| Entity | UUID acts as |
-|--------|--------------|
-| Board | Access token to view/modify the entire board |
-| Contributor | Identity token for that contributor's actions |
+| Entity              | UUID acts as                                                     |
+| ------------------- | ---------------------------------------------------------------- |
+| Board               | Access token to view/modify the entire board                     |
+| Contributor         | Identity token for that contributor's actions                    |
 | Task/Column/Comment | Part of the board's internal structure (protected by board UUID) |
 
 ## Consequences
