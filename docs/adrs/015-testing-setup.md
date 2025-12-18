@@ -14,6 +14,22 @@ We use Playwright for end-to-end testing of high-level user flows.
 3. **No overlapping tests** - If two tests cover the same scenario with minor variations, merge them or keep only one.
 4. **Speed matters** - Tests run in parallel. Slow tests block iteration. Optimize aggressively.
 
+## When Tests Reveal App Issues: FIX THE APP
+
+**This is critical.** When a flaky test reveals a real app problem, the priority is:
+
+1. **FIX THE APP** - not just the test
+2. Real users experience the same issues
+3. A "passing" test suite with workarounds is a lie
+
+**Example:** If a test fails because navigating away before sync completes causes data loss:
+- **WRONG:** Simplify the test to avoid the navigation scenario
+- **RIGHT:** Fix the app to ensure sync completes or data persists locally
+
+**Ask yourself:** "Would a real user hit this problem?" If yes, the app is broken - not just the test.
+
+Workarounds in tests that mask real app issues are technical debt. They let bugs ship to users while giving false confidence. Always prioritize user experience over green test runs.
+
 ## Flaky Failures vs Hard Failures
 
 Retries help distinguish failure types. Both are bugs requiring different debugging approaches:
