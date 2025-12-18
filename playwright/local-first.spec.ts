@@ -2,9 +2,10 @@ import { test, expect } from "@playwright/test"
 import { createTestBoard, waitForBoardLoad, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright"
 
 test.describe("Local-First Architecture", () => {
-  test("should isolate state between boards in same session", async ({ page }) => {
-    // This test verifies that the local-first store correctly isolates state
-    // between different boards. Board 1's data shouldn't appear on Board 2.
+  test("should isolate state between boards and persist data across navigation", async ({ page }) => {
+    // This test verifies:
+    // 1. The local-first store correctly isolates state between boards
+    // 2. Data persists across navigation (via localStorage outbox persistence)
 
     // Create first board and a task
     const boardId1 = await createTestBoard(page, "Board One", "testpass123")
@@ -25,7 +26,7 @@ test.describe("Local-First Architecture", () => {
     await waitForSidebarClose(page)
     await expect(page.getByText(/board1-task/i)).toBeVisible()
 
-    // Create second board and a task
+    // Navigate away to create second board (outbox may still be flushing)
     await page.goto("/")
     await createTestBoard(page, "Board Two", "testpass456")
     await waitForBoardLoad(page)
@@ -47,11 +48,18 @@ test.describe("Local-First Architecture", () => {
     // Verify Board 2 shows only BOARD2-Task (Board 1's task shouldn't leak here)
     await expect(page.getByText(/board2-task/i)).toBeVisible()
     await expect(page.getByText(/board1-task/i)).not.toBeVisible()
+
+    // Navigate back to Board 1 and verify the task persisted
+    // This confirms the localStorage outbox persistence worked
+    await page.goto(`/boards/${boardId1}`)
+    await waitForBoardLoad(page)
+    await expect(page.getByText(/board1-task/i)).toBeVisible()
   })
 
-  test("should handle rapid task creation via outbox", async ({ page }) => {
-    // This test verifies that creating multiple tasks in quick succession
-    // all get properly queued through the outbox (optimistic updates work)
+  test("should handle rapid task creation and persist after reload", async ({ page }) => {
+    // This test verifies:
+    // 1. Rapid task creation via outbox works (optimistic updates)
+    // 2. All tasks persist after page reload (via localStorage outbox restoration and flush)
 
     await createTestBoard(page, "Rapid Creation Test", "testpass123")
     await waitForBoardLoad(page)
@@ -70,6 +78,17 @@ test.describe("Local-First Architecture", () => {
 
     // Verify column shows 3 tasks (optimistic update should show immediately)
     const todoColumn = page.locator('[title="Click to edit"]').filter({ hasText: /to do/i }).locator("..")
+    await expect(todoColumn.getByText(/3/)).toBeVisible()
+
+    // Reload immediately - the localStorage outbox persistence should ensure no data loss
+    // Any pending sync items are restored and flushed on the new page
+    await page.reload()
+    await waitForBoardLoad(page)
+
+    // Wait for sync to complete (restored outbox items are flushed on page load)
+    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible({ timeout: 15000 })
+
+    // Verify all tasks persisted
     await expect(todoColumn.getByText(/3/)).toBeVisible()
   })
 })

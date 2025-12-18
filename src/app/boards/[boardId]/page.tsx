@@ -9,6 +9,7 @@ import { BoardClient } from "@/components/board/board-client"
 import { TrackBoardVisit } from "@/components/board/track-board-visit"
 import { TaskSidebarHost } from "@/components/task-sidebar/task-sidebar"
 import { HydrateBoard } from "@/components/board/hydrate-board"
+import { OutboxGuard } from "@/components/board/outbox-guard"
 import type { BoardData } from "@/hooks/use-board"
 import type { TaskWithComments } from "@/hooks/use-task"
 
@@ -92,6 +93,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   return (
     <div className="flex h-screen flex-col overflow-hidden gradient-mesh">
       <HydrateBoard boardId={board.id} boardData={boardData} taskData={taskData} />
+      <OutboxGuard boardId={board.id} />
       <TrackBoardVisit boardId={board.id} title={board.title} />
       <BoardHeader boardId={board.id} title={board.title} contributors={contributorsWithStats} tags={tagsWithStats} />
       <main className="relative flex-1 overflow-hidden">

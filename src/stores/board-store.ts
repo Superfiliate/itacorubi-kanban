@@ -5,6 +5,7 @@ import type { ContributorColor, TaskPriority } from "@/db/schema"
 import type { BoardData, BoardTask, BoardColumn } from "@/hooks/use-board"
 import type { TaskComment, TaskWithComments } from "@/hooks/use-task"
 import { ensureTagHasHash } from "@/lib/tag-utils"
+import { saveOutbox, loadOutbox } from "@/lib/outbox/persistence"
 
 export type ColumnEntity = {
   id: string
@@ -551,24 +552,45 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
   ensureBoard: (boardId) => {
     const existing = get().boardsById[boardId]
     if (existing) return existing
+
+    // Create new board state and restore any persisted outbox items
     const created = makeEmptyBoard(boardId)
+    const persistedOutbox = loadOutbox(boardId)
+    if (persistedOutbox.length > 0) {
+      created.outbox = persistedOutbox
+    }
+
     set((s) => ({ boardsById: { ...s.boardsById, [boardId]: created } }))
     return created
   },
 
   hydrateBoardFromServer: (boardId, boardData) => {
+    // First ensure the board exists (this restores any persisted outbox items)
+    const ensuredBoard = get().ensureBoard(boardId)
+    const restoredOutbox = ensuredBoard.outbox
+
     set((s) => {
       const current = s.boardsById[boardId]
-      // Do not overwrite while local changes are pending/in flight
-      if (current && (current.isFlushing || current.outbox.length > 0)) {
+
+      // If flush is in progress, don't overwrite to avoid race conditions
+      if (current && current.isFlushing) {
         return s
       }
+
+      // Normalize server data
       const normalized = normalizeBoard(boardId, boardData)
+
       // Preserve taskDetailsById from previous state - these are fetched separately
       // and should not be wiped when board polling refreshes board-level data
       if (current?.taskDetailsById && Object.keys(current.taskDetailsById).length > 0) {
         normalized.taskDetailsById = { ...current.taskDetailsById }
       }
+
+      // Preserve restored outbox items - they need to be flushed
+      if (restoredOutbox.length > 0) {
+        normalized.outbox = restoredOutbox
+      }
+
       return { boardsById: { ...s.boardsById, [boardId]: normalized } }
     })
   },
@@ -1432,20 +1454,23 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
   },
 
   enqueue: (item) => {
+    const boardId = item.boardId
     set((s) => {
-      const boardId = item.boardId
       const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId)
       const outboxItem: OutboxItem = {
         ...(item as any),
         id: item.id ?? crypto.randomUUID(),
         createdAt: item.createdAt ?? Date.now(),
       }
+      const newOutbox = [...board.outbox, outboxItem]
+      // Persist to localStorage for navigation resilience
+      saveOutbox(boardId, newOutbox)
       return {
         boardsById: {
           ...s.boardsById,
           [boardId]: {
             ...board,
-            outbox: [...board.outbox, outboxItem],
+            outbox: newOutbox,
             lastLocalActivityAt: Date.now(),
           },
         },
@@ -1457,10 +1482,13 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
     set((s) => {
       const board = s.boardsById[boardId]
       if (!board) return s
+      const newOutbox = board.outbox.filter((i) => i.id !== itemId)
+      // Persist to localStorage for navigation resilience
+      saveOutbox(boardId, newOutbox)
       return {
         boardsById: {
           ...s.boardsById,
-          [boardId]: { ...board, outbox: board.outbox.filter((i) => i.id !== itemId) },
+          [boardId]: { ...board, outbox: newOutbox },
         },
       }
     })

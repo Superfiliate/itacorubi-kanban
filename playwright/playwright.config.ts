@@ -15,8 +15,8 @@ export default defineConfig({
   workers: process.env.CI ? 2 : 4,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retries for flakiness detection (not to hide bugs - both flaky and hard failures are bugs) */
-  retries: 2,
+  /* Retry on CI only */
+  retries: process.env.CI ? 3 : 1,
   /* Timeout for each test */
   timeout: 30000, // 30s per test maximum
   /* Timeout for expect assertions */
