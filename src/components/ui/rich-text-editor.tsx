@@ -6,6 +6,8 @@ import StarterKit from "@tiptap/starter-kit";
 import { FileHandler } from "@tiptap/extension-file-handler";
 import { ImageExtension } from "./tiptap-extensions/image-extension";
 import { FileAttachment } from "./tiptap-extensions/file-attachment";
+import { LoomEmbed } from "./tiptap-extensions/loom-embed";
+import { YouTubeEmbed } from "./tiptap-extensions/youtube-embed";
 import { UploadPlaceholder } from "./tiptap-extensions/upload-placeholder";
 import {
   Bold,
@@ -450,6 +452,8 @@ export function RichTextEditor({
         allowBase64: false,
       }),
       FileAttachment,
+      LoomEmbed,
+      YouTubeEmbed,
       UploadPlaceholder,
       // FileHandler is always included, but callbacks check if upload is enabled
       // Note: Not using allowedMimeTypes to avoid filtering issues - we validate on the server
@@ -608,8 +612,13 @@ export function isRichTextEmpty(content: string | undefined): boolean {
           attrs?: Record<string, unknown>;
         };
 
-        // Images and file attachments are meaningful content
-        if (n.type === "image" || n.type === "fileAttachment") {
+        // Images, file attachments, and video embeds are meaningful content
+        if (
+          n.type === "image" ||
+          n.type === "fileAttachment" ||
+          n.type === "loomEmbed" ||
+          n.type === "youtubeEmbed"
+        ) {
           return true;
         }
 

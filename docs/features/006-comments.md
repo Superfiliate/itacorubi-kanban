@@ -30,6 +30,19 @@ Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. Th
 
 - Undo/Redo (Ctrl+Z / Ctrl+Shift+Z)
 
+### Video Embeds
+
+Pasting a video URL from supported platforms automatically transforms the link into an embedded player:
+
+- **Loom**: `https://www.loom.com/share/{videoId}` or `https://loom.com/share/{videoId}`
+- **YouTube**: `https://www.youtube.com/watch?v={videoId}`, `https://youtu.be/{videoId}`, or `https://youtube.com/embed/{videoId}`
+
+Embed features:
+
+- Responsive 16:9 aspect ratio player
+- Hover actions: Open in new tab, Delete (edit mode only)
+- Stored as custom nodes in Tiptap JSON content
+
 ### Technical Details
 
 - Content is stored as JSON (Tiptap's native format) in the database

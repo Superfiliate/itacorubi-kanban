@@ -1,10 +1,36 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import {
   createTestBoard,
   waitForBoardLoad,
   waitForSidebarOpen,
   waitForSidebarClose,
 } from "./utils/playwright";
+
+/**
+ * Helper to set up a comment editor with an author selected.
+ * Returns the editor element ready for content input.
+ */
+async function setupCommentEditor(page: Page, boardName: string) {
+  await createTestBoard(page, boardName, "testpass123");
+  await waitForBoardLoad(page);
+
+  // Create a task
+  const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
+  await addTaskButton.click();
+  const sidebar = await waitForSidebarOpen(page);
+
+  // Create an author
+  const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i });
+  await authorSelect.click();
+  const authorInput = page.getByPlaceholder(/search or create/i);
+  await authorInput.fill("Test Author");
+  await page.getByRole("option", { name: /create.*test author/i }).click();
+
+  const editor = sidebar.locator('[contenteditable="true"]').first();
+  await editor.click();
+
+  return { sidebar, editor };
+}
 
 test.describe("Comments", () => {
   // Note: Basic "add comment" is covered by the polling persistence test below
@@ -60,6 +86,44 @@ test.describe("Comments", () => {
 
     // Author should be pre-selected
     await expect(sidebar2.getByRole("combobox").getByText(/remembered author/i)).toBeVisible();
+  });
+
+  test("should embed YouTube video when pasting a YouTube URL", async ({ page, context }) => {
+    const { editor } = await setupCommentEditor(page, "YouTube Embed Test");
+
+    // Grant clipboard permissions
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    // Paste a YouTube URL
+    const youtubeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    await page.evaluate((url) => navigator.clipboard.writeText(url), youtubeUrl);
+    await editor.press("ControlOrMeta+v");
+
+    // Wait for the embed to appear (iframe with YouTube embed URL)
+    const youtubeEmbed = page.locator('iframe[src*="youtube.com/embed"]');
+    await expect(youtubeEmbed).toBeVisible({ timeout: 5000 });
+
+    // Verify the embed has the correct video ID
+    await expect(youtubeEmbed).toHaveAttribute("src", /dQw4w9WgXcQ/);
+  });
+
+  test("should embed Loom video when pasting a Loom URL", async ({ page, context }) => {
+    const { editor } = await setupCommentEditor(page, "Loom Embed Test");
+
+    // Grant clipboard permissions
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    // Paste a Loom URL
+    const loomUrl = "https://www.loom.com/share/abc123def456";
+    await page.evaluate((url) => navigator.clipboard.writeText(url), loomUrl);
+    await editor.press("ControlOrMeta+v");
+
+    // Wait for the embed to appear (iframe with Loom embed URL)
+    const loomEmbed = page.locator('iframe[src*="loom.com/embed"]');
+    await expect(loomEmbed).toBeVisible({ timeout: 5000 });
+
+    // Verify the embed has the correct video ID
+    await expect(loomEmbed).toHaveAttribute("src", /abc123def456/);
   });
 
   test("should edit a comment", async ({ page }) => {
