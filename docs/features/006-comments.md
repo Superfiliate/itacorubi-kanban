@@ -22,9 +22,27 @@ Comments support rich-text formatting via a WYSIWYG editor powered by Tiptap. Th
 - Heading 3 (H3)
 - Bullet lists
 - Numbered lists
+- Task lists (checkboxes)
 - Blockquotes
 - Code blocks (multi-line)
 - Horizontal rule
+
+### Links
+
+URLs are automatically detected and converted to clickable links when typing or pasting:
+
+- Auto-detection works for `http://` and `https://` URLs
+- Links open in a new tab when clicked (in read-only mode)
+- Links are styled with underline for visibility
+
+### Task Lists
+
+Task lists provide interactive checkboxes for tracking action items:
+
+- Click the checkbox icon in the toolbar to create a task list
+- Click checkboxes to toggle completion status
+- Completed items are shown with strikethrough text
+- Supports nested task lists (indent with Tab)
 
 ### Other
 

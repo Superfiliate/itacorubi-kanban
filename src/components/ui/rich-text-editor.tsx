@@ -4,6 +4,10 @@ import React, { useEffect, useRef, useCallback, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { FileHandler } from "@tiptap/extension-file-handler";
+import Placeholder from "@tiptap/extension-placeholder";
+import Link from "@tiptap/extension-link";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { ImageExtension } from "./tiptap-extensions/image-extension";
 import { FileAttachment } from "./tiptap-extensions/file-attachment";
 import { LoomEmbed } from "./tiptap-extensions/loom-embed";
@@ -19,6 +23,7 @@ import {
   Heading3,
   List,
   ListOrdered,
+  ListTodo,
   Quote,
   Minus,
   Undo,
@@ -251,6 +256,13 @@ function Toolbar({ editor, onAttachClick, isUploading, canUpload }: ToolbarProps
       >
         <ListOrdered className="h-4 w-4" />
       </ToolbarButton>
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleTaskList().run()}
+        isActive={editor.isActive("taskList")}
+        title="Task List"
+      >
+        <ListTodo className="h-4 w-4" />
+      </ToolbarButton>
 
       <ToolbarDivider />
 
@@ -447,6 +459,21 @@ export function RichTextEditor({
           levels: [1, 2, 3],
         },
       }),
+      Placeholder.configure({
+        placeholder,
+      }),
+      Link.configure({
+        openOnClick: false, // Don't open links when clicking in edit mode
+        autolink: true, // Auto-detect URLs when typing
+        defaultProtocol: "https",
+        HTMLAttributes: {
+          class: "text-primary underline underline-offset-2",
+        },
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true, // Allow nested task lists
+      }),
       ImageExtension.configure({
         inline: false,
         allowBase64: false,
@@ -570,15 +597,7 @@ export function RichTextEditor({
         isUploading={isUploading}
         canUpload={canUpload}
       />
-      <div className="relative">
-        <EditorContent editor={editor} />
-        {/* Placeholder */}
-        {editor.isEmpty && (
-          <div className="absolute top-2 left-3 text-muted-foreground pointer-events-none text-sm">
-            {placeholder}
-          </div>
-        )}
-      </div>
+      <EditorContent editor={editor} />
       {/* Hidden file input for attachment button */}
       {canUpload && (
         <input
