@@ -145,7 +145,7 @@ export function CommentsSection({ taskId, boardId, comments, contributors }: Com
         <h4 className="text-xs font-medium text-muted-foreground">Add a comment</h4>
         <div className="flex flex-col md:flex-row md:gap-3 space-y-2 md:space-y-0">
           <div className="flex-1 space-y-2">
-            <label className="text-label">Author</label>
+            <span className="text-label">Author</span>
             <AuthorSelect
               boardId={boardId}
               selectedAuthorId={selectedAuthorId}
@@ -155,7 +155,7 @@ export function CommentsSection({ taskId, boardId, comments, contributors }: Com
             />
           </div>
           <div className="flex-1 space-y-2">
-            <label className="text-label">Stakeholder (optional)</label>
+            <span className="text-label">Stakeholder (optional)</span>
             <ContributorSelect
               boardId={boardId}
               selectedContributorId={selectedStakeholderId}
@@ -167,7 +167,7 @@ export function CommentsSection({ taskId, boardId, comments, contributors }: Com
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-label">Content</label>
+          <span className="text-label">Content</span>
           <RichTextEditor
             content={newCommentContent}
             onChange={setNewCommentContent}

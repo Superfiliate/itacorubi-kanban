@@ -157,6 +157,7 @@ export function CreateBoardDialog({ open, onOpenChange }: CreateBoardDialogProps
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter board title"
+                // oxlint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
                 disabled={isCreating}
               />

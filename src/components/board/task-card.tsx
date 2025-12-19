@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { MessageSquare, User } from "lucide-react";
 import { ContributorBadge } from "@/components/contributor-badge";
 import { TagBadge } from "@/components/tag-badge";
@@ -152,7 +153,7 @@ export function TaskCard({
       {...attributes}
       {...listeners}
     >
-      <a
+      <Link
         href={`/boards/${boardId}?task=${id}`}
         className="absolute inset-0 z-10"
         onClick={handleClick}

@@ -64,6 +64,7 @@ export function UnlockForm({ boardId, initialPassword, initialError }: UnlockFor
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
+        {/* oxlint-disable-next-line jsx-a11y/no-autofocus */}
         <PasswordInput
           placeholder="Enter password"
           value={password}

@@ -78,9 +78,14 @@ export function AssigneesSelect({
     inputValue.trim() &&
     !contributors.some((c) => c.name.toLowerCase() === inputValue.trim().toLowerCase());
 
+  const labelId = "assignees-label";
+  const listboxId = "assignees-listbox";
+
   return (
     <div className="space-y-2">
-      <label className="text-label">Assignees</label>
+      <span id={labelId} className="text-label">
+        Assignees
+      </span>
 
       {/* Selected assignees */}
       {assignees.length > 0 && (
@@ -103,14 +108,15 @@ export function AssigneesSelect({
             asInput
             role="combobox"
             aria-expanded={open}
-            aria-label="Assignees"
+            aria-controls={listboxId}
+            aria-labelledby={labelId}
             className="w-full justify-between"
           >
             {assignees.length === 0 ? "Select assignees..." : `${assignees.length} selected`}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0" align="start">
+        <PopoverContent id={listboxId} className="w-[300px] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search or create..."

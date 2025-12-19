@@ -76,9 +76,14 @@ export function TagsSelect({ taskId, boardId, tags, allTags }: TagsSelectProps) 
     inputValue.trim() &&
     !allTags.some((t) => t.name.toLowerCase() === inputValue.trim().toLowerCase());
 
+  const labelId = "tags-label";
+  const listboxId = "tags-listbox";
+
   return (
     <div className="space-y-2">
-      <label className="text-label">Tags</label>
+      <span id={labelId} className="text-label">
+        Tags
+      </span>
 
       {/* Selected tags */}
       {tags.length > 0 && (
@@ -101,14 +106,15 @@ export function TagsSelect({ taskId, boardId, tags, allTags }: TagsSelectProps) 
             asInput
             role="combobox"
             aria-expanded={open}
-            aria-label="Tags"
+            aria-controls={listboxId}
+            aria-labelledby={labelId}
             className="w-full justify-between"
           >
             {tags.length === 0 ? "Select tags..." : `${tags.length} selected`}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0" align="start">
+        <PopoverContent id={listboxId} className="w-[300px] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search or create..."

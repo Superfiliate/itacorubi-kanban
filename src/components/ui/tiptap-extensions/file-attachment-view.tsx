@@ -111,6 +111,8 @@ export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) 
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
+          {/* User-uploaded video - captions not available */}
+          {/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
           <video src={url} controls className="rounded-md max-w-full h-auto" preload="metadata">
             Your browser does not support the video tag.
           </video>
@@ -138,8 +140,9 @@ export function FileAttachmentView({ node, deleteNode, editor }: NodeViewProps) 
         {/* File icon */}
         <span className="text-2xl flex-shrink-0">{icon}</span>
 
-        {/* File info */}
+        {/* File info - using <a> for file download (Link doesn't support download attribute) */}
         <div className="flex-1 min-w-0 pr-16">
+          {/* oxlint-disable-next-line nextjs/no-html-link-for-pages */}
           <a
             href={url}
             download={filename}

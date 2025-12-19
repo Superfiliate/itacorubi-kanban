@@ -104,6 +104,8 @@ export function AuthorSelect({
     inputValue.trim() &&
     !contributors.some((c) => c.name.toLowerCase() === inputValue.trim().toLowerCase());
 
+  const listboxId = "author-select-listbox";
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -112,6 +114,7 @@ export function AuthorSelect({
           asInput
           role="combobox"
           aria-expanded={open}
+          aria-controls={listboxId}
           aria-label={placeholder}
           className="w-full justify-between"
         >
@@ -123,7 +126,7 @@ export function AuthorSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent id={listboxId} className="w-[300px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search or create..."

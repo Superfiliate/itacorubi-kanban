@@ -45,7 +45,8 @@ export function ImageView({ node, deleteNode, editor }: NodeViewProps) {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Image */}
+        {/* Image - using img for dynamic user content with unknown dimensions */}
+        {/* oxlint-disable-next-line nextjs/no-img-element */}
         <img src={src} alt={alt || ""} className="rounded-md max-w-full h-auto" draggable={false} />
 
         {/* Hover overlay with action buttons */}

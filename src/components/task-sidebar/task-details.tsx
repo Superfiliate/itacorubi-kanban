@@ -127,7 +127,7 @@ export function TaskDetails({ task, columns, contributors, tags, onClose }: Task
 
       {/* Title */}
       <div className="space-y-2">
-        <label className="text-label">Title</label>
+        <span className="text-label">Title</span>
         <EditableText
           value={task.title}
           onSave={handleTitleSave}
@@ -191,7 +191,7 @@ export function TaskDetails({ task, columns, contributors, tags, onClose }: Task
 
       {/* Created At */}
       <div className="space-y-2">
-        <label className="text-label">Created at</label>
+        <span className="text-label">Created at</span>
         <DatePicker
           date={task.createdAt ?? undefined}
           onDateChange={handleCreatedAtChange}

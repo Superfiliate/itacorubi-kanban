@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CommentsSection } from "./comments-section";
@@ -150,13 +150,13 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     return tags;
   }, [board, tags]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsOpen(false);
     // Clear pending task to ensure clean state for reopening
     useBoardStore.getState().setPendingOpenTask(null);
     // Update URL
     router.replace(`/boards/${boardId}`);
-  };
+  }, [router, boardId]);
 
   // Hydrate server task into local store when it arrives
   useEffect(() => {
@@ -171,7 +171,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     if (!pendingCreate && !localTaskEntity && !isServerLoading && !taskForUI) {
       handleClose();
     }
-  }, [pendingCreate, localTaskEntity, isServerLoading, taskForUI]);
+  }, [pendingCreate, localTaskEntity, isServerLoading, taskForUI, handleClose]);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>

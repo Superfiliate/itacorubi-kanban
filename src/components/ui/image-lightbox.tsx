@@ -55,7 +55,8 @@ export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxPro
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
 
-          {/* Image */}
+          {/* Image - using img for dynamic user content with unknown dimensions */}
+          {/* oxlint-disable-next-line nextjs/no-img-element, jsx-a11y/click-events-have-key-events */}
           <img
             src={src}
             alt={alt || "Preview"}
