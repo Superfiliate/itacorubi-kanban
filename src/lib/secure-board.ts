@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { boards } from "@/db/schema";
-import { clearBoardPassword, getBoardPassword } from "@/lib/board-password";
+import { clearBoardPassword, getBoardPassword, setBoardPassword } from "@/lib/board-password";
 import { verifyPassword } from "@/lib/password-hash";
 import { eq } from "drizzle-orm";
 
@@ -21,6 +21,16 @@ export async function getBoardPasswordOptional(boardId: string): Promise<string 
   if (!ok) {
     await clearBoardPassword(boardId);
     return null;
+  }
+
+  // Refresh cookie to ensure latest cookie settings (e.g., SameSite policy)
+  // This is wrapped in try/catch because cookies can only be modified in Server Actions
+  // or Route Handlers, not in Server Components. The refresh will work when called from
+  // actions, and gracefully skip when called from Server Components.
+  try {
+    await setBoardPassword(boardId, password);
+  } catch {
+    // Expected to fail in Server Component context - that's okay
   }
 
   return password;

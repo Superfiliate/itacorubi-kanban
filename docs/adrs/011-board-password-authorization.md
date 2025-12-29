@@ -19,6 +19,7 @@ We still want the password to be used **thoroughly** as an authorization gate fo
 - **Hashing**: `scrypt` (salted, parameterized) stored as a single encoded string
 - **Password Storage**: HTTP-only cookies (for UX; never store raw password in DB)
 - **Cookie Name**: `board-{boardId}-password`
+- **Cookie SameSite**: `Lax` (allows email link navigation while blocking cross-site subrequests)
 
 ### Stored Fields
 
@@ -55,9 +56,16 @@ Public links allow sharing a board with password prefilled:
 
 ### Access Helpers (`src/lib/secure-board.ts`)
 
-- `getBoardPasswordOptional(boardId)` → returns cookie password only if it verifies against `boards.passwordHash`
+- `getBoardPasswordOptional(boardId)` → returns cookie password only if it verifies against `boards.passwordHash`; also refreshes the cookie to ensure latest settings
 - `requireBoardPassword(boardId)` / `requireBoardAccess(boardId)` → throws if missing/invalid
 - Prefer these helpers in server actions instead of ad-hoc cookie reads to keep behavior consistent.
+
+### Cookie Refresh
+
+On every successful password verification, we re-set the cookie with `setBoardPassword()`. This ensures:
+
+- Cookie settings (e.g., SameSite policy) stay up-to-date as we evolve them
+- Users automatically get upgraded to new cookie policies on their next board visit
 
 ### Cookie Helpers (`src/lib/board-password.ts`)
 
@@ -85,6 +93,7 @@ Public links allow sharing a board with password prefilled:
 - **Cookie is not enough**: cookie password must verify against the stored hash on every action
 - **Ownership checks**: server actions must verify the mutated entity belongs to the board (don’t trust `boardId` passed from the client)
 - **Public Links**: Password embedded in URL (`/boards/{id}/unlock?password={password}`) - treat as sensitive
+- **SameSite=Lax**: We use `Lax` instead of `Strict` to allow email notification links to work. `Lax` still protects against CSRF attacks on POST requests while allowing top-level GET navigations from external sites (like email clients)
 
 ## Consequences
 
@@ -95,6 +104,7 @@ Public links allow sharing a board with password prefilled:
 - Password is never stored in plaintext in the database
 - HTTP-only cookies prevent XSS attacks
 - Public links prefilled but require explicit unlock action
+- Email notification links work (SameSite=Lax allows cross-site navigations)
 
 ### Negative
 
@@ -105,3 +115,4 @@ Public links allow sharing a board with password prefilled:
 ## Notes
 
 - Cookie expiration: 1 year (long-lived for convenience)
+- Cookie SameSite: `Lax` (changed from `Strict` to support email links)

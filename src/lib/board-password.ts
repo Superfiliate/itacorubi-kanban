@@ -23,11 +23,11 @@ export async function setBoardPassword(boardId: string, password: string): Promi
   const cookieName = `${COOKIE_PREFIX}${boardId}${COOKIE_SUFFIX}`;
 
   // Set cookie with long expiration (1 year)
-  // HTTP-only, Secure (HTTPS only), SameSite=Strict
+  // HTTP-only, Secure (HTTPS only), SameSite=Lax (allows email link navigation)
   cookieStore.set(cookieName, password, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 60 * 60 * 24 * 365, // 1 year
     path: "/",
   });

@@ -264,11 +264,11 @@ test.describe("Email Notifications", () => {
 
     const emailMeta = emails[0];
     expect(emailMeta.fromEmail).toBeDefined();
-    expect(emailMeta.fromEmail).toBe("notifications@resend.dev"); // Default from address
+    expect(emailMeta.fromEmail).toBe("noreply@notifications.itacorubi.com");
 
     // Verify from address in full email response
     const { email } = await getEmailById(page, boardId, emailMeta.id);
-    expect(email.fromEmail).toBe("notifications@resend.dev");
+    expect(email.fromEmail).toBe("noreply@notifications.itacorubi.com");
   });
 
   test("should show email history link in board header", async ({ page }) => {
