@@ -8,6 +8,7 @@ CREATE TABLE pending_notifications (
   metadata TEXT,
   created_at INTEGER DEFAULT (unixepoch())
 );
-
+--> statement-breakpoint
 CREATE INDEX idx_pending_notifications_recipient ON pending_notifications(recipient_id);
+--> statement-breakpoint
 CREATE INDEX idx_pending_notifications_created_at ON pending_notifications(created_at);

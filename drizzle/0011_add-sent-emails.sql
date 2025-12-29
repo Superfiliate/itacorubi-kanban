@@ -13,5 +13,5 @@ CREATE TABLE sent_emails (
   sent_to_resend INTEGER DEFAULT 0,
   created_at INTEGER DEFAULT (unixepoch())
 );
-
+--> statement-breakpoint
 CREATE INDEX idx_sent_emails_created_at ON sent_emails(created_at);
