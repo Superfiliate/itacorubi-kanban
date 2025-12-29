@@ -120,7 +120,7 @@ export default function BoardEmailsPage({ params }: PageProps) {
                 {processing ? "Processing..." : "Process Now"}
               </Button>
               <span className="text-xs text-muted-foreground">
-                Emails are sent automatically every 5 minutes
+                Emails are sent automatically every 30 minutes
               </span>
             </div>
           </div>
