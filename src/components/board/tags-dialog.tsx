@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Tag, Trash2, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -263,20 +264,6 @@ function TagRow({ tag, boardId }: { tag: TagWithStats; boardId: string }) {
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 py-12">
-      <Tag className="h-16 w-16 text-muted-foreground" />
-      <div className="text-center">
-        <h3 className="text-heading">No tags yet</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Add tags to categorize and organize your tasks
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function AddTagForm({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -408,7 +395,11 @@ export function TagsDialog({ boardId, tags, open, onOpenChange }: TagsDialogProp
         </DialogHeader>
 
         {displayTags.length === 0 ? (
-          <EmptyState />
+          <EmptyState
+            icon={Tag}
+            title="No tags yet"
+            description="Add tags to categorize and organize your tasks"
+          />
         ) : (
           <ScrollArea className="max-h-[400px] -mx-6 px-6">
             {displayTags.map((tag) => (

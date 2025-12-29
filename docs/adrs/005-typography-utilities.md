@@ -37,6 +37,52 @@ Cheatsheet:
   </Button>
   ```
 
+## Avoid Opacity Modifiers on Text Colors
+
+Do NOT use Tailwind opacity modifiers on text colors:
+
+```tsx
+// BAD - hard to read, especially on glassmorphism backgrounds
+<p className="text-muted-foreground/50">Secondary text</p>
+
+// GOOD - use the semantic utility
+<p className="text-muted">Secondary text</p>
+```
+
+The `text-muted-foreground` color is already calibrated for readability in both light and dark modes. Adding `/50`, `/60`, `/70` opacity makes text unreadable on semi-transparent backgrounds.
+
+**Exception**: Opacity modifiers are acceptable for:
+
+- Decorative/non-essential elements (borders, icons in visual hierarchies)
+- Interactive states (hover/fade effects)
+- Elements that are intentionally de-emphasized and not critical to read
+
+## Common Patterns
+
+### Empty States
+
+Use the shared `EmptyState` component for consistent empty state UI:
+
+```tsx
+import { EmptyState } from "@/components/empty-state";
+import { Users } from "lucide-react";
+
+<EmptyState
+  icon={Users}
+  title="No contributors yet"
+  description="Add contributors to assign them to tasks"
+/>
+```
+
+Props:
+
+- `icon`: LucideIcon - the icon to display
+- `title`: string - the main heading
+- `description`: string - supporting text
+- `iconSize`: "sm" | "lg" (default: "lg") - h-12 vs h-16
+- `children`: React.ReactNode - optional action buttons
+
 ## Links
 
 - Utilities defined in: `src/styles/typography.css`
+- EmptyState component: `src/components/empty-state.tsx`

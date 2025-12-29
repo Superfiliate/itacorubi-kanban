@@ -153,7 +153,7 @@ export function TagsSelect({ taskId, boardId, tags, allTags }: TagsSelectProps) 
                   </CommandItem>
                 )}
                 {filteredTags.length > 0 && !inputValue.trim() && (
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground/70">
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
                     Type to add a new tag
                   </div>
                 )}

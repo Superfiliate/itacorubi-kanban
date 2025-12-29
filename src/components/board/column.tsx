@@ -218,7 +218,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
             transformOrigin: "right center",
           }}
         >
-          <span className="text-xs text-muted-foreground/60">{tasks.length}</span>
+          <span className="text-xs text-muted-foreground">{tasks.length}</span>
           <span className="font-medium text-muted-foreground">{name}</span>
         </div>
       </div>

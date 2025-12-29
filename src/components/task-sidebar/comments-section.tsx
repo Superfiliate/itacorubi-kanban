@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { MessageSquare } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { RichTextEditor, isRichTextEmpty } from "@/components/ui/rich-text-editor";
 import { AuthorSelect, getRememberedAuthor } from "./author-select";
@@ -123,11 +124,12 @@ export function CommentsSection({ taskId, boardId, comments, contributors }: Com
       <h3 className="text-heading-sm">Comments</h3>
 
       {enrichedComments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <MessageSquare className="h-12 w-12 text-muted-foreground" />
-          <p className="mt-4 text-sm text-muted-foreground">No comments yet</p>
-          <p className="text-xs text-muted-foreground">Be the first to add a comment</p>
-        </div>
+        <EmptyState
+          icon={MessageSquare}
+          iconSize="sm"
+          title="No comments yet"
+          description="Be the first to add a comment"
+        />
       ) : (
         enrichedComments.map((comment) => (
           <CommentItem

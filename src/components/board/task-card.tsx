@@ -172,7 +172,7 @@ export function TaskCard({
             {commentAgeText && <span className="truncate opacity-80">· {commentAgeText}</span>}
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground/50">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <MessageSquare className="h-3 w-3 shrink-0" />
             <span>0</span>
           </div>
@@ -193,7 +193,7 @@ export function TaskCard({
             ))}
           </div>
         ) : (
-          <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-muted-foreground/40 px-2 py-0.5 text-xs text-muted-foreground/60">
+          <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-muted-foreground/40 px-2 py-0.5 text-xs text-muted-foreground">
             <User className="h-3 w-3" />
           </span>
         )}

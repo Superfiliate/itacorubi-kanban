@@ -24,8 +24,7 @@ const serverEnvSchema = z.object({
 
   // Database (Turso) - Required in production
   TURSO_DATABASE_URL: z
-    .string()
-    .url("TURSO_DATABASE_URL must be a valid URL")
+    .url({ message: "TURSO_DATABASE_URL must be a valid URL" })
     .optional()
     .refine((val) => !isVercelProduction || (val && val.length > 0), {
       message: "TURSO_DATABASE_URL is required in production",
@@ -69,14 +68,14 @@ const serverEnvSchema = z.object({
     }),
 
   // Email sender address - Optional with default
-  EMAIL_FROM: z.string().email("EMAIL_FROM must be a valid email address").optional(),
+  EMAIL_FROM: z.email({ message: "EMAIL_FROM must be a valid email address" }).optional(),
 
   // Vercel-provided variables (automatically set by Vercel)
   VERCEL_URL: z.string().optional(),
   VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
 
   // Base URL for the app - Optional, auto-detected from VERCEL_URL
-  NEXT_PUBLIC_BASE_URL: z.string().url("NEXT_PUBLIC_BASE_URL must be a valid URL").optional(),
+  NEXT_PUBLIC_BASE_URL: z.url({ message: "NEXT_PUBLIC_BASE_URL must be a valid URL" }).optional(),
 });
 
 /**

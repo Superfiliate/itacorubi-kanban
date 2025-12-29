@@ -14,6 +14,7 @@ import {
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { useState, useMemo } from "react";
 import { Columns3 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Column } from "./column";
 import { AddColumnButton } from "./add-column-button";
 import { useReorderColumns } from "@/hooks/use-board";
@@ -217,17 +218,14 @@ export function BoardClient({ boardId }: BoardClientProps) {
 
   if (columns.length === 0) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <Columns3 className="h-16 w-16 text-muted-foreground" />
-          <div>
-            <h3 className="text-heading">No columns yet</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Add your first column to start organizing tasks
-            </p>
-          </div>
-        </div>
-        <AddColumnButton boardId={boardId} />
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+        <EmptyState
+          icon={Columns3}
+          title="No columns yet"
+          description="Add your first column to start organizing tasks"
+        >
+          <AddColumnButton boardId={boardId} />
+        </EmptyState>
       </div>
     );
   }

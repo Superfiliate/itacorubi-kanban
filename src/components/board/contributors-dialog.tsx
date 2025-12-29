@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Users, Trash2, ChevronDown, ChevronRight, Plus, Mail } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -355,20 +356,6 @@ function ContributorRow({
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 py-12">
-      <Users className="h-16 w-16 text-muted-foreground" />
-      <div className="text-center">
-        <h3 className="text-heading">No contributors yet</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Add contributors to assign them to tasks and track comments
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function AddContributorForm({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -493,7 +480,11 @@ export function ContributorsDialog({
         </DialogHeader>
 
         {displayContributors.length === 0 ? (
-          <EmptyState />
+          <EmptyState
+            icon={Users}
+            title="No contributors yet"
+            description="Add contributors to assign them to tasks and track comments"
+          />
         ) : (
           <ScrollArea className="max-h-[400px] -mx-6 px-6">
             {displayContributors.map((contributor) => (

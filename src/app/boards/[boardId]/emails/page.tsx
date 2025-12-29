@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, use } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Mail, ExternalLink, CheckCircle, Clock, ArrowLeft } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -116,13 +117,13 @@ export default function BoardEmailsPage({ params }: PageProps) {
 
           {/* Email list */}
           {emails.length === 0 ? (
-            <div className="rounded-lg border border-border/50 bg-muted/30 p-12 text-center">
-              <Mail className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-lg text-muted-foreground">No emails sent yet</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Notification emails will appear here when contributors with email addresses receive
-                updates
-              </p>
+            <div className="rounded-lg border border-border/50 bg-muted/30">
+              <EmptyState
+                icon={Mail}
+                iconSize="sm"
+                title="No emails sent yet"
+                description="Notification emails will appear here when contributors with email addresses receive updates"
+              />
             </div>
           ) : (
             <div className="space-y-3">
