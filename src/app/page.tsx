@@ -5,7 +5,7 @@ import { CreateBoardButton } from "@/components/create-board-button";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col gradient-mesh">
+    <div className="flex min-h-screen flex-col gradient-holographic">
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
         <div className="mx-auto max-w-4xl glass glass-strong border border-border/50 px-8 py-10 shadow-2xl">
           <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl md:text-7xl">

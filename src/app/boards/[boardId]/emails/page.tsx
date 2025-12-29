@@ -72,7 +72,7 @@ export default function BoardEmailsPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-mesh p-8">
+      <div className="min-h-screen gradient-holographic gradient-holographic--muted p-8">
         <div className="mx-auto max-w-4xl">
           <div className="glass glass-strong border border-border/50 p-8 text-center">
             <p className="text-muted-foreground">Loading...</p>
@@ -88,7 +88,7 @@ export default function BoardEmailsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen gradient-mesh p-8">
+    <div className="min-h-screen gradient-holographic gradient-holographic--muted p-8">
       <div className="mx-auto max-w-4xl">
         <div className="glass glass-strong border border-border/50 p-8">
           {/* Header */}
