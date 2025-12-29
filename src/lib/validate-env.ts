@@ -70,9 +70,6 @@ const serverEnvSchema = z.object({
   // Vercel-provided variables (automatically set by Vercel)
   VERCEL_URL: z.string().optional(),
   VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
-
-  // Base URL for the app - Optional, auto-detected from VERCEL_URL
-  NEXT_PUBLIC_BASE_URL: z.url({ message: "NEXT_PUBLIC_BASE_URL must be a valid URL" }).optional(),
 });
 
 /**

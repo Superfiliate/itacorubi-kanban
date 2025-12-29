@@ -36,4 +36,4 @@ When modifying the component interface, update ALL usage locations.
 ## Links
 
 - Component: `src/components/sync-indicator.tsx`
-- Architecture: `docs/adrs/010-offline-first-data-layer.md`
+- Architecture: `docs/adrs/010-local-first-architecture.md`

@@ -9,13 +9,18 @@ import { env } from "@/lib/validate-env";
 // Initialize Resend client if API key is present
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
+// Production domain for email links
+const PRODUCTION_DOMAIN = "https://itacorubi.com";
+
 /**
  * Determine base URL for email links.
- * Prefers VERCEL_URL for production accuracy (handles preview deployments).
+ * Uses the production domain for Vercel production, VERCEL_URL for preview deployments,
+ * and localhost for local development.
  */
 function getBaseUrl(): string {
+  if (env.VERCEL_ENV === "production") return PRODUCTION_DOMAIN;
   if (env.VERCEL_URL) return `https://${env.VERCEL_URL}`;
-  return env.NEXT_PUBLIC_BASE_URL || "http://localhost:5800";
+  return "http://localhost:5800";
 }
 
 // Hardcoded "from" email address for notifications
