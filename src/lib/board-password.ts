@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { env } from "@/lib/validate-env";
 
 const COOKIE_PREFIX = "board-";
 const COOKIE_SUFFIX = "-password";
@@ -25,7 +26,7 @@ export async function setBoardPassword(boardId: string, password: string): Promi
   // HTTP-only, Secure (HTTPS only), SameSite=Strict
   cookieStore.set(cookieName, password, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: env.NODE_ENV === "production",
     sameSite: "strict",
     maxAge: 60 * 60 * 24 * 365, // 1 year
     path: "/",

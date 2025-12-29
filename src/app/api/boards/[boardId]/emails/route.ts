@@ -5,6 +5,7 @@ import { desc, eq, inArray, and } from "drizzle-orm";
 import { render } from "@react-email/render";
 import { TaskDigestEmail, type NotificationItem } from "@/emails/task-digest";
 import { requireBoardAccess } from "@/lib/secure-board";
+import { env } from "@/lib/validate-env";
 
 interface RouteParams {
   params: Promise<{ boardId: string }>;
@@ -124,10 +125,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
 
       // Determine the board URL
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5800";
+      const baseUrl = env.NEXT_PUBLIC_BASE_URL || "http://localhost:5800";
       const boardUrl = `${baseUrl}/boards/${board.id}`;
 
-      const fromEmail = process.env.EMAIL_FROM || "notifications@resend.dev";
+      const fromEmail = env.EMAIL_FROM || "notifications@resend.dev";
       const subject = `Task updates on ${board.title}`;
 
       // Render email to HTML

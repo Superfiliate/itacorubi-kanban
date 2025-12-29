@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { setBoardPassword } from "@/lib/board-password";
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board";
 import { hashPassword } from "@/lib/password-hash";
+import { env } from "@/lib/validate-env";
 
 export async function createBoard(title: string, password: string) {
   const id = crypto.randomUUID();
@@ -48,7 +49,7 @@ export async function createBoard(title: string, password: string) {
 
 export async function getBoards() {
   // Protect against leaking board UUIDs in production
-  if (process.env.NODE_ENV !== "development") {
+  if (env.NODE_ENV !== "development") {
     return [];
   }
 

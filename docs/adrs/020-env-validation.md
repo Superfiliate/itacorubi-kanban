@@ -62,3 +62,21 @@ pnpm build
 # Should fail with clear errors
 VERCEL_ENV=production pnpm build
 ```
+
+## Linting Enforcement
+
+The `node/no-process-env` rule in `.oxlintrc.json` prevents direct `process.env` usage, enforcing that all code uses the validated `env` object.
+
+**Exceptions** (allowed to use `process.env` directly):
+
+- `src/lib/validate-env.ts` - The validation module itself
+- `next.config.ts` - Loaded before validation runs
+- `drizzle.config.ts` - Used by CLI, not app runtime
+- `playwright/**/*.ts` - Test configuration
+
+For client components that need `NODE_ENV`, use an inline disable comment with explanation:
+
+```typescript
+// eslint-disable-next-line node/no-process-env -- NODE_ENV is replaced at build time by bundler
+const isProduction = process.env.NODE_ENV === "production";
+```

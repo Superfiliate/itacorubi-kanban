@@ -129,6 +129,7 @@ async function uploadFile(
   boardId: string,
   commentId: string,
 ): Promise<UploadedFileResult> {
+  // eslint-disable-next-line node/no-process-env -- NODE_ENV is replaced at build time by bundler for client components
   const isProduction = process.env.NODE_ENV === "production";
   const isLargeFile = file.size >= CLIENT_UPLOAD_THRESHOLD;
 

@@ -1,18 +1,30 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "nextjs", "import", "jsx-a11y", "promise"],
+  "plugins": ["typescript", "react", "nextjs", "import", "jsx-a11y", "promise", "node"],
   "env": {
     "browser": true,
     "node": true
   },
   "rules": {
-    "jsx-a11y/no-autofocus": "off"
+    "jsx-a11y/no-autofocus": "off",
+    "node/no-process-env": "error"
   },
   "overrides": [
     {
       "files": ["src/emails/**/*.tsx"],
       "rules": {
         "nextjs/no-html-link-for-pages": "off"
+      }
+    },
+    {
+      "files": [
+        "src/lib/validate-env.ts",
+        "next.config.ts",
+        "drizzle.config.ts",
+        "playwright/**/*.ts"
+      ],
+      "rules": {
+        "node/no-process-env": "off"
       }
     }
   ]
