@@ -72,6 +72,7 @@ export const contributors = sqliteTable("contributors", {
     .notNull()
     .references(() => boards.id, { onDelete: "restrict" }),
   name: text("name").notNull(),
+  email: text("email"), // Optional - for email notifications
   color: text("color").notNull().$type<ContributorColor>(),
 });
 
@@ -163,6 +164,43 @@ export const uploadedFiles = sqliteTable("uploaded_files", {
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
+// Pending notifications - queue for batching email notifications
+export const NOTIFICATION_TYPES = ["comment", "move", "assign", "priority"] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export const pendingNotifications = sqliteTable("pending_notifications", {
+  id: text("id").primaryKey(), // UUID
+  boardId: text("board_id")
+    .notNull()
+    .references(() => boards.id, { onDelete: "restrict" }),
+  taskId: text("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  recipientId: text("recipient_id")
+    .notNull()
+    .references(() => contributors.id, { onDelete: "cascade" }),
+  type: text("type").notNull().$type<NotificationType>(),
+  triggeredById: text("triggered_by_id").references(() => contributors.id, { onDelete: "set null" }),
+  metadata: text("metadata"), // JSON: column names, comment preview, etc.
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+// Sent emails - "Letter Opener" style email log for debugging and testing
+// Always populated in all environments; production also sends via Resend
+export const sentEmails = sqliteTable("sent_emails", {
+  id: text("id").primaryKey(), // UUID
+  fromEmail: text("from_email").notNull().default("notifications@resend.dev"),
+  recipientEmail: text("recipient_email").notNull(),
+  recipientName: text("recipient_name").notNull(),
+  subject: text("subject").notNull(),
+  boardId: text("board_id").notNull(),
+  boardTitle: text("board_title").notNull(),
+  htmlContent: text("html_content").notNull(), // Rendered HTML for viewing
+  notificationIds: text("notification_ids").notNull(), // JSON array of notification IDs
+  sentToResend: integer("sent_to_resend", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
 // ============================================================
 // RELATIONS
 // ============================================================
@@ -174,6 +212,7 @@ export const boardsRelations = relations(boards, ({ many }) => ({
   tags: many(tags),
   comments: many(comments),
   uploadedFiles: many(uploadedFiles),
+  pendingNotifications: many(pendingNotifications),
 }));
 
 export const columnsRelations = relations(columns, ({ one, many }) => ({
@@ -197,6 +236,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   stakeholders: many(taskStakeholders),
   tags: many(taskTags),
   comments: many(comments),
+  pendingNotifications: many(pendingNotifications),
 }));
 
 export const contributorsRelations = relations(contributors, ({ one, many }) => ({
@@ -208,6 +248,8 @@ export const contributorsRelations = relations(contributors, ({ one, many }) => 
   taskStakeholders: many(taskStakeholders),
   comments: many(comments),
   commentsAsStakeholder: many(comments),
+  pendingNotificationsAsRecipient: many(pendingNotifications),
+  pendingNotificationsAsTriggerer: many(pendingNotifications),
 }));
 
 export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
@@ -282,6 +324,27 @@ export const uploadedFilesRelations = relations(uploadedFiles, ({ one }) => ({
   }),
 }));
 
+export const pendingNotificationsRelations = relations(pendingNotifications, ({ one }) => ({
+  board: one(boards, {
+    fields: [pendingNotifications.boardId],
+    references: [boards.id],
+  }),
+  task: one(tasks, {
+    fields: [pendingNotifications.taskId],
+    references: [tasks.id],
+  }),
+  recipient: one(contributors, {
+    fields: [pendingNotifications.recipientId],
+    references: [contributors.id],
+  }),
+  triggeredBy: one(contributors, {
+    fields: [pendingNotifications.triggeredById],
+    references: [contributors.id],
+  }),
+}));
+
+// sentEmails has no relations - it's a standalone log table
+
 // ============================================================
 // TYPE EXPORTS
 // ============================================================
@@ -303,3 +366,7 @@ export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
 export type UploadedFile = typeof uploadedFiles.$inferSelect;
 export type NewUploadedFile = typeof uploadedFiles.$inferInsert;
+export type PendingNotification = typeof pendingNotifications.$inferSelect;
+export type NewPendingNotification = typeof pendingNotifications.$inferInsert;
+export type SentEmail = typeof sentEmails.$inferSelect;
+export type NewSentEmail = typeof sentEmails.$inferInsert;

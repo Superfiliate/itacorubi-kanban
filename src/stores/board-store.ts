@@ -25,6 +25,7 @@ export type TaskEntity = {
 export type ContributorEntity = {
   id: string;
   name: string;
+  email: string | null;
   color: ContributorColor;
 };
 
@@ -97,7 +98,7 @@ export type OutboxItem =
       id: string;
       type: "updateContributor";
       boardId: string;
-      payload: { contributorId: string; name?: string; color?: ContributorColor };
+      payload: { contributorId: string; name?: string; color?: ContributorColor; email?: string | null };
       createdAt: number;
     }
   | {
@@ -378,6 +379,7 @@ type BoardStoreState = {
     contributorId: string;
     name?: string;
     color?: ContributorColor;
+    email?: string | null;
   }) => void;
   deleteContributorLocal: (args: { boardId: string; contributorId: string }) => void;
 
@@ -462,7 +464,7 @@ function normalizeBoard(boardId: string, board: BoardData): NormalizedBoardState
 
   // Contributors
   for (const c of board.contributors) {
-    state.contributorsById[c.id] = { id: c.id, name: c.name, color: c.color };
+    state.contributorsById[c.id] = { id: c.id, name: c.name, email: c.email ?? null, color: c.color };
     state.contributorOrder.push(c.id);
   }
 
@@ -809,7 +811,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
     });
   },
 
-  updateContributorLocal: ({ boardId, contributorId, name, color }) => {
+  updateContributorLocal: ({ boardId, contributorId, name, color, email }) => {
     set((s) => {
       const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
       const existing = board.contributorsById[contributorId];
@@ -825,6 +827,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
                 ...existing,
                 ...(name !== undefined ? { name } : null),
                 ...(color !== undefined ? { color } : null),
+                ...(email !== undefined ? { email } : null),
               },
             },
             lastLocalActivityAt: Date.now(),
@@ -846,7 +849,7 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
             ...board,
             contributorsById: {
               ...board.contributorsById,
-              [contributorId]: { id: contributorId, name, color },
+              [contributorId]: { id: contributorId, name, email: null, color },
             },
             contributorOrder: [...board.contributorOrder, contributorId],
             lastLocalActivityAt: Date.now(),

@@ -64,6 +64,34 @@
       "when": 1766200000000,
       "tag": "0008_remove-uploaded-files-comment-fk",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1766300000000,
+      "tag": "0009_add-contributor-email",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1766400000000,
+      "tag": "0010_add-notification-queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1766500000000,
+      "tag": "0011_add-sent-emails",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1766600000000,
+      "tag": "0012_add-sent-emails-from",
+      "breakpoints": true
     }
   ]
 }

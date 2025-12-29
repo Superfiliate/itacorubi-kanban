@@ -56,6 +56,7 @@ export interface BoardColumn {
 export interface BoardContributor {
   id: string;
   name: string;
+  email?: string | null;
   color: ContributorColor;
   boardId: string;
 }

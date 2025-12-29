@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Users, Trash2, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Users, Trash2, ChevronDown, ChevronRight, Plus, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -92,6 +92,8 @@ function ContributorRow({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [emailValue, setEmailValue] = useState(contributor.email ?? "");
 
   const canDelete = contributor.taskCount === 0 && contributor.commentCount === 0;
   const hasActivity = contributor.taskCount > 0 || contributor.commentCount > 0;
@@ -100,6 +102,7 @@ function ContributorRow({
 
   const displayName = localContributor?.name ?? contributor.name;
   const displayColor = localContributor?.color ?? contributor.color;
+  const displayEmail = localContributor?.email ?? contributor.email;
 
   const handleNameSave = async (name: string) => {
     // Update normalized store (board view derives names from contributorsById)
@@ -149,6 +152,43 @@ function ContributorRow({
     void flushBoardOutbox(boardId);
 
     toast.success("Contributor updated");
+  };
+
+  const handleEmailSave = async () => {
+    const trimmedEmail = emailValue.trim();
+    const newEmail = trimmedEmail || null;
+
+    // Basic email validation
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error("Invalid email format");
+      return;
+    }
+
+    // Update normalized store
+    useBoardStore
+      .getState()
+      .updateContributorLocal({ boardId, contributorId: contributor.id, email: newEmail });
+
+    // Also update TanStack Query cache for contributors list
+    queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        contributors: old.contributors.map((c) =>
+          c.id === contributor.id ? { ...c, email: newEmail } : c,
+        ),
+      };
+    });
+
+    useBoardStore.getState().enqueue({
+      type: "updateContributor",
+      boardId,
+      payload: { contributorId: contributor.id, email: newEmail },
+    });
+    void flushBoardOutbox(boardId);
+
+    setIsEditingEmail(false);
+    toast.success(newEmail ? "Email updated" : "Email removed");
   };
 
   const handleDelete = async () => {
@@ -231,6 +271,46 @@ function ContributorRow({
         >
           <Trash2 className="h-4 w-4" />
         </Button>
+      </div>
+
+      {/* Email field */}
+      <div className="pb-2 pl-9 flex items-center gap-2">
+        <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+        {isEditingEmail ? (
+          <div className="flex items-center gap-2 flex-1">
+            <Input
+              type="email"
+              value={emailValue}
+              onChange={(e) => setEmailValue(e.target.value)}
+              placeholder="email@example.com"
+              className="h-7 text-xs flex-1"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleEmailSave();
+                if (e.key === "Escape") {
+                  setEmailValue(displayEmail ?? "");
+                  setIsEditingEmail(false);
+                }
+              }}
+              autoFocus
+            />
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleEmailSave}>
+              Save
+            </Button>
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              setEmailValue(displayEmail ?? "");
+              setIsEditingEmail(true);
+            }}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left flex-1 truncate"
+            title={displayEmail ? "Click to edit email" : "Click to add email for notifications"}
+          >
+            {displayEmail || (
+              <span className="italic text-muted-foreground/60">Add email for notifications</span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Expanded stats */}
@@ -386,6 +466,7 @@ export function ContributorsDialog({
       byId.set(id, {
         id: c.id,
         name: c.name,
+        email: c.email,
         color: c.color,
         boardId,
         taskCount: 0,

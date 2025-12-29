@@ -83,8 +83,8 @@ async function executeOutboxItem(item: OutboxItem): Promise<void> {
       return;
     }
     case "updateContributor": {
-      const { contributorId, name, color } = item.payload;
-      await updateContributor(contributorId, item.boardId, { name, color });
+      const { contributorId, name, color, email } = item.payload;
+      await updateContributor(contributorId, item.boardId, { name, color, email });
       return;
     }
     case "deleteContributor": {

@@ -6,6 +6,7 @@ import { eq, and, lt, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireBoardAccess } from "@/lib/secure-board";
 import { deleteFile } from "@/lib/storage";
+import { queueCommentNotification } from "@/lib/notifications";
 
 /**
  * Extract all file URLs from Tiptap JSON content.
@@ -101,6 +102,14 @@ export async function createComment(
     // Move this task to position 0
     await db.update(tasks).set({ position: 0 }).where(eq(tasks.id, taskId));
   }
+
+  // Queue notification for assignees and stakeholders (except the comment author)
+  await queueCommentNotification({
+    boardId,
+    taskId,
+    authorId,
+    commentContent: content,
+  });
 
   revalidatePath(`/boards/${boardId}`);
   return commentId;

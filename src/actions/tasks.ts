@@ -6,6 +6,7 @@ import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board";
 import { TASK_PRIORITIES, type TaskPriority } from "@/db/schema";
+import { queueMoveNotification, queuePriorityNotification } from "@/lib/notifications";
 
 export async function createTask(
   boardId: string,
@@ -120,7 +121,21 @@ export async function updateTaskPriority(id: string, priority: TaskPriority, boa
     throw new Error("Task not found");
   }
 
-  await db.update(tasks).set({ priority }).where(eq(tasks.id, id));
+  // Only notify if priority actually changed
+  const oldPriority = task.priority;
+  if (oldPriority !== priority) {
+    await db.update(tasks).set({ priority }).where(eq(tasks.id, id));
+
+    // Queue notification for priority change
+    await queuePriorityNotification({
+      boardId,
+      taskId: id,
+      priority,
+    });
+  } else {
+    await db.update(tasks).set({ priority }).where(eq(tasks.id, id));
+  }
+
   revalidatePath(`/boards/${boardId}`);
 }
 
@@ -152,6 +167,14 @@ export async function updateTaskColumn(
   // If moving to same column at same position, do nothing
   if (oldColumnId === newColumnId && (newPosition === undefined || newPosition === oldPosition)) {
     return;
+  }
+
+  // Track if we're moving to a different column (for notifications)
+  const isColumnChange = oldColumnId !== newColumnId;
+  let oldColumnName: string | undefined;
+  if (isColumnChange) {
+    const oldColumn = await db.query.columns.findFirst({ where: eq(columns.id, oldColumnId) });
+    oldColumnName = oldColumn?.name;
   }
 
   // Get max position in new column if newPosition not provided
@@ -206,6 +229,16 @@ export async function updateTaskColumn(
     .update(tasks)
     .set({ columnId: newColumnId, position: newPosition })
     .where(eq(tasks.id, id));
+
+  // Queue notification for column change (task moved)
+  if (isColumnChange && oldColumnName) {
+    await queueMoveNotification({
+      boardId,
+      taskId: id,
+      fromColumnName: oldColumnName,
+      toColumnName: newColumn.name,
+    });
+  }
 
   revalidatePath(`/boards/${boardId}`);
 }

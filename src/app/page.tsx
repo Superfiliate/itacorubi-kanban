@@ -2,6 +2,7 @@ import { Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RecentBoards } from "@/components/recent-boards";
 import { CreateBoardButton } from "@/components/create-board-button";
+import { DevEmailLink } from "@/components/dev-email-link";
 
 export default function Home() {
   return (
@@ -35,6 +36,10 @@ export default function Home() {
           </div>
 
           <RecentBoards />
+
+          <div className="mt-8 flex justify-center">
+            <DevEmailLink variant="link" />
+          </div>
         </div>
       </main>
     </div>

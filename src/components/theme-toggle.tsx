@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useQuery } from "@tanstack/react-query";
-import { Moon, Sun, Monitor, HardDrive } from "lucide-react";
+import { Moon, Sun, Monitor, HardDrive, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +22,14 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ boardId }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
+  const [isDevEnv, setIsDevEnv] = useState(false);
+
+  // Check if dev email API is accessible
+  useEffect(() => {
+    fetch("/api/dev/emails", { method: "HEAD" })
+      .then((res) => setIsDevEnv(res.ok))
+      .catch(() => setIsDevEnv(false));
+  }, []);
 
   // Fetch storage usage if boardId is provided
   const { data: storageUsage } = useQuery({
@@ -86,6 +96,19 @@ export function ThemeToggle({ boardId }: ThemeToggleProps) {
                 {storagePercentage}% used
               </div>
             </div>
+          </>
+        )}
+
+        {/* Dev email viewer - only show in dev/test environments */}
+        {isDevEnv && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/dev/emails">
+                <Mail className="mr-2 h-4 w-4" />
+                Dev Emails
+              </Link>
+            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>

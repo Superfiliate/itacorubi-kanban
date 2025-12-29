@@ -15,6 +15,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board";
 import { getRandomContributorColor } from "@/lib/contributor-colors";
+import { queueAssignNotification } from "@/lib/notifications";
 
 export async function createContributor(
   boardId: string,
@@ -78,6 +79,13 @@ export async function addAssignee(taskId: string, contributorId: string, boardId
   await db.insert(taskAssignees).values({
     taskId,
     contributorId,
+  });
+
+  // Queue notification for the new assignee
+  await queueAssignNotification({
+    boardId,
+    taskId,
+    assigneeId: contributorId,
   });
 
   revalidatePath(`/boards/${boardId}`);
@@ -187,7 +195,7 @@ export async function createAndAddStakeholder(
 export async function updateContributor(
   id: string,
   boardId: string,
-  updates: { name?: string; color?: ContributorColor },
+  updates: { name?: string; color?: ContributorColor; email?: string | null },
 ) {
   await requireBoardAccess(boardId);
 
@@ -196,12 +204,19 @@ export async function updateContributor(
     throw new Error("Contributor not found");
   }
 
-  const updateData: { name?: string; color?: ContributorColor } = {};
+  const updateData: { name?: string; color?: ContributorColor; email?: string | null } = {};
   if (updates.color !== undefined) {
     updateData.color = updates.color;
   }
   if (updates.name !== undefined) {
     updateData.name = updates.name;
+  }
+  if (updates.email !== undefined) {
+    // Validate email format if provided
+    if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) {
+      throw new Error("Invalid email format");
+    }
+    updateData.email = updates.email;
   }
 
   await db.update(contributors).set(updateData).where(eq(contributors.id, id));
@@ -268,6 +283,7 @@ export async function deleteContributor(id: string, boardId: string) {
 export type ContributorWithStats = {
   id: string;
   name: string;
+  email: string | null;
   color: ContributorColor;
   boardId: string;
   taskCount: number;
@@ -334,6 +350,7 @@ export async function getContributorsWithStats(boardId: string): Promise<Contrib
     return {
       id: contributor.id,
       name: contributor.name,
+      email: contributor.email,
       color: contributor.color,
       boardId: contributor.boardId,
       taskCount: contributorAssignments.length,
