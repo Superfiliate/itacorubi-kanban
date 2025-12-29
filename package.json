@@ -24,12 +24,6 @@
     "test:codegen": "playwright codegen http://localhost:5800",
     "knip": "knip"
   },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs}": [
-      "oxlint --fix",
-      "oxfmt --no-error-on-unmatched-pattern"
-    ]
-  },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",
     "@dnd-kit/sortable": "10.0.0",
@@ -82,7 +76,6 @@
     "drizzle-kit": "0.31.8",
     "husky": "^9.1.7",
     "knip": "^5.78.0",
-    "lint-staged": "^16.2.7",
     "oxfmt": "^0.18.0",
     "oxlint": "^1.33.0",
     "postcss": "^8.5.6",

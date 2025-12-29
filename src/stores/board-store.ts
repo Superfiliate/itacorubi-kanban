@@ -98,7 +98,12 @@ export type OutboxItem =
       id: string;
       type: "updateContributor";
       boardId: string;
-      payload: { contributorId: string; name?: string; color?: ContributorColor; email?: string | null };
+      payload: {
+        contributorId: string;
+        name?: string;
+        color?: ContributorColor;
+        email?: string | null;
+      };
       createdAt: number;
     }
   | {
@@ -464,7 +469,12 @@ function normalizeBoard(boardId: string, board: BoardData): NormalizedBoardState
 
   // Contributors
   for (const c of board.contributors) {
-    state.contributorsById[c.id] = { id: c.id, name: c.name, email: c.email ?? null, color: c.color };
+    state.contributorsById[c.id] = {
+      id: c.id,
+      name: c.name,
+      email: c.email ?? null,
+      color: c.color,
+    };
     state.contributorOrder.push(c.id);
   }
 
