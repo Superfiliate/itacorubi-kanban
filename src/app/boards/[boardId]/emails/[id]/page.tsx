@@ -21,31 +21,33 @@ type SentEmail = {
 };
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ boardId: string; id: string }>;
 }
 
-export default function DevEmailViewerPage({ params }: PageProps) {
-  const { id } = use(params);
+export default function BoardEmailViewerPage({ params }: PageProps) {
+  const { boardId, id } = use(params);
   const [email, setEmail] = useState<SentEmail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notAllowed, setNotAllowed] = useState(false);
+  const [unauthorized, setUnauthorized] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const fetchEmail = async () => {
       try {
-        const response = await fetch(`/api/dev/emails/${id}`);
+        const response = await fetch(`/api/boards/${boardId}/emails/${id}`);
+        if (response.status === 401) {
+          setUnauthorized(true);
+          setLoading(false);
+          return;
+        }
         if (response.status === 404) {
-          // Could be not allowed or not found - redirect to list
-          router.push("/dev/emails");
+          setNotFound(true);
+          setLoading(false);
           return;
         }
         const data = await response.json();
-        if (data.error) {
-          setNotAllowed(true);
-        } else {
-          setEmail(data.email);
-        }
+        setEmail(data.email);
       } catch (error) {
         console.error("Failed to fetch email:", error);
       } finally {
@@ -54,7 +56,7 @@ export default function DevEmailViewerPage({ params }: PageProps) {
     };
 
     fetchEmail();
-  }, [id, router]);
+  }, [boardId, id]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -73,29 +75,19 @@ export default function DevEmailViewerPage({ params }: PageProps) {
     );
   }
 
-  if (notAllowed) {
-    return (
-      <div className="min-h-screen gradient-mesh p-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="glass glass-strong border border-border/50 p-8 text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Not Available</h1>
-            <p className="text-muted-foreground">
-              The email viewer is only available in development and test environments.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+  if (unauthorized) {
+    router.push(`/boards/${boardId}/unlock`);
+    return null;
   }
 
-  if (!email) {
+  if (notFound || !email) {
     return (
       <div className="min-h-screen gradient-mesh p-8">
         <div className="mx-auto max-w-4xl">
           <div className="glass glass-strong border border-border/50 p-8 text-center">
             <h1 className="text-2xl font-bold text-foreground mb-4">Email Not Found</h1>
             <Button variant="outline" asChild>
-              <Link href="/dev/emails">Back to Email List</Link>
+              <Link href={`/boards/${boardId}/emails`}>Back to Email History</Link>
             </Button>
           </div>
         </div>
@@ -112,7 +104,7 @@ export default function DevEmailViewerPage({ params }: PageProps) {
           {/* Header */}
           <div className="mb-6 flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
-              <Link href="/dev/emails">
+              <Link href={`/boards/${boardId}/emails`}>
                 <ArrowLeft />
               </Link>
             </Button>
@@ -130,9 +122,7 @@ export default function DevEmailViewerPage({ params }: PageProps) {
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">From:</span>
-                <span className="text-sm font-medium">
-                  Kanban Board &lt;{email.fromEmail}&gt;
-                </span>
+                <span className="text-sm font-medium">Kanban Board &lt;{email.fromEmail}&gt;</span>
               </div>
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />

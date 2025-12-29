@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Share2, Tag } from "lucide-react";
+import { Users, Share2, Tag, Mail } from "lucide-react";
+import Link from "next/link";
 import { EditableText } from "@/components/editable-text";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,18 @@ export function BoardHeader({ boardId, title, contributors, tags }: BoardHeaderP
           aria-label="Manage tags"
         >
           <Tag className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          asChild
+          title="Email history"
+          aria-label="Email history"
+        >
+          <Link href={`/boards/${boardId}/emails`}>
+            <Mail className="h-4 w-4" />
+          </Link>
         </Button>
         <ThemeToggle boardId={boardId} />
       </div>

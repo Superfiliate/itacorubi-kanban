@@ -66,6 +66,15 @@ Remove your email address from the contributor profile:
 3. Click on your email address
 4. Clear the field and save
 
+### View Email History
+
+All board members can view the history of notification emails sent for their board:
+
+1. Open the board
+2. Click the mail icon (📧) in the board header
+3. Browse the list of sent emails
+4. Click any email to view its full rendered content
+
 ## Technical Notes
 
 ### Email Provider: Resend
@@ -99,21 +108,31 @@ The notification digest is processed by:
 - Schedule: Every 5 minutes (`*/5 * * * *`)
 - Configured in `vercel.json`
 
-## Development & Testing
+## Email History
 
-### Email Viewer (Letter Opener Style)
+### Overview
 
-In development and test environments, a "Letter Opener" style UI is available at `/dev/emails`:
+The email history feature allows board members to view all notification emails that have been sent for their board. This is useful for:
 
-- **View all sent emails** — List of all emails that would have been sent
-- **Email preview** — Click any email to see its rendered HTML content
-- **Process notifications** — Trigger the cron job manually without waiting
-- **Clear all** — Remove all captured emails for testing
+- Verifying notifications were sent correctly
+- Debugging notification issues
+- Reviewing what updates were communicated
 
-This is useful for:
-- Developing and debugging email templates
-- Manual testing of notification flows
-- Verifying email content without actually sending
+### Access Control
+
+Email history is protected by board authentication:
+
+- Users must have unlocked the board (entered the password)
+- Each board's email history is separate and isolated
+- Users can see all emails for the board, not just their own
+
+### User Interface
+
+Access email history via the mail icon in the board header:
+
+- **Email list** — Shows all sent emails with recipient, subject, and timestamp
+- **Email detail** — Click any email to view its full rendered HTML content
+- **Process notifications** — Manually trigger notification processing (useful for testing)
 
 ### How It Works
 
@@ -122,48 +141,47 @@ Emails are **always** saved to the `sent_emails` table regardless of environment
 | Environment | Behavior |
 |------------|----------|
 | Production | Save to DB + Send via Resend |
-| Development | Save to DB only (view at `/dev/emails`) |
-| Test | Save to DB only (accessible via API for Playwright) |
+| Development | Save to DB only |
+| Test | Save to DB only |
 
 This ensures:
 - Consistent behavior across environments
 - Debugging production issues by checking stored emails
 - Full E2E testing without external email services
 
+### API Endpoints
+
+Board-scoped email API (requires board authentication):
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/boards/[boardId]/emails` | List emails for this board |
+| POST | `/api/boards/[boardId]/emails` | Process pending notifications |
+| GET | `/api/boards/[boardId]/emails/[id]` | Get single email with HTML content |
+
 ### Playwright Testing
 
 Email notifications can be tested with Playwright:
 
 ```typescript
-// Clear emails before test
-await page.request.delete("/api/dev/emails");
+// Extract boardId from URL after creating board
+const boardId = page.url().match(/\/boards\/([^/]+)/)?.[1];
 
-// ... perform actions that trigger notifications ...
+// Perform actions that trigger notifications...
 
 // Process notifications
-await page.request.post("/api/dev/emails");
+await page.request.post(`/api/boards/${boardId}/emails`);
 
 // Verify emails were captured
-const response = await page.request.get("/api/dev/emails");
+const response = await page.request.get(`/api/boards/${boardId}/emails`);
 const { emails } = await response.json();
 expect(emails.length).toBeGreaterThan(0);
 
 // Check email content
-const emailResponse = await page.request.get(`/api/dev/emails/${emails[0].id}`);
+const emailResponse = await page.request.get(`/api/boards/${boardId}/emails/${emails[0].id}`);
 const { email } = await emailResponse.json();
 expect(email.htmlContent).toContain("expected content");
 ```
-
-### API Endpoints (Dev/Test Only)
-
-These endpoints are only available when `TURSO_DATABASE_URL` starts with `file:` (local SQLite):
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/dev/emails` | List all sent emails |
-| POST | `/api/dev/emails` | Trigger notification processing |
-| DELETE | `/api/dev/emails` | Clear all sent emails |
-| GET | `/api/dev/emails/[id]` | Get single email with full HTML content |
 
 ## Files
 
@@ -171,10 +189,11 @@ These endpoints are only available when `TURSO_DATABASE_URL` starts with `file:`
 - `src/lib/notifications.ts` — Queue helper functions
 - `src/emails/task-digest.tsx` — Email template component
 - `src/app/api/cron/send-notifications/route.ts` — Cron handler
-- `src/app/api/dev/emails/route.ts` — Dev email API (list, clear, trigger)
-- `src/app/api/dev/emails/[id]/route.ts` — Dev email detail API
-- `src/app/dev/emails/page.tsx` — Email viewer UI
-- `src/app/dev/emails/[id]/page.tsx` — Single email viewer
+- `src/app/api/boards/[boardId]/emails/route.ts` — Board email API (list, process)
+- `src/app/api/boards/[boardId]/emails/[id]/route.ts` — Board email detail API
+- `src/app/boards/[boardId]/emails/page.tsx` — Email history UI
+- `src/app/boards/[boardId]/emails/[id]/page.tsx` — Single email viewer
 - `src/components/board/contributors-dialog.tsx` — Email input UI
+- `src/components/board/board-header.tsx` — Email history link
 - `vercel.json` — Cron configuration
 - `playwright/email-notifications.spec.ts` — E2E tests

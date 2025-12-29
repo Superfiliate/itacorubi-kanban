@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, use } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Trash2, Mail, ExternalLink, CheckCircle, Clock } from "lucide-react";
+import { RefreshCw, Mail, ExternalLink, CheckCircle, Clock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -17,20 +17,23 @@ type SentEmail = {
   createdAt: string;
 };
 
-export default function DevEmailsPage() {
+interface PageProps {
+  params: Promise<{ boardId: string }>;
+}
+
+export default function BoardEmailsPage({ params }: PageProps) {
+  const { boardId } = use(params);
   const [emails, setEmails] = useState<SentEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [clearing, setClearing] = useState(false);
-  const [notAllowed, setNotAllowed] = useState(false);
+  const [unauthorized, setUnauthorized] = useState(false);
   const router = useRouter();
 
   const fetchEmails = useCallback(async () => {
     try {
-      const response = await fetch("/api/dev/emails");
-      if (response.status === 404) {
-        // API returned 404 - not allowed in this environment
-        setNotAllowed(true);
+      const response = await fetch(`/api/boards/${boardId}/emails`);
+      if (response.status === 401) {
+        setUnauthorized(true);
         setLoading(false);
         return;
       }
@@ -41,7 +44,7 @@ export default function DevEmailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [boardId]);
 
   useEffect(() => {
     fetchEmails();
@@ -50,7 +53,7 @@ export default function DevEmailsPage() {
   const handleProcessNotifications = async () => {
     setProcessing(true);
     try {
-      const response = await fetch("/api/dev/emails", { method: "POST" });
+      const response = await fetch(`/api/boards/${boardId}/emails`, { method: "POST" });
       const data = await response.json();
       console.log("Processed notifications:", data);
       await fetchEmails();
@@ -58,21 +61,6 @@ export default function DevEmailsPage() {
       console.error("Failed to process notifications:", error);
     } finally {
       setProcessing(false);
-    }
-  };
-
-  const handleClearAll = async () => {
-    if (!confirm("Are you sure you want to clear all sent emails?")) {
-      return;
-    }
-    setClearing(true);
-    try {
-      await fetch("/api/dev/emails", { method: "DELETE" });
-      setEmails([]);
-    } catch (error) {
-      console.error("Failed to clear emails:", error);
-    } finally {
-      setClearing(false);
     }
   };
 
@@ -93,19 +81,9 @@ export default function DevEmailsPage() {
     );
   }
 
-  if (notAllowed) {
-    return (
-      <div className="min-h-screen gradient-mesh p-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="glass glass-strong border border-border/50 p-8 text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Not Available</h1>
-            <p className="text-muted-foreground">
-              The email viewer is only available in development and test environments.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+  if (unauthorized) {
+    router.push(`/boards/${boardId}/unlock`);
+    return null;
   }
 
   return (
@@ -114,33 +92,26 @@ export default function DevEmailsPage() {
         <div className="glass glass-strong border border-border/50 p-8">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                <Mail className="h-8 w-8" />
-                Email Viewer
-              </h1>
-              <p className="mt-2 text-muted-foreground">
-                Development tool for viewing sent emails (Letter Opener style)
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleProcessNotifications}
-                disabled={processing}
-                variant="default"
-              >
-                <RefreshCw className={processing ? "animate-spin" : ""} />
-                {processing ? "Processing..." : "Process Notifications"}
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="icon" asChild>
+                <Link href={`/boards/${boardId}`}>
+                  <ArrowLeft />
+                </Link>
               </Button>
-              <Button
-                onClick={handleClearAll}
-                disabled={clearing || emails.length === 0}
-                variant="destructive"
-              >
-                <Trash2 />
-                Clear All
-              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                  <Mail className="h-8 w-8" />
+                  Email History
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                  View notification emails sent for this board
+                </p>
+              </div>
             </div>
+            <Button onClick={handleProcessNotifications} disabled={processing} variant="default">
+              <RefreshCw className={processing ? "animate-spin" : ""} />
+              {processing ? "Processing..." : "Process Notifications"}
+            </Button>
           </div>
 
           {/* Email list */}
@@ -149,7 +120,8 @@ export default function DevEmailsPage() {
               <Mail className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4 text-lg text-muted-foreground">No emails sent yet</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Perform actions that trigger notifications, then click &quot;Process Notifications&quot;
+                Notification emails will appear here when contributors with email addresses receive
+                updates
               </p>
             </div>
           ) : (
@@ -157,7 +129,7 @@ export default function DevEmailsPage() {
               {emails.map((email) => (
                 <Link
                   key={email.id}
-                  href={`/dev/emails/${email.id}`}
+                  href={`/boards/${boardId}/emails/${email.id}`}
                   className="block rounded-lg border border-border/50 bg-white/40 dark:bg-white/5 p-4 transition-colors hover:bg-white/60 dark:hover:bg-white/10"
                 >
                   <div className="flex items-start justify-between">
@@ -172,7 +144,6 @@ export default function DevEmailsPage() {
                       </div>
                       <p className="mt-1 font-medium text-foreground">{email.subject}</p>
                       <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>Board: {email.boardTitle}</span>
                         <span>{formatDate(email.createdAt)}</span>
                         {email.sentToResend ? (
                           <span className="flex items-center gap-1 text-green-600 dark:text-green-400">

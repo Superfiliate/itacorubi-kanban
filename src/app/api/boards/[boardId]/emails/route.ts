@@ -1,34 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { sentEmails, pendingNotifications } from "@/db/schema";
-import { desc, inArray } from "drizzle-orm";
+import { desc, eq, inArray, and } from "drizzle-orm";
 import { render } from "@react-email/render";
 import { TaskDigestEmail, type NotificationItem } from "@/emails/task-digest";
+import { requireBoardAccess } from "@/lib/secure-board";
 
-// Block access in production
-// We check for local database (file:*) or non-production NODE_ENV
-function isDevOrTest(): boolean {
-  // If using a local SQLite file, we're in dev/test mode
-  const dbUrl = process.env.TURSO_DATABASE_URL || "";
-  if (dbUrl.startsWith("file:")) {
-    return true;
-  }
-  // Also check NODE_ENV as fallback
-  return process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
+interface RouteParams {
+  params: Promise<{ boardId: string }>;
 }
 
-// HEAD - Check if dev email API is accessible (for client-side feature detection)
-export async function HEAD() {
-  if (!isDevOrTest()) {
-    return new NextResponse(null, { status: 404 });
-  }
-  return new NextResponse(null, { status: 200 });
-}
+// GET - List emails for this board
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  const { boardId } = await params;
 
-// GET - List all sent emails
-export async function GET() {
-  if (!isDevOrTest()) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    await requireBoardAccess(boardId);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const emails = await db
@@ -44,31 +33,26 @@ export async function GET() {
       createdAt: sentEmails.createdAt,
     })
     .from(sentEmails)
+    .where(eq(sentEmails.boardId, boardId))
     .orderBy(desc(sentEmails.createdAt));
 
   return NextResponse.json({ emails });
 }
 
-// DELETE - Clear all sent emails
-export async function DELETE() {
-  if (!isDevOrTest()) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+// POST - Process pending notifications for this board
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  const { boardId } = await params;
 
-  await db.delete(sentEmails);
-
-  return NextResponse.json({ message: "All sent emails cleared" });
-}
-
-// POST - Trigger the notification cron (process pending notifications)
-export async function POST() {
-  if (!isDevOrTest()) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    await requireBoardAccess(boardId);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    // Fetch all pending notifications with related data
+    // Fetch pending notifications for this board only
     const notifications = await db.query.pendingNotifications.findMany({
+      where: eq(pendingNotifications.boardId, boardId),
       with: {
         recipient: true,
         triggeredBy: true,
@@ -156,7 +140,7 @@ export async function POST() {
         }),
       );
 
-      // Save to sent_emails table (never send to Resend in dev/test)
+      // Save to sent_emails table
       await db.insert(sentEmails).values({
         id: crypto.randomUUID(),
         fromEmail,
@@ -178,20 +162,26 @@ export async function POST() {
     if (processedNotificationIds.length > 0) {
       await db
         .delete(pendingNotifications)
-        .where(inArray(pendingNotifications.id, processedNotificationIds));
+        .where(
+          and(
+            eq(pendingNotifications.boardId, boardId),
+            inArray(pendingNotifications.id, processedNotificationIds),
+          ),
+        );
     }
 
     // Delete notifications for recipients without email
     const notificationsWithoutEmail = notifications.filter((n) => !n.recipient.email);
     if (notificationsWithoutEmail.length > 0) {
-      await db
-        .delete(pendingNotifications)
-        .where(
+      await db.delete(pendingNotifications).where(
+        and(
+          eq(pendingNotifications.boardId, boardId),
           inArray(
             pendingNotifications.id,
             notificationsWithoutEmail.map((n) => n.id),
           ),
-        );
+        ),
+      );
     }
 
     return NextResponse.json({
@@ -201,9 +191,6 @@ export async function POST() {
     });
   } catch (error) {
     console.error("Error processing notifications:", error);
-    return NextResponse.json(
-      { error: "Failed to process notifications" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to process notifications" }, { status: 500 });
   }
 }
