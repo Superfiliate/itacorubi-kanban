@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { uploadedFiles } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireBoardPassword } from "@/lib/secure-board";
 import {
   uploadFile,
   deleteFile,
   MAX_FILE_SIZE,
-  MAX_BOARD_STORAGE,
   isAllowedFileType,
+  checkBoardStorageQuota,
+  formatFileSize,
 } from "@/lib/storage";
 
 /**
@@ -59,15 +60,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check board storage quota
-    const boardUsage = await db
-      .select({ total: sql<number>`COALESCE(SUM(${uploadedFiles.size}), 0)` })
-      .from(uploadedFiles)
-      .where(eq(uploadedFiles.boardId, boardId));
-
-    const currentUsage = boardUsage[0]?.total ?? 0;
-    if (currentUsage + file.size > MAX_BOARD_STORAGE) {
+    const quota = await checkBoardStorageQuota(boardId, file.size);
+    if (!quota.allowed) {
       return NextResponse.json(
-        { error: `Board storage limit exceeded (${MAX_BOARD_STORAGE / 1024 / 1024 / 1024}GB max)` },
+        { error: `Board storage limit exceeded (${formatFileSize(quota.limit)} max)` },
         { status: 400 },
       );
     }

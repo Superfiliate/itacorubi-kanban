@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { db } from "@/db";
 import { uploadedFiles } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
 import { requireBoardPassword } from "@/lib/secure-board";
-import { MAX_FILE_SIZE, MAX_BOARD_STORAGE, isAllowedFileType } from "@/lib/storage/constants";
+import { MAX_FILE_SIZE, isAllowedFileType, ALLOWED_MIME_TYPES } from "@/lib/storage/constants";
+import { checkBoardStorageQuota } from "@/lib/storage/quota";
 
 /**
  * Client upload metadata passed from the client
@@ -52,32 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         return {
-          allowedContentTypes: [
-            // Images
-            "image/jpeg",
-            "image/png",
-            "image/gif",
-            "image/webp",
-            "image/svg+xml",
-            // Videos
-            "video/mp4",
-            "video/webm",
-            "video/quicktime",
-            // Documents
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.ms-excel",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-powerpoint",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            // Text
-            "text/plain",
-            "text/csv",
-            // Archives
-            "application/zip",
-            "application/x-zip-compressed",
-          ],
+          allowedContentTypes: ALLOWED_MIME_TYPES,
           maximumSizeInBytes: MAX_FILE_SIZE,
           // Add random suffix to prevent conflicts
           addRandomSuffix: true,
@@ -103,13 +78,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         // Check board storage quota
-        const boardUsage = await db
-          .select({ total: sql<number>`COALESCE(SUM(${uploadedFiles.size}), 0)` })
-          .from(uploadedFiles)
-          .where(eq(uploadedFiles.boardId, metadata.boardId));
-
-        const currentUsage = boardUsage[0]?.total ?? 0;
-        if (currentUsage + metadata.fileSize > MAX_BOARD_STORAGE) {
+        const quota = await checkBoardStorageQuota(metadata.boardId, metadata.fileSize);
+        if (!quota.allowed) {
           console.error("Board storage limit exceeded");
           // Note: The file was already uploaded to Blob, but we won't record it
           // This is a limitation of client uploads - we should delete it

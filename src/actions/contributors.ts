@@ -16,6 +16,7 @@ import { revalidatePath } from "next/cache";
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board";
 import { getRandomContributorColor } from "@/lib/contributor-colors";
 import { queueAssignNotification } from "@/lib/notifications";
+import { requireTask, requireContributor } from "@/lib/require-resource";
 
 export async function createContributor(
   boardId: string,
@@ -56,18 +57,8 @@ export async function getContributors(boardId: string) {
 
 export async function addAssignee(taskId: string, contributorId: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
-
-  const contributor = await db.query.contributors.findFirst({
-    where: eq(contributors.id, contributorId),
-  });
-  if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found");
-  }
+  await requireTask(taskId, boardId);
+  await requireContributor(contributorId, boardId);
 
   // Check if already assigned
   const existing = await db.query.taskAssignees.findFirst({
@@ -93,18 +84,8 @@ export async function addAssignee(taskId: string, contributorId: string, boardId
 
 export async function removeAssignee(taskId: string, contributorId: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
-
-  const contributor = await db.query.contributors.findFirst({
-    where: eq(contributors.id, contributorId),
-  });
-  if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found");
-  }
+  await requireTask(taskId, boardId);
+  await requireContributor(contributorId, boardId);
 
   await db
     .delete(taskAssignees)
@@ -126,18 +107,8 @@ export async function createAndAssignContributor(
 
 export async function addStakeholder(taskId: string, contributorId: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
-
-  const contributor = await db.query.contributors.findFirst({
-    where: eq(contributors.id, contributorId),
-  });
-  if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found");
-  }
+  await requireTask(taskId, boardId);
+  await requireContributor(contributorId, boardId);
 
   // Check if already a stakeholder
   const existing = await db.query.taskStakeholders.findFirst({
@@ -159,18 +130,8 @@ export async function addStakeholder(taskId: string, contributorId: string, boar
 
 export async function removeStakeholder(taskId: string, contributorId: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
-
-  const contributor = await db.query.contributors.findFirst({
-    where: eq(contributors.id, contributorId),
-  });
-  if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found");
-  }
+  await requireTask(taskId, boardId);
+  await requireContributor(contributorId, boardId);
 
   await db
     .delete(taskStakeholders)
@@ -198,11 +159,7 @@ export async function updateContributor(
   updates: { name?: string; color?: ContributorColor; email?: string | null },
 ) {
   await requireBoardAccess(boardId);
-
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) });
-  if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found");
-  }
+  await requireContributor(id, boardId);
 
   const updateData: { name?: string; color?: ContributorColor; email?: string | null } = {};
   if (updates.color !== undefined) {
@@ -226,11 +183,7 @@ export async function updateContributor(
 
 export async function deleteContributor(id: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const contributor = await db.query.contributors.findFirst({ where: eq(contributors.id, id) });
-  if (!contributor || contributor.boardId !== boardId) {
-    throw new Error("Contributor not found");
-  }
+  await requireContributor(id, boardId);
 
   // Check if contributor has any task assignments
   const assignmentCount = await db

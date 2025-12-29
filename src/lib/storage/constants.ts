@@ -6,12 +6,43 @@
 export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB per file
 export const MAX_BOARD_STORAGE = 10 * 1024 * 1024 * 1024; // 10GB per board
 
-// Allowed file types (MIME type prefixes)
+// Allowed file types (MIME type prefixes for server-side prefix matching)
 export const ALLOWED_FILE_TYPES = [
   // Images
   "image/",
   // Videos
   "video/",
+  // Documents
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  // Text
+  "text/plain",
+  "text/csv",
+  // Archives
+  "application/zip",
+  "application/x-zip-compressed",
+];
+
+/**
+ * Full MIME types for Vercel Blob client uploads.
+ * Vercel Blob requires explicit MIME types (no prefixes).
+ */
+export const ALLOWED_MIME_TYPES: string[] = [
+  // Images
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  // Videos
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
   // Documents
   "application/pdf",
   "application/msword",

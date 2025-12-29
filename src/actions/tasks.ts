@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board";
 import { TASK_PRIORITIES, type TaskPriority } from "@/db/schema";
 import { queueMoveNotification, queuePriorityNotification } from "@/lib/notifications";
+import { requireColumn, requireTask } from "@/lib/require-resource";
 
 export async function createTask(
   boardId: string,
@@ -16,11 +17,7 @@ export async function createTask(
   createdAt?: Date,
 ) {
   await requireBoardAccess(boardId);
-
-  const column = await db.query.columns.findFirst({ where: eq(columns.id, columnId) });
-  if (!column || column.boardId !== boardId) {
-    throw new Error("Invalid column");
-  }
+  await requireColumn(columnId, boardId);
 
   // Get the max position for this column
   const maxPositionResult = await db
@@ -89,10 +86,7 @@ export async function getTask(id: string) {
 
 export async function updateTaskTitle(id: string, title: string, boardId: string) {
   await requireBoardAccess(boardId);
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, id) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
+  await requireTask(id, boardId);
 
   await db.update(tasks).set({ title }).where(eq(tasks.id, id));
   revalidatePath(`/boards/${boardId}`);
@@ -100,10 +94,7 @@ export async function updateTaskTitle(id: string, title: string, boardId: string
 
 export async function updateTaskCreatedAt(id: string, createdAt: Date, boardId: string) {
   await requireBoardAccess(boardId);
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, id) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
+  await requireTask(id, boardId);
 
   await db.update(tasks).set({ createdAt }).where(eq(tasks.id, id));
   revalidatePath(`/boards/${boardId}`);
@@ -116,10 +107,7 @@ export async function updateTaskPriority(id: string, priority: TaskPriority, boa
     throw new Error("Invalid priority");
   }
 
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, id) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
+  const task = await requireTask(id, boardId);
 
   // Only notify if priority actually changed
   const oldPriority = task.priority;
@@ -147,19 +135,8 @@ export async function updateTaskColumn(
 ) {
   await requireBoardAccess(boardId);
 
-  const newColumn = await db.query.columns.findFirst({ where: eq(columns.id, newColumnId) });
-  if (!newColumn || newColumn.boardId !== boardId) {
-    throw new Error("Invalid column");
-  }
-
-  const task = await db.query.tasks.findFirst({
-    where: eq(tasks.id, id),
-  });
-
-  if (!task) return;
-  if (task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
+  const newColumn = await requireColumn(newColumnId, boardId);
+  const task = await requireTask(id, boardId);
 
   const oldColumnId = task.columnId;
   const oldPosition = task.position;
@@ -245,14 +222,7 @@ export async function updateTaskColumn(
 
 export async function deleteTask(id: string, boardId: string) {
   await requireBoardAccess(boardId);
-  const task = await db.query.tasks.findFirst({
-    where: eq(tasks.id, id),
-  });
-
-  if (!task) return;
-  if (task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
+  const task = await requireTask(id, boardId);
 
   // Delete assignees first
   await db.delete(taskAssignees).where(eq(taskAssignees.taskId, id));

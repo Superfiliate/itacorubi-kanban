@@ -14,6 +14,7 @@ import { revalidatePath } from "next/cache";
 import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board";
 import { getRandomTagColor } from "@/lib/tag-colors";
 import { ensureTagHasHash } from "@/lib/tag-utils";
+import { requireTask, requireTag } from "@/lib/require-resource";
 
 export async function createTag(
   boardId: string,
@@ -55,16 +56,8 @@ export async function getTags(boardId: string) {
 
 export async function addTagToTask(taskId: string, tagId: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
-
-  const tag = await db.query.tags.findFirst({ where: eq(tags.id, tagId) });
-  if (!tag || tag.boardId !== boardId) {
-    throw new Error("Tag not found");
-  }
+  await requireTask(taskId, boardId);
+  await requireTag(tagId, boardId);
 
   // Check if already assigned
   const existing = await db.query.taskTags.findFirst({
@@ -83,16 +76,8 @@ export async function addTagToTask(taskId: string, tagId: string, boardId: strin
 
 export async function removeTagFromTask(taskId: string, tagId: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
-
-  const tag = await db.query.tags.findFirst({ where: eq(tags.id, tagId) });
-  if (!tag || tag.boardId !== boardId) {
-    throw new Error("Tag not found");
-  }
+  await requireTask(taskId, boardId);
+  await requireTag(tagId, boardId);
 
   await db.delete(taskTags).where(and(eq(taskTags.taskId, taskId), eq(taskTags.tagId, tagId)));
 
@@ -116,11 +101,7 @@ export async function updateTag(
   updates: { name?: string; color?: ContributorColor },
 ) {
   await requireBoardAccess(boardId);
-
-  const tag = await db.query.tags.findFirst({ where: eq(tags.id, id) });
-  if (!tag || tag.boardId !== boardId) {
-    throw new Error("Tag not found");
-  }
+  await requireTag(id, boardId);
 
   const updateData: { name?: string; color?: ContributorColor } = {};
   if (updates.color !== undefined) {
@@ -138,11 +119,7 @@ export async function updateTag(
 
 export async function deleteTag(id: string, boardId: string) {
   await requireBoardAccess(boardId);
-
-  const tag = await db.query.tags.findFirst({ where: eq(tags.id, id) });
-  if (!tag || tag.boardId !== boardId) {
-    throw new Error("Tag not found");
-  }
+  await requireTag(id, boardId);
 
   // Check if tag has any task assignments
   const assignmentCount = await db

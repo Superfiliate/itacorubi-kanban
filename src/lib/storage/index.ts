@@ -27,6 +27,10 @@ export {
   isVideoType,
 } from "./constants";
 
+// Re-export server-only quota utilities
+export { getBoardStorageUsage, checkBoardStorageQuota } from "./quota";
+export type { StorageQuotaResult } from "./quota";
+
 import { MAX_FILE_SIZE, isAllowedFileType, isVercelBlobUrl, isLocalUploadUrl } from "./constants";
 
 function useVercelBlob(): boolean {
@@ -104,4 +108,40 @@ export async function deleteFile(url: string): Promise<void> {
     }
   }
   // If URL doesn't match either pattern, ignore (might be external URL)
+}
+
+export interface DeleteFilesResult {
+  deleted: number;
+  failed: number;
+  errors: Array<{ url: string; error: string }>;
+}
+
+/**
+ * Delete multiple files from storage with error tolerance.
+ * Continues deleting even if individual files fail.
+ */
+export async function deleteFilesWithTolerance(
+  files: Array<{ url: string }>,
+): Promise<DeleteFilesResult> {
+  const result: DeleteFilesResult = {
+    deleted: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  for (const file of files) {
+    try {
+      await deleteFile(file.url);
+      result.deleted++;
+    } catch (error) {
+      console.error(`Failed to delete file ${file.url}:`, error);
+      result.failed++;
+      result.errors.push({
+        url: file.url,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  return result;
 }

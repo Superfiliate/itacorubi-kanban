@@ -91,7 +91,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   const taskData = task as TaskWithComments | null;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden gradient-mesh">
+    <div className="flex h-screen flex-col overflow-hidden gradient-holographic gradient-holographic--muted">
       <HydrateBoard boardId={board.id} boardData={boardData} taskData={taskData} />
       <OutboxGuard boardId={board.id} />
       <TrackBoardVisit boardId={board.id} title={board.title} />

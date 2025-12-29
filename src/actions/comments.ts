@@ -5,8 +5,9 @@ import { comments, tasks, uploadedFiles } from "@/db/schema";
 import { eq, and, lt, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireBoardAccess } from "@/lib/secure-board";
-import { deleteFile } from "@/lib/storage";
+import { deleteFilesWithTolerance } from "@/lib/storage";
 import { queueCommentNotification } from "@/lib/notifications";
+import { requireTask, requireComment, requireContributor } from "@/lib/require-resource";
 
 /**
  * Extract all file URLs from Tiptap JSON content.
@@ -63,20 +64,11 @@ export async function createComment(
 ) {
   await requireBoardAccess(boardId);
 
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
-  if (!task || task.boardId !== boardId) {
-    throw new Error("Task not found");
-  }
+  const task = await requireTask(taskId, boardId);
 
   // Validate stakeholder if provided
   if (stakeholderId) {
-    const { contributors } = await import("@/db/schema");
-    const stakeholder = await db.query.contributors.findFirst({
-      where: eq(contributors.id, stakeholderId),
-    });
-    if (!stakeholder || stakeholder.boardId !== boardId) {
-      throw new Error("Stakeholder not found or does not belong to board");
-    }
+    await requireContributor(stakeholderId, boardId);
   }
 
   const commentId = id ?? crypto.randomUUID();
@@ -123,21 +115,11 @@ export async function updateComment(
   stakeholderId?: string | null,
 ) {
   await requireBoardAccess(boardId);
-
-  const existing = await db.query.comments.findFirst({ where: eq(comments.id, commentId) });
-  if (!existing || existing.boardId !== boardId) {
-    throw new Error("Comment not found");
-  }
+  await requireComment(commentId, boardId);
 
   // Validate stakeholder if provided
   if (stakeholderId) {
-    const { contributors } = await import("@/db/schema");
-    const stakeholder = await db.query.contributors.findFirst({
-      where: eq(contributors.id, stakeholderId),
-    });
-    if (!stakeholder || stakeholder.boardId !== boardId) {
-      throw new Error("Stakeholder not found or does not belong to board");
-    }
+    await requireContributor(stakeholderId, boardId);
   }
 
   // Clean up orphaned files (files in DB but not in the new content)
@@ -149,17 +131,9 @@ export async function updateComment(
     const urlsInContent = new Set(extractFileUrlsFromContent(content));
     const orphanedFiles = filesInDb.filter((file) => !urlsInContent.has(file.url));
 
-    // Delete orphaned files from storage and database
-    for (const file of orphanedFiles) {
-      try {
-        await deleteFile(file.url);
-      } catch (error) {
-        // Log but don't fail - file might already be deleted
-        console.error(`Failed to delete orphaned file ${file.url}:`, error);
-      }
-    }
-
+    // Delete orphaned files from storage (tolerates individual failures)
     if (orphanedFiles.length > 0) {
+      await deleteFilesWithTolerance(orphanedFiles);
       await db.delete(uploadedFiles).where(
         inArray(
           uploadedFiles.id,
@@ -183,28 +157,16 @@ export async function updateComment(
 
 export async function deleteComment(commentId: string, boardId: string) {
   await requireBoardAccess(boardId);
-  const existing = await db.query.comments.findFirst({ where: eq(comments.id, commentId) });
-  if (!existing || existing.boardId !== boardId) {
-    throw new Error("Comment not found");
-  }
+  await requireComment(commentId, boardId);
 
   // Get all files associated with this comment
   const files = await db.query.uploadedFiles.findMany({
     where: eq(uploadedFiles.commentId, commentId),
   });
 
-  // Delete files from storage
-  for (const file of files) {
-    try {
-      await deleteFile(file.url);
-    } catch (error) {
-      // Log but don't fail - file might already be deleted
-      console.error(`Failed to delete file ${file.url}:`, error);
-    }
-  }
-
-  // Delete file records from database
+  // Delete files from storage (tolerates individual failures) and database
   if (files.length > 0) {
+    await deleteFilesWithTolerance(files);
     await db.delete(uploadedFiles).where(eq(uploadedFiles.commentId, commentId));
   }
 
