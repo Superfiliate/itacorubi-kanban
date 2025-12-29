@@ -67,9 +67,6 @@ const serverEnvSchema = z.object({
       message: "BLOB_READ_WRITE_TOKEN is required in production for file uploads",
     }),
 
-  // Email sender address - Optional with default
-  EMAIL_FROM: z.email({ message: "EMAIL_FROM must be a valid email address" }).optional(),
-
   // Vercel-provided variables (automatically set by Vercel)
   VERCEL_URL: z.string().optional(),
   VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),

@@ -81,15 +81,14 @@ All board members can view the history of notification emails sent for their boa
 
 - Uses [Resend](https://resend.com) for email delivery
 - React email templates for consistent rendering
-- Requires `RESEND_API_KEY` environment variable
+- Emails are sent via Resend whenever `RESEND_API_KEY` is present (any environment)
 
 ### Environment Variables
 
-| Variable         | Required         | Description                                        |
-| ---------------- | ---------------- | -------------------------------------------------- |
-| `RESEND_API_KEY` | Yes (production) | Resend API key for sending emails                  |
-| `CRON_SECRET`    | Yes (production) | Secret to authorize cron endpoint                  |
-| `EMAIL_FROM`     | No               | From address (default: `notifications@resend.dev`) |
+| Variable         | Required         | Description                                             |
+| ---------------- | ---------------- | ------------------------------------------------------- |
+| `RESEND_API_KEY` | No               | Resend API key — if present, emails are sent via Resend |
+| `CRON_SECRET`    | Yes (production) | Secret to authorize cron endpoint                       |
 
 ### Notification Queue
 
@@ -138,17 +137,17 @@ Access email history via the mail icon in the board header:
 
 Emails are **always** saved to the `sent_emails` table regardless of environment:
 
-| Environment | Behavior                     |
-| ----------- | ---------------------------- |
-| Production  | Save to DB + Send via Resend |
-| Development | Save to DB only              |
-| Test        | Save to DB only              |
+| RESEND_API_KEY | Behavior                     |
+| -------------- | ---------------------------- |
+| Present        | Save to DB + Send via Resend |
+| Not present    | Save to DB only              |
 
 This ensures:
 
 - Consistent behavior across environments
 - Debugging production issues by checking stored emails
 - Full E2E testing without external email services
+- Flexibility to test Resend integration in development if desired
 
 ### API Endpoints
 
@@ -188,8 +187,9 @@ expect(email.htmlContent).toContain("expected content");
 
 - `src/db/schema.ts` — pendingNotifications + sentEmails table definitions
 - `src/lib/notifications.ts` — Queue helper functions
+- `src/lib/process-board-notifications.ts` — Shared processing logic for board notifications
 - `src/emails/task-digest.tsx` — Email template component
-- `src/app/api/cron/send-notifications/route.ts` — Cron handler
+- `src/app/api/cron/send-notifications/route.ts` — Cron handler (processes all boards)
 - `src/app/api/boards/[boardId]/emails/route.ts` — Board email API (list, process)
 - `src/app/api/boards/[boardId]/emails/[id]/route.ts` — Board email detail API
 - `src/app/boards/[boardId]/emails/page.tsx` — Email history UI

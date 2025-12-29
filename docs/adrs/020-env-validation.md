@@ -21,7 +21,6 @@ Build-time validation of required environment variables using Zod, failing deplo
 
 | Variable               | Format | Default                         |
 | ---------------------- | ------ | ------------------------------- |
-| `EMAIL_FROM`           | Email  | `notifications@resend.dev`      |
 | `NEXT_PUBLIC_BASE_URL` | URL    | Auto-detected from `VERCEL_URL` |
 
 ## Examples

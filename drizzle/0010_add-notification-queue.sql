@@ -11,5 +11,3 @@ CREATE TABLE pending_notifications (
 
 CREATE INDEX idx_pending_notifications_recipient ON pending_notifications(recipient_id);
 CREATE INDEX idx_pending_notifications_created_at ON pending_notifications(created_at);
-
-

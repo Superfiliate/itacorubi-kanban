@@ -287,4 +287,105 @@ test.describe("Email Notifications", () => {
     // Verify the email history page loads
     await expect(page.getByRole("heading", { name: /email history/i })).toBeVisible();
   });
+
+  test("should reject GET /api/boards/[boardId]/emails without authentication", async ({
+    page,
+    context,
+  }) => {
+    // Create board to get a valid boardId
+    const boardId = await createTestBoard(page, "Unauth GET Test", "testpass123");
+
+    // Clear cookies to simulate unauthenticated request
+    await context.clearCookies();
+
+    // Attempt to access the email list API without authentication
+    const response = await page.request.get(`/api/boards/${boardId}/emails`);
+
+    // Should return 401 Unauthorized
+    expect(response.status()).toBe(401);
+
+    const data = await response.json();
+    expect(data.error).toBe("Unauthorized");
+  });
+
+  test("should reject POST /api/boards/[boardId]/emails without authentication", async ({
+    page,
+    context,
+  }) => {
+    // Create board to get a valid boardId
+    const boardId = await createTestBoard(page, "Unauth POST Test", "testpass123");
+
+    // Clear cookies to simulate unauthenticated request
+    await context.clearCookies();
+
+    // Attempt to process notifications without authentication
+    const response = await page.request.post(`/api/boards/${boardId}/emails`);
+
+    // Should return 401 Unauthorized
+    expect(response.status()).toBe(401);
+
+    const data = await response.json();
+    expect(data.error).toBe("Unauthorized");
+  });
+
+  test("should reject GET /api/boards/[boardId]/emails/[id] without authentication", async ({
+    page,
+    context,
+  }) => {
+    // Create board and process a notification to get an email ID
+    await createTestBoard(page, "Unauth Email Detail Test", "testpass123");
+    await waitForBoardLoad(page);
+
+    const boardId = getBoardIdFromUrl(page);
+
+    // Create a task and trigger notification
+    await page
+      .getByRole("button", { name: /add task/i })
+      .first()
+      .click();
+    const sidebar = await waitForSidebarOpen(page);
+
+    const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i });
+    await assigneesSelect.click();
+    await page.getByPlaceholder(/search or create/i).fill("Unauth Detail User");
+    await page.getByRole("option", { name: /create.*unauth detail user/i }).click();
+    await expect(
+      sidebar.locator("span").filter({ hasText: "Unauth Detail User" }).first(),
+    ).toBeVisible();
+
+    await sidebar.getByRole("button", { name: /back/i }).click();
+    await waitForSidebarClose(page);
+    await page.waitForTimeout(500);
+
+    await createContributorWithEmail(page, "unauthdetail@example.com");
+
+    // Move task to trigger notification
+    await page.getByRole("link", { name: /open task.*new task/i }).click();
+    const sidebar2 = await waitForSidebarOpen(page);
+    const statusLabel = sidebar2.getByText("Status");
+    const statusSelect = statusLabel.locator("..").getByRole("combobox");
+    await statusSelect.click();
+    await page.getByRole("option", { name: /doing/i }).click();
+    await page.waitForTimeout(500);
+    await sidebar2.getByRole("button", { name: /back/i }).click();
+    await waitForSidebarClose(page);
+
+    // Process and get email ID
+    await processNotifications(page, boardId);
+    const { emails } = await getSentEmails(page, boardId);
+    expect(emails.length).toBeGreaterThan(0);
+    const emailId = emails[0].id;
+
+    // Clear cookies to simulate unauthenticated request
+    await context.clearCookies();
+
+    // Attempt to get email detail without authentication
+    const response = await page.request.get(`/api/boards/${boardId}/emails/${emailId}`);
+
+    // Should return 401 Unauthorized
+    expect(response.status()).toBe(401);
+
+    const data = await response.json();
+    expect(data.error).toBe("Unauthorized");
+  });
 });

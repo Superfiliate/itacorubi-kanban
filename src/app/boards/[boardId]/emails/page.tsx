@@ -109,10 +109,20 @@ export default function BoardEmailsPage({ params }: PageProps) {
                 </p>
               </div>
             </div>
-            <Button onClick={handleProcessNotifications} disabled={processing} variant="default">
-              <RefreshCw className={processing ? "animate-spin" : ""} />
-              {processing ? "Processing..." : "Process Notifications"}
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                onClick={handleProcessNotifications}
+                disabled={processing}
+                variant="ghost"
+                size="sm"
+              >
+                <RefreshCw className={processing ? "animate-spin" : ""} />
+                {processing ? "Processing..." : "Process Now"}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Emails are sent automatically every 5 minutes
+              </span>
+            </div>
           </div>
 
           {/* Email list */}
