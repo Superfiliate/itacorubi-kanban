@@ -307,7 +307,7 @@ function ContributorRow({
             title={displayEmail ? "Click to edit email" : "Click to add email for notifications"}
           >
             {displayEmail || (
-              <span className="italic text-muted-foreground/60">Add email for notifications</span>
+              <span className="italic text-muted-foreground">Add email for notifications</span>
             )}
           </button>
         )}
@@ -358,10 +358,10 @@ function ContributorRow({
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-12">
-      <Users className="h-16 w-16 text-muted-foreground/50" />
+      <Users className="h-16 w-16 text-muted-foreground" />
       <div className="text-center">
         <h3 className="text-heading">No contributors yet</h3>
-        <p className="mt-1 text-muted">
+        <p className="mt-1 text-sm text-muted-foreground">
           Add contributors to assign them to tasks and track comments
         </p>
       </div>

@@ -266,10 +266,12 @@ function TagRow({ tag, boardId }: { tag: TagWithStats; boardId: string }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-12">
-      <Tag className="h-16 w-16 text-muted-foreground/50" />
+      <Tag className="h-16 w-16 text-muted-foreground" />
       <div className="text-center">
         <h3 className="text-heading">No tags yet</h3>
-        <p className="mt-1 text-muted">Add tags to categorize and organize your tasks</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Add tags to categorize and organize your tasks
+        </p>
       </div>
     </div>
   );

@@ -117,7 +117,7 @@ export default function BoardEmailsPage({ params }: PageProps) {
           {/* Email list */}
           {emails.length === 0 ? (
             <div className="rounded-lg border border-border/50 bg-muted/30 p-12 text-center">
-              <Mail className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <Mail className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="mt-4 text-lg text-muted-foreground">No emails sent yet</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Notification emails will appear here when contributors with email addresses receive

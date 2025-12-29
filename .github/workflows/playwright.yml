@@ -31,6 +31,9 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      - name: Check for dead code
+        run: pnpm knip
+
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium
 

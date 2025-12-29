@@ -219,10 +219,12 @@ export function BoardClient({ boardId }: BoardClientProps) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Columns3 className="h-16 w-16 text-muted-foreground/50" />
+          <Columns3 className="h-16 w-16 text-muted-foreground" />
           <div>
             <h3 className="text-heading">No columns yet</h3>
-            <p className="mt-1 text-muted">Add your first column to start organizing tasks</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Add your first column to start organizing tasks
+            </p>
           </div>
         </div>
         <AddColumnButton boardId={boardId} />

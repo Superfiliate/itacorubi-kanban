@@ -124,9 +124,9 @@ export function CommentsSection({ taskId, boardId, comments, contributors }: Com
 
       {enrichedComments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
+          <MessageSquare className="h-12 w-12 text-muted-foreground" />
           <p className="mt-4 text-sm text-muted-foreground">No comments yet</p>
-          <p className="text-xs text-muted-foreground/70">Be the first to add a comment</p>
+          <p className="text-xs text-muted-foreground">Be the first to add a comment</p>
         </div>
       ) : (
         enrichedComments.map((comment) => (
