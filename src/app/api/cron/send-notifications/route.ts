@@ -5,22 +5,21 @@ import { inArray } from "drizzle-orm";
 import { Resend } from "resend";
 import { TaskDigestEmail, type NotificationItem } from "@/emails/task-digest";
 import { render } from "@react-email/render";
+import { env } from "@/lib/validate-env";
 
 // Initialize Resend client (may be undefined if no API key)
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
 // Determine if we should actually send via Resend
-const shouldSendToResend = Boolean(
-  process.env.RESEND_API_KEY && process.env.NODE_ENV === "production",
-);
+const shouldSendToResend = Boolean(env.RESEND_API_KEY && env.NODE_ENV === "production");
 
 // Verify cron secret to prevent unauthorized calls
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = env.CRON_SECRET;
 
   // In development or test, allow without secret
-  if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+  if (env.NODE_ENV === "development" || env.NODE_ENV === "test") {
     return true;
   }
 
@@ -84,7 +83,12 @@ export async function GET(request: Request) {
     }
 
     // Process emails for each recipient
-    const results: { recipientId: string; success: boolean; sentToResend: boolean; error?: string }[] = [];
+    const results: {
+      recipientId: string;
+      success: boolean;
+      sentToResend: boolean;
+      error?: string;
+    }[] = [];
     const processedNotificationIds: string[] = [];
 
     for (const [recipientId, data] of notificationsByRecipient) {
@@ -113,13 +117,13 @@ export async function GET(request: Request) {
       });
 
       // Determine the board URL
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5800";
+      const baseUrl = env.VERCEL_URL
+        ? `https://${env.VERCEL_URL}`
+        : env.NEXT_PUBLIC_BASE_URL || "http://localhost:5800";
       const boardUrl = `${baseUrl}/boards/${board.id}`;
 
       // Determine "from" address
-      const fromEmail = process.env.EMAIL_FROM || "notifications@resend.dev";
+      const fromEmail = env.EMAIL_FROM || "notifications@resend.dev";
       const subject = `Task updates on ${board.title}`;
 
       // Render email to HTML
@@ -180,14 +184,12 @@ export async function GET(request: Request) {
     // Also delete notifications for recipients without email (no point keeping them)
     const notificationsWithoutEmail = notifications.filter((n) => !n.recipient.email);
     if (notificationsWithoutEmail.length > 0) {
-      await db
-        .delete(pendingNotifications)
-        .where(
-          inArray(
-            pendingNotifications.id,
-            notificationsWithoutEmail.map((n) => n.id),
-          ),
-        );
+      await db.delete(pendingNotifications).where(
+        inArray(
+          pendingNotifications.id,
+          notificationsWithoutEmail.map((n) => n.id),
+        ),
+      );
     }
 
     return NextResponse.json({
@@ -199,9 +201,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Error processing notifications:", error);
-    return NextResponse.json(
-      { error: "Failed to process notifications" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to process notifications" }, { status: 500 });
   }
 }

@@ -21,12 +21,12 @@ Contributors can optionally add their email address to receive notifications:
 
 Notifications are queued when these events occur:
 
-| Event | Recipients | Details |
-|-------|------------|---------|
-| New comment | Assignees + Stakeholders (except author) | Includes comment preview |
-| Task moved | Assignees + Stakeholders | From/to column names |
-| Assignee added | The new assignee only | — |
-| Priority changed | Assignees + Stakeholders | New priority level |
+| Event            | Recipients                               | Details                  |
+| ---------------- | ---------------------------------------- | ------------------------ |
+| New comment      | Assignees + Stakeholders (except author) | Includes comment preview |
+| Task moved       | Assignees + Stakeholders                 | From/to column names     |
+| Assignee added   | The new assignee only                    | —                        |
+| Priority changed | Assignees + Stakeholders                 | New priority level       |
 
 ### Batching
 
@@ -85,11 +85,11 @@ All board members can view the history of notification emails sent for their boa
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `RESEND_API_KEY` | Yes (production) | Resend API key for sending emails |
-| `CRON_SECRET` | Yes (production) | Secret to authorize cron endpoint |
-| `EMAIL_FROM` | No | From address (default: `notifications@resend.dev`) |
+| Variable         | Required         | Description                                        |
+| ---------------- | ---------------- | -------------------------------------------------- |
+| `RESEND_API_KEY` | Yes (production) | Resend API key for sending emails                  |
+| `CRON_SECRET`    | Yes (production) | Secret to authorize cron endpoint                  |
+| `EMAIL_FROM`     | No               | From address (default: `notifications@resend.dev`) |
 
 ### Notification Queue
 
@@ -138,13 +138,14 @@ Access email history via the mail icon in the board header:
 
 Emails are **always** saved to the `sent_emails` table regardless of environment:
 
-| Environment | Behavior |
-|------------|----------|
-| Production | Save to DB + Send via Resend |
-| Development | Save to DB only |
-| Test | Save to DB only |
+| Environment | Behavior                     |
+| ----------- | ---------------------------- |
+| Production  | Save to DB + Send via Resend |
+| Development | Save to DB only              |
+| Test        | Save to DB only              |
 
 This ensures:
+
 - Consistent behavior across environments
 - Debugging production issues by checking stored emails
 - Full E2E testing without external email services
@@ -153,11 +154,11 @@ This ensures:
 
 Board-scoped email API (requires board authentication):
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/boards/[boardId]/emails` | List emails for this board |
-| POST | `/api/boards/[boardId]/emails` | Process pending notifications |
-| GET | `/api/boards/[boardId]/emails/[id]` | Get single email with HTML content |
+| Method | Endpoint                            | Description                        |
+| ------ | ----------------------------------- | ---------------------------------- |
+| GET    | `/api/boards/[boardId]/emails`      | List emails for this board         |
+| POST   | `/api/boards/[boardId]/emails`      | Process pending notifications      |
+| GET    | `/api/boards/[boardId]/emails/[id]` | Get single email with HTML content |
 
 ### Playwright Testing
 

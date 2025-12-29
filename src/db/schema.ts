@@ -180,7 +180,9 @@ export const pendingNotifications = sqliteTable("pending_notifications", {
     .notNull()
     .references(() => contributors.id, { onDelete: "cascade" }),
   type: text("type").notNull().$type<NotificationType>(),
-  triggeredById: text("triggered_by_id").references(() => contributors.id, { onDelete: "set null" }),
+  triggeredById: text("triggered_by_id").references(() => contributors.id, {
+    onDelete: "set null",
+  }),
   metadata: text("metadata"), // JSON: column names, comment preview, etc.
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });

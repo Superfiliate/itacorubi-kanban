@@ -12,6 +12,7 @@ import { put, del } from "@vercel/blob";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
+import { env } from "@/lib/validate-env";
 
 // Re-export client-safe constants
 export {
@@ -31,7 +32,7 @@ import { MAX_FILE_SIZE, isAllowedFileType, isVercelBlobUrl, isLocalUploadUrl } f
 function useVercelBlob(): boolean {
   // Use Vercel Blob only in production with a valid token
   // In development and test modes, use local filesystem
-  return process.env.NODE_ENV === "production" && !!process.env.BLOB_READ_WRITE_TOKEN;
+  return env.NODE_ENV === "production" && !!env.BLOB_READ_WRITE_TOKEN;
 }
 
 /**
