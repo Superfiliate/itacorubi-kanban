@@ -5,6 +5,9 @@ import { boards } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { UnlockForm } from "@/components/board/unlock-form";
 
+// This page depends on per-request cookies for board authorization.
+export const dynamic = "force-dynamic";
+
 interface UnlockPageProps {
   params: Promise<{ boardId: string }>;
   searchParams: Promise<{ password?: string; error?: string }>;

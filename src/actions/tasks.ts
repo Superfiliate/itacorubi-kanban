@@ -13,7 +13,7 @@ export async function createTask(
   boardId: string,
   columnId: string,
   title: string,
-  id?: string,
+  id: string,
   createdAt?: Date,
 ) {
   await requireBoardAccess(boardId);
@@ -27,10 +27,8 @@ export async function createTask(
 
   const maxPosition = maxPositionResult[0]?.maxPosition ?? -1;
 
-  const taskId = id ?? crypto.randomUUID();
-
   await db.insert(tasks).values({
-    id: taskId,
+    id,
     boardId,
     columnId,
     title,
@@ -39,7 +37,7 @@ export async function createTask(
   });
 
   revalidatePath(`/boards/${boardId}`);
-  return taskId;
+  return id;
 }
 
 export async function getTask(id: string) {

@@ -125,7 +125,7 @@ function ContributorRow({
       boardId,
       payload: { contributorId: contributor.id, name },
     });
-    void flushBoardOutbox(boardId);
+    await flushBoardOutbox(boardId);
 
     toast.success("Contributor updated");
   };
@@ -150,7 +150,7 @@ function ContributorRow({
       boardId,
       payload: { contributorId: contributor.id, color },
     });
-    void flushBoardOutbox(boardId);
+    await flushBoardOutbox(boardId);
 
     toast.success("Contributor updated");
   };
@@ -186,10 +186,12 @@ function ContributorRow({
       boardId,
       payload: { contributorId: contributor.id, email: newEmail },
     });
-    void flushBoardOutbox(boardId);
-
+    // Close the inline editor immediately so UI updates (tests look for the rendered text).
     setIsEditingEmail(false);
     toast.success(newEmail ? "Email updated" : "Email removed");
+
+    // Flush after UI update to ensure server state is committed for notifications.
+    await flushBoardOutbox(boardId);
   };
 
   const handleDelete = async () => {
@@ -212,7 +214,7 @@ function ContributorRow({
         boardId,
         payload: { contributorId: contributor.id },
       });
-      void flushBoardOutbox(boardId);
+      await flushBoardOutbox(boardId);
 
       toast.success("Contributor deleted");
       setIsDeleteDialogOpen(false);
@@ -394,7 +396,7 @@ function AddContributorForm({ boardId }: { boardId: string }) {
         boardId,
         payload: { contributorId, name: trimmedName, color },
       });
-      void flushBoardOutbox(boardId);
+      await flushBoardOutbox(boardId);
 
       setName("");
       toast.success("Contributor added");

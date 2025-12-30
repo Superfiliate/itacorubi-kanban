@@ -8,7 +8,7 @@ import { getRandomEmoji } from "@/lib/emojis";
 import { requireBoardAccess } from "@/lib/secure-board";
 import { requireColumn } from "@/lib/require-resource";
 
-export async function createColumn(boardId: string, id?: string) {
+export async function createColumn(boardId: string, id: string) {
   await requireBoardAccess(boardId);
 
   // Get the max position for this board
@@ -19,19 +19,18 @@ export async function createColumn(boardId: string, id?: string) {
 
   const maxPosition = maxPositionResult[0]?.maxPosition ?? -1;
 
-  const columnId = id ?? crypto.randomUUID();
   const emoji = getRandomEmoji();
   const plainName = `${emoji} New column`;
 
   await db.insert(columns).values({
-    id: columnId,
+    id,
     boardId,
     name: plainName,
     position: maxPosition + 1,
   });
 
   revalidatePath(`/boards/${boardId}`);
-  return columnId;
+  return id;
 }
 
 export async function updateColumnName(id: string, name: string, boardId: string) {

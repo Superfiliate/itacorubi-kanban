@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createTask, getTask, deleteTask } from "@/actions/tasks";
+import { getTask, deleteTask } from "@/actions/tasks";
 import { boardKeys, type BoardData, type BoardTask } from "./use-board";
 import type { ContributorColor, TaskPriority } from "@/db/schema";
 import { getRandomContributorColor } from "@/lib/contributor-colors";
@@ -84,27 +84,34 @@ export function useCreateTask(boardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ columnId, title }: { columnId: string; title: string }) =>
-      createTask(boardId, columnId, title),
-    onMutate: async ({ columnId, title }) => {
-      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) });
-
-      const previous = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId));
-      const optimisticId = crypto.randomUUID();
+    mutationFn: async ({ columnId, title }: { columnId: string; title: string }) => {
+      // Generate stable ID on client for local-first consistency
+      const taskId = crypto.randomUUID();
+      const createdAt = new Date();
 
       const newTask: BoardTask = {
-        id: optimisticId,
+        id: taskId,
         boardId,
         columnId,
         title,
         priority: "none",
         position: 0,
-        createdAt: new Date(),
+        createdAt,
         assignees: [],
         stakeholders: [],
         comments: [],
       };
 
+      // Update local store
+      useBoardStore.getState().createTaskLocal({
+        boardId,
+        taskId,
+        columnId,
+        title,
+        createdAt,
+      });
+
+      // Update TanStack cache
       queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
         if (!old) return old;
 
@@ -125,30 +132,17 @@ export function useCreateTask(boardId: string) {
         };
       });
 
-      return { previous, optimisticId, optimisticTask: newTask };
-    },
-    onSuccess: (serverId, _, context) => {
-      // Replace optimistic ID with server ID in board cache
-      // The title already matches since we passed it to the server
-      if (context?.optimisticId && serverId !== context.optimisticId) {
-        queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            columns: old.columns.map((col) => ({
-              ...col,
-              tasks: col.tasks.map((task) =>
-                task.id === context.optimisticId ? { ...task, id: serverId } : task,
-              ),
-            })),
-          };
-        });
-      }
-    },
-    onError: (_err, _, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(boardId), context.previous);
-      }
+      // Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "createTask",
+        boardId,
+        payload: { taskId, columnId, title, createdAt },
+      });
+      // Don't auto-flush here: follow-up mutations (assignees, moves, etc.) often need to
+      // flush multiple dependent operations in-order (create task -> assign -> move) and will
+      // explicitly flush. This avoids overlapping flushes and race conditions in tests.
+
+      return taskId;
     },
   });
 }
@@ -222,7 +216,8 @@ export function useUpdateTaskPriority(boardId: string) {
         boardId,
         payload: { taskId, priority },
       });
-      void flushBoardOutbox(boardId);
+      // Await flush to ensure server action is called and notifications are queued
+      await flushBoardOutbox(boardId);
     },
   });
 }
@@ -259,6 +254,121 @@ export function useUpdateTaskColumn(boardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    onMutate: async ({
+      taskId,
+      newColumnId,
+      newPosition,
+    }: {
+      taskId: string;
+      newColumnId: string;
+      newPosition?: number;
+    }) => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: boardKeys.detail(boardId) });
+
+      // Snapshot the previous value
+      const previousBoard = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId));
+
+      // Update local store first (UI reads from this)
+      const board = useBoardStore.getState().boardsById[boardId];
+      if (board) {
+        const task = board.tasksById[taskId];
+        if (task) {
+          // Calculate target index in new column
+          const targetColumnTaskIds = board.tasksByColumnId[newColumnId] ?? [];
+          const targetIndex = newPosition ?? targetColumnTaskIds.length;
+
+          // Update local store using moveTaskLocal
+          useBoardStore.getState().moveTaskLocal({
+            boardId,
+            taskId,
+            toColumnId: newColumnId,
+            toIndex: targetIndex,
+          });
+        }
+      }
+
+      // Also update React Query cache for consistency
+      if (previousBoard) {
+        // Find the task
+        let task: BoardTask | undefined;
+        let oldColumnId: string | undefined;
+
+        for (const col of previousBoard.columns) {
+          const found = col.tasks.find((t) => t.id === taskId);
+          if (found) {
+            task = found;
+            oldColumnId = col.id;
+            break;
+          }
+        }
+
+        if (task && oldColumnId) {
+          // Skip if task is already in the correct position
+          if (oldColumnId !== newColumnId || task.position !== newPosition) {
+            // Calculate new position if not provided
+            const targetColumn = previousBoard.columns.find((c) => c.id === newColumnId);
+            const finalPosition =
+              newPosition ??
+              (targetColumn ? Math.max(...targetColumn.tasks.map((t) => t.position), -1) + 1 : 0);
+
+            const updatedBoard: BoardData = {
+              ...previousBoard,
+              columns: previousBoard.columns.map((col) => {
+                // Handle old column (remove task)
+                if (col.id === oldColumnId && oldColumnId !== newColumnId) {
+                  // Remove from old column and update positions
+                  const filtered = col.tasks.filter((t) => t.id !== taskId);
+                  return {
+                    ...col,
+                    tasks: filtered.map((t, i) => ({ ...t, position: i })),
+                  };
+                }
+                // Handle new column (add task)
+                if (col.id === newColumnId) {
+                  // Add to new column
+                  const movedTask = { ...task!, columnId: newColumnId, position: finalPosition };
+                  // If moving within same column, filter out the task first
+                  const existingTasks =
+                    oldColumnId === newColumnId
+                      ? col.tasks.filter((t) => t.id !== taskId)
+                      : col.tasks;
+
+                  const newTasks = [
+                    ...existingTasks.map((t) =>
+                      t.position >= finalPosition ? { ...t, position: t.position + 1 } : t,
+                    ),
+                    movedTask,
+                  ].sort((a, b) => a.position - b.position);
+
+                  // Normalize positions to be sequential (0, 1, 2, ...)
+                  return {
+                    ...col,
+                    tasks: newTasks.map((t, i) => ({ ...t, position: i })),
+                  };
+                }
+                return col;
+              }),
+            };
+
+            queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), updatedBoard);
+
+            // Update task cache with new column
+            queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
+              if (!old) return old;
+              const newColumn = updatedBoard.columns.find((c) => c.id === newColumnId);
+              return {
+                ...old,
+                columnId: newColumnId,
+                column: newColumn ? { id: newColumn.id, name: newColumn.name } : old.column,
+              };
+            });
+          }
+        }
+      }
+
+      return { previousBoard };
+    },
     mutationFn: async ({
       taskId,
       newColumnId,
@@ -268,89 +378,20 @@ export function useUpdateTaskColumn(boardId: string) {
       newColumnId: string;
       newPosition?: number;
     }) => {
-      // 1) Update TanStack cache (local store already updated by handleDragOver)
-      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
-        if (!old) return old;
-
-        // Find the task
-        let task: BoardTask | undefined;
-        let oldColumnId: string | undefined;
-
-        for (const col of old.columns) {
-          const found = col.tasks.find((t) => t.id === taskId);
-          if (found) {
-            task = found;
-            oldColumnId = col.id;
-            break;
-          }
-        }
-
-        if (!task || !oldColumnId) return old;
-
-        // Skip if task is already in the correct position
-        if (oldColumnId === newColumnId && task.position === newPosition) return old;
-        if (oldColumnId === newColumnId && newPosition === undefined) return old;
-
-        // Calculate new position if not provided
-        const targetColumn = old.columns.find((c) => c.id === newColumnId);
-        const finalPosition =
-          newPosition ??
-          (targetColumn ? Math.max(...targetColumn.tasks.map((t) => t.position), -1) + 1 : 0);
-
-        return {
-          ...old,
-          columns: old.columns.map((col) => {
-            if (col.id === oldColumnId && col.id !== newColumnId) {
-              // Remove from old column and update positions
-              const filtered = col.tasks.filter((t) => t.id !== taskId);
-              return {
-                ...col,
-                tasks: filtered.map((t, i) => ({ ...t, position: i })),
-              };
-            }
-            if (col.id === newColumnId) {
-              // Add to new column
-              const movedTask = { ...task!, columnId: newColumnId, position: finalPosition };
-              const existingTasks =
-                col.id === oldColumnId ? col.tasks.filter((t) => t.id !== taskId) : col.tasks;
-
-              const newTasks = [
-                ...existingTasks.map((t) =>
-                  t.position >= finalPosition ? { ...t, position: t.position + 1 } : t,
-                ),
-                movedTask,
-              ].sort((a, b) => a.position - b.position);
-
-              // Normalize positions to be sequential (0, 1, 2, ...)
-              return {
-                ...col,
-                tasks: newTasks.map((t, i) => ({ ...t, position: i })),
-              };
-            }
-            return col;
-          }),
-        };
-      });
-
-      // Update task cache with new column
-      queryClient.setQueryData<TaskWithComments>(taskKeys.detail(taskId), (old) => {
-        if (!old) return old;
-        const board = queryClient.getQueryData<BoardData>(boardKeys.detail(boardId));
-        const newColumn = board?.columns.find((c) => c.id === newColumnId);
-        return {
-          ...old,
-          columnId: newColumnId,
-          column: newColumn ? { id: newColumn.id, name: newColumn.name } : old.column,
-        };
-      });
-
-      // 2) Enqueue for background sync
+      // Enqueue for background sync
       useBoardStore.getState().enqueue({
         type: "updateTaskColumn",
         boardId,
         payload: { taskId, columnId: newColumnId, position: newPosition },
       });
-      void flushBoardOutbox(boardId);
+      // Await flush to ensure server action is called and notifications are queued
+      await flushBoardOutbox(boardId);
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousBoard) {
+        queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), context.previousBoard);
+      }
     },
   });
 }
@@ -458,7 +499,8 @@ export function useAddAssignee(boardId: string) {
         boardId,
         payload: { taskId, contributorId },
       });
-      void flushBoardOutbox(boardId);
+      // Await flush to ensure server action is called and notifications are queued
+      await flushBoardOutbox(boardId);
     },
   });
 }
@@ -566,7 +608,8 @@ export function useCreateAndAssignContributor(boardId: string) {
         boardId,
         payload: { taskId, contributorId, name, color },
       });
-      void flushBoardOutbox(boardId);
+      // Await flush to ensure server action is called and notifications are queued
+      await flushBoardOutbox(boardId);
 
       return contributorId;
     },
@@ -1038,7 +1081,8 @@ export function useCreateComment(boardId: string) {
           stakeholderId: stakeholderId ?? null,
         },
       });
-      void flushBoardOutbox(boardId);
+      // Await flush to ensure server action is called and notifications are queued
+      await flushBoardOutbox(boardId);
 
       return commentId;
     },

@@ -45,7 +45,7 @@ async function createContributorWithEmail(page: Page, email: string): Promise<vo
   await expect(dialog).not.toBeVisible();
 
   // Wait for the outbox to flush
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
 }
 
 /**
@@ -131,7 +131,7 @@ test.describe("Email Notifications", () => {
     await waitForSidebarClose(page);
 
     // Wait for sync
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Add email to the assignee
     await createContributorWithEmail(page, "watcher@example.com");
@@ -146,7 +146,7 @@ test.describe("Email Notifications", () => {
     await page.getByRole("option", { name: /doing/i }).click();
 
     // Wait for move to persist
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Close sidebar
     await sidebar2.getByRole("button", { name: /back/i }).click();
@@ -237,7 +237,7 @@ test.describe("Email Notifications", () => {
     // Close sidebar
     await sidebar.getByRole("button", { name: /back/i }).click();
     await waitForSidebarClose(page);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Add email to the assignee
     await createContributorWithEmail(page, "fromtest@example.com");
@@ -250,7 +250,7 @@ test.describe("Email Notifications", () => {
     const statusSelect = statusLabel.locator("..").getByRole("combobox");
     await statusSelect.click();
     await page.getByRole("option", { name: /doing/i }).click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     await sidebar2.getByRole("button", { name: /back/i }).click();
     await waitForSidebarClose(page);
@@ -355,7 +355,7 @@ test.describe("Email Notifications", () => {
 
     await sidebar.getByRole("button", { name: /back/i }).click();
     await waitForSidebarClose(page);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     await createContributorWithEmail(page, "unauthdetail@example.com");
 
@@ -366,7 +366,7 @@ test.describe("Email Notifications", () => {
     const statusSelect = statusLabel.locator("..").getByRole("combobox");
     await statusSelect.click();
     await page.getByRole("option", { name: /doing/i }).click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
     await sidebar2.getByRole("button", { name: /back/i }).click();
     await waitForSidebarClose(page);
 

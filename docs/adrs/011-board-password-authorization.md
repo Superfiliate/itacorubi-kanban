@@ -56,16 +56,16 @@ Public links allow sharing a board with password prefilled:
 
 ### Access Helpers (`src/lib/secure-board.ts`)
 
-- `getBoardPasswordOptional(boardId)` → returns cookie password only if it verifies against `boards.passwordHash`; also refreshes the cookie to ensure latest settings
+- `getBoardPasswordOptional(boardId)` → returns cookie password only if it verifies against `boards.passwordHash`
 - `requireBoardPassword(boardId)` / `requireBoardAccess(boardId)` → throws if missing/invalid
 - Prefer these helpers in server actions instead of ad-hoc cookie reads to keep behavior consistent.
 
 ### Cookie Refresh
 
-On every successful password verification, we re-set the cookie with `setBoardPassword()`. This ensures:
+We **do not** automatically re-set/refresh the cookie on every request.
 
-- Cookie settings (e.g., SameSite policy) stay up-to-date as we evolve them
-- Users automatically get upgraded to new cookie policies on their next board visit
+- The cookie is set explicitly when the user unlocks a board (`unlockBoard`) and when a board is created.
+- Cookie expiration is already long-lived (1 year), so per-request refresh is unnecessary and can introduce flaky behavior (e.g., in-flight `Set-Cookie` responses reintroducing cookies after a client clears them).
 
 ### Cookie Helpers (`src/lib/board-password.ts`)
 

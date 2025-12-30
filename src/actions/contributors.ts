@@ -21,21 +21,19 @@ import { requireTask, requireContributor } from "@/lib/require-resource";
 export async function createContributor(
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor },
+  id: string,
+  color: ContributorColor,
 ) {
   await requireBoardAccess(boardId);
 
-  const id = opts?.id ?? crypto.randomUUID();
-  const color =
-    opts?.color && CONTRIBUTOR_COLORS.includes(opts.color)
-      ? opts.color
-      : getRandomContributorColor();
+  // Validate color is a known contributor color
+  const validatedColor = CONTRIBUTOR_COLORS.includes(color) ? color : getRandomContributorColor();
 
   await db.insert(contributors).values({
     id,
     boardId,
     name,
-    color,
+    color: validatedColor,
   });
 
   revalidatePath(`/boards/${boardId}`);
@@ -98,11 +96,12 @@ export async function createAndAssignContributor(
   taskId: string,
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor },
+  id: string,
+  color: ContributorColor,
 ) {
-  const contributorId = await createContributor(boardId, name, opts);
-  await addAssignee(taskId, contributorId, boardId);
-  return contributorId;
+  await createContributor(boardId, name, id, color);
+  await addAssignee(taskId, id, boardId);
+  return id;
 }
 
 export async function addStakeholder(taskId: string, contributorId: string, boardId: string) {
@@ -146,11 +145,12 @@ export async function createAndAddStakeholder(
   taskId: string,
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor },
+  id: string,
+  color: ContributorColor,
 ) {
-  const contributorId = await createContributor(boardId, name, opts);
-  await addStakeholder(taskId, contributorId, boardId);
-  return contributorId;
+  await createContributor(boardId, name, id, color);
+  await addStakeholder(taskId, id, boardId);
+  return id;
 }
 
 export async function updateContributor(

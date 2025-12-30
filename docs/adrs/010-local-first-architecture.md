@@ -5,7 +5,7 @@ Treat the **client as the primary source of truth** for interactive UX using a *
 ## Rationale
 
 - **Local-first**: UI reads/writes from a normalized in-memory store (no waiting on network for interactions)
-- **Outbox background sync**: Local writes enqueue mutations that flush to server actions asynchronously
+- **Outbox background sync**: Local writes enqueue mutations that flush to the server asynchronously
 - **Stable client-chosen values**: Client generates UUIDs and chooses visual fields (e.g., contributor color) so the backend does not "surprise" the UI later
 - **Conflict strategy**: Last-write-wins; optimize for good actors and low concurrency
 
@@ -47,6 +47,14 @@ Local writes enqueue an outbox item describing the server mutation to perform.
 
 - Flush is **sequential** (simpler ordering, matches last-write-wins)
 - If authorization fails (wrong password), the UI may diverge and that's acceptable
+
+### Transport
+
+Outbox items are flushed from the client by POSTing to a single Route Handler:
+
+- `POST /api/boards/{boardId}/outbox` (`src/app/api/boards/[boardId]/outbox/route.ts`)
+
+The Route Handler verifies board access, then executes the corresponding server-side mutation (reusing the same server action functions).
 
 ### Outbox Persistence (Navigation Resilience)
 
@@ -100,6 +108,7 @@ flushOutboxInBackground();
 - `src/stores/board-store.ts` - Zustand store with normalized entities
 - `src/lib/outbox/persistence.ts` - localStorage save/load
 - `src/lib/outbox/apply-local.ts` - Reconstructs optimistic state from outbox items
+- `src/lib/outbox/flush.ts` - Flushes via `POST /api/boards/{boardId}/outbox`
 - `src/hooks/use-outbox-guard.ts` - beforeunload handler hook
 - `src/components/board/outbox-guard.tsx` - Board-level guard component
 - `src/components/sync-indicator.tsx` - Sync status driven by `selectOutboxStatus(boardId)`

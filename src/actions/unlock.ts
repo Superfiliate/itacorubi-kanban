@@ -11,17 +11,20 @@ export async function unlockBoard(boardId: string, password: string) {
     where: eq(boards.id, boardId),
   });
 
+  // Use generic error message to prevent board existence enumeration
+  const genericError = "Invalid board or password";
+
   if (!board) {
-    return { success: false, error: "Board not found" };
+    return { success: false, error: genericError };
   }
 
   if (!board.passwordHash) {
-    return { success: false, error: "Board password not initialized" };
+    return { success: false, error: genericError };
   }
 
   const ok = verifyPassword(password, board.passwordHash);
   if (!ok) {
-    return { success: false, error: "Invalid password" };
+    return { success: false, error: genericError };
   }
 
   await setBoardPassword(boardId, password);

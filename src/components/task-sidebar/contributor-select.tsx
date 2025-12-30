@@ -75,7 +75,7 @@ export function ContributorSelect({
         boardId,
         payload: { contributorId, name, color },
       });
-      void flushBoardOutbox(boardId);
+      await flushBoardOutbox(boardId);
 
       onContributorChange(contributorId);
       setInputValue("");

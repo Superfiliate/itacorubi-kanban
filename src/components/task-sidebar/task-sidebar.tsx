@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { ContributorColor } from "@/db/schema";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { selectBoard, selectTaskDetails, useBoardStore } from "@/stores/board-store";
+import { flushBoardOutbox } from "@/lib/outbox/flush";
 
 interface TaskSidebarProps {
   taskId: string;
@@ -151,6 +152,10 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   }, [board, tags]);
 
   const handleClose = useCallback(() => {
+    // Kick off a flush on close, but don't block closing the sheet on slow networks.
+    // (Tests already include waits; and other critical flows await flush explicitly.)
+    void flushBoardOutbox(boardId);
+
     setIsOpen(false);
     // Clear pending task to ensure clean state for reopening
     useBoardStore.getState().setPendingOpenTask(null);

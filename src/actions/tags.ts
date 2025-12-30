@@ -19,13 +19,13 @@ import { requireTask, requireTag } from "@/lib/require-resource";
 export async function createTag(
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor },
+  id: string,
+  color: ContributorColor,
 ) {
   await requireBoardAccess(boardId);
 
-  const id = opts?.id ?? crypto.randomUUID();
-  const color =
-    opts?.color && CONTRIBUTOR_COLORS.includes(opts.color) ? opts.color : getRandomTagColor();
+  // Validate color is a known color
+  const validatedColor = CONTRIBUTOR_COLORS.includes(color) ? color : getRandomTagColor();
 
   // Ensure tag name starts with "#"
   const normalizedName = ensureTagHasHash(name);
@@ -34,7 +34,7 @@ export async function createTag(
     id,
     boardId,
     name: normalizedName,
-    color,
+    color: validatedColor,
   });
 
   revalidatePath(`/boards/${boardId}`);
@@ -88,11 +88,12 @@ export async function createAndAddTag(
   taskId: string,
   boardId: string,
   name: string,
-  opts?: { id?: string; color?: ContributorColor },
+  id: string,
+  color: ContributorColor,
 ) {
-  const tagId = await createTag(boardId, name, opts);
-  await addTagToTask(taskId, tagId, boardId);
-  return tagId;
+  await createTag(boardId, name, id, color);
+  await addTagToTask(taskId, id, boardId);
+  return id;
 }
 
 export async function updateTag(

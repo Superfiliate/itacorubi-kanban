@@ -58,7 +58,7 @@ export async function createComment(
   boardId: string,
   authorId: string,
   content: string,
-  id?: string,
+  id: string,
   createdAt?: Date,
   stakeholderId?: string | null,
 ) {
@@ -66,15 +66,16 @@ export async function createComment(
 
   const task = await requireTask(taskId, boardId);
 
+  // Validate author belongs to this board
+  await requireContributor(authorId, boardId);
+
   // Validate stakeholder if provided
   if (stakeholderId) {
     await requireContributor(stakeholderId, boardId);
   }
 
-  const commentId = id ?? crypto.randomUUID();
-
   await db.insert(comments).values({
-    id: commentId,
+    id,
     taskId,
     boardId,
     authorId,
@@ -104,7 +105,7 @@ export async function createComment(
   });
 
   revalidatePath(`/boards/${boardId}`);
-  return commentId;
+  return id;
 }
 
 export async function updateComment(
@@ -116,6 +117,9 @@ export async function updateComment(
 ) {
   await requireBoardAccess(boardId);
   await requireComment(commentId, boardId);
+
+  // Validate author belongs to this board
+  await requireContributor(authorId, boardId);
 
   // Validate stakeholder if provided
   if (stakeholderId) {

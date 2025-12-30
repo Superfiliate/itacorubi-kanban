@@ -1,3 +1,4 @@
+pnpm exec next typegen
 pnpm lint --fix
 pnpm format
 pnpm exec tsc --noEmit
