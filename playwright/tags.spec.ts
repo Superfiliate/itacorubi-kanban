@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { seedAndNavigateToBoard, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright";
+import {
+  seedAndNavigateToBoard,
+  waitForSidebarOpen,
+  waitForSidebarClose,
+} from "./utils/playwright";
 
 test.describe("Tags", () => {
   test("should create tag via dropdown and show badge on task card", async ({ page }) => {

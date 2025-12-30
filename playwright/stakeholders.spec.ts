@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { seedAndNavigateToBoard, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright";
+import {
+  seedAndNavigateToBoard,
+  waitForSidebarOpen,
+  waitForSidebarClose,
+} from "./utils/playwright";
 
 test.describe("Stakeholders", () => {
   test("should create stakeholder via stakeholders dropdown", async ({ page }) => {

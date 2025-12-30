@@ -105,7 +105,7 @@ export default async function BoardPage({ params, searchParams }: BoardPageProps
   return (
     <div
       data-testid="board-page"
-      className="flex h-screen flex-col overflow-hidden gradient-holographic gradient-holographic--muted"
+      className="flex h-screen flex-col overflow-hidden gradient-holographic"
     >
       <HydrateBoard boardId={board.id} boardData={boardData} taskData={taskData} />
       <OutboxGuard boardId={board.id} />

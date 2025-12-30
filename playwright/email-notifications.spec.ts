@@ -7,7 +7,6 @@ import {
   waitForSync,
 } from "./utils/playwright";
 
-
 /**
  * Helper to set up a contributor with an email address
  */
