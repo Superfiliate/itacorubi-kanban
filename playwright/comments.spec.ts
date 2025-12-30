@@ -252,7 +252,10 @@ test.describe("Comments", () => {
     // Also assign Recipient to the task (to test deduplication: mentioned + assigned = 1 notification)
     const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i });
     await assigneesSelect.click();
-    await page.getByRole("option", { name: /recipient/i }).first().click();
+    await page
+      .getByRole("option", { name: /recipient/i })
+      .first()
+      .click();
     await expect(sidebar.locator("span").filter({ hasText: "Recipient" }).first()).toBeVisible();
     // Close assignees dropdown
     await page.keyboard.press("Escape");
