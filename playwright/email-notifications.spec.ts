@@ -1,23 +1,12 @@
 import { test, expect, Page } from "@playwright/test";
 import {
-  createTestBoard,
-  waitForBoardLoad,
+  seedAndNavigateToBoard,
+  seedTestBoard,
   waitForSidebarOpen,
   waitForSidebarClose,
   waitForSync,
 } from "./utils/playwright";
 
-/**
- * Helper to extract boardId from the current URL
- */
-function getBoardIdFromUrl(page: Page): string {
-  const url = page.url();
-  const match = url.match(/\/boards\/([^/]+)/);
-  if (!match) {
-    throw new Error(`Could not extract boardId from URL: ${url}`);
-  }
-  return match[1];
-}
 
 /**
  * Helper to set up a contributor with an email address
@@ -106,10 +95,7 @@ test.describe("Email Notifications", () => {
     page,
   }) => {
     // Create board and task
-    await createTestBoard(page, "Move Notification Test", "testpass123");
-    await waitForBoardLoad(page);
-
-    const boardId = getBoardIdFromUrl(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Move Notification Test" });
 
     // Create a task
     await page
@@ -177,10 +163,7 @@ test.describe("Email Notifications", () => {
 
   test("board email API should require authentication", async ({ page }) => {
     // Create board to get a valid boardId
-    await createTestBoard(page, "Auth Test Board", "testpass123");
-    await waitForBoardLoad(page);
-
-    const boardId = getBoardIdFromUrl(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Auth Test Board" });
 
     // Navigate away to clear the session cookie (simulate unauthenticated request)
     // Actually, the API uses cookie-based auth from the board unlock flow
@@ -197,10 +180,7 @@ test.describe("Email Notifications", () => {
 
   test("should be able to trigger notification processing", async ({ page }) => {
     // Create board
-    await createTestBoard(page, "Process Test Board", "testpass123");
-    await waitForBoardLoad(page);
-
-    const boardId = getBoardIdFromUrl(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Process Test Board" });
 
     // Trigger should work without errors
     const response = await page.request.post(`/api/boards/${boardId}/emails`);
@@ -212,10 +192,7 @@ test.describe("Email Notifications", () => {
 
   test("should save from email address in sent emails", async ({ page }) => {
     // Create board and task with assignee
-    await createTestBoard(page, "From Address Test", "testpass123");
-    await waitForBoardLoad(page);
-
-    const boardId = getBoardIdFromUrl(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "From Address Test" });
 
     // Create a task
     await page
@@ -274,8 +251,7 @@ test.describe("Email Notifications", () => {
 
   test("should show email history link in board header", async ({ page }) => {
     // Create board
-    await createTestBoard(page, "Header Link Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Header Link Test" });
 
     // Verify the email history link is visible in the header
     const emailHistoryLink = page.getByRole("link", { name: /email history/i });
@@ -294,7 +270,7 @@ test.describe("Email Notifications", () => {
     context,
   }) => {
     // Create board to get a valid boardId
-    const boardId = await createTestBoard(page, "Unauth GET Test", "testpass123");
+    const { boardId } = await seedTestBoard(page.request, { title: "Unauth GET Test" });
 
     // Clear cookies to simulate unauthenticated request
     await context.clearCookies();
@@ -314,7 +290,7 @@ test.describe("Email Notifications", () => {
     context,
   }) => {
     // Create board to get a valid boardId
-    const boardId = await createTestBoard(page, "Unauth POST Test", "testpass123");
+    const { boardId } = await seedTestBoard(page.request, { title: "Unauth POST Test" });
 
     // Clear cookies to simulate unauthenticated request
     await context.clearCookies();
@@ -334,10 +310,7 @@ test.describe("Email Notifications", () => {
     context,
   }) => {
     // Create board and process a notification to get an email ID
-    await createTestBoard(page, "Unauth Email Detail Test", "testpass123");
-    await waitForBoardLoad(page);
-
-    const boardId = getBoardIdFromUrl(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Unauth Email Detail Test" });
 
     // Create a task and trigger notification
     await page

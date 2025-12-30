@@ -1,4 +1,71 @@
-import { Page, expect, Locator } from "@playwright/test";
+import { Page, expect, Locator, APIRequestContext } from "@playwright/test";
+
+// ============================================================
+// FAST TEST SETUP (API-based)
+// ============================================================
+
+interface SeedBoardOptions {
+  title?: string;
+  password?: string;
+  tasks?: Array<{
+    title: string;
+    columnIndex?: number;
+    assignees?: string[];
+  }>;
+  contributors?: Array<{
+    name: string;
+    email?: string;
+  }>;
+}
+
+interface SeedBoardResult {
+  boardId: string;
+  columnIds: string[];
+  taskIds: string[];
+  contributorIds: Record<string, string>;
+}
+
+/**
+ * Creates a board via API (fast) - use for most tests
+ * This is ~10x faster than createTestBoard which uses the UI
+ */
+export async function seedTestBoard(
+  request: APIRequestContext,
+  options: SeedBoardOptions = {},
+): Promise<SeedBoardResult> {
+  const response = await request.post("/api/test/seed", {
+    data: {
+      title: options.title ?? "Test Board",
+      password: options.password ?? "testpass123",
+      tasks: options.tasks,
+      contributors: options.contributors,
+    },
+  });
+
+  if (!response.ok()) {
+    throw new Error(`Failed to seed board: ${response.status()} ${await response.text()}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Seeds a board and navigates to it (fast setup + navigation)
+ * Use this as a replacement for createTestBoard in most tests
+ */
+export async function seedAndNavigateToBoard(
+  page: Page,
+  options: SeedBoardOptions = {},
+): Promise<SeedBoardResult> {
+  const result = await seedTestBoard(page.request, options);
+  await page.goto(`/boards/${result.boardId}`);
+  await waitForBoardLoad(page);
+  return result;
+}
+
+// ============================================================
+// UI-BASED TEST HELPERS
+// ============================================================
 
 /**
  * Waits for the task sidebar to be visible
@@ -99,12 +166,8 @@ export async function unlockTestBoard(
  * Uses global timeout configuration (10s)
  */
 export async function waitForBoardLoad(page: Page): Promise<void> {
-  // Wait for board header and at least one column to be visible
-  // Using Promise.all for parallel waiting instead of sequential
-  await Promise.all([
-    page.waitForSelector("header"),
-    page.waitForSelector("text=/.*to do|.*doing|.*done|.*archive/i"),
-  ]);
+  // Wait for the board page container (fast testid selector)
+  await page.waitForSelector('[data-testid="board-page"]');
 }
 
 /**

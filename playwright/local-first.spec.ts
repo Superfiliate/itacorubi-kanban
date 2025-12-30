@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
-  createTestBoard,
+  seedAndNavigateToBoard,
   waitForBoardLoad,
   waitForSidebarOpen,
   waitForSidebarClose,
@@ -16,8 +16,7 @@ test.describe("Local-First Architecture", () => {
     // 2. Data persists across navigation (via localStorage outbox persistence)
 
     // Create first board and a task
-    const boardId1 = await createTestBoard(page, "Board One", "testpass123");
-    await waitForBoardLoad(page);
+    const { boardId: boardId1 } = await seedAndNavigateToBoard(page, { title: "Board One" });
 
     await page
       .getByRole("button", { name: /add task/i })
@@ -37,10 +36,8 @@ test.describe("Local-First Architecture", () => {
     await waitForSidebarClose(page);
     await expect(page.getByText(/board1-task/i)).toBeVisible();
 
-    // Navigate away to create second board (outbox may still be flushing)
-    await page.goto("/");
-    await createTestBoard(page, "Board Two", "testpass456");
-    await waitForBoardLoad(page);
+    // Create second board (outbox may still be flushing)
+    await seedAndNavigateToBoard(page, { title: "Board Two", password: "testpass456" });
 
     await page
       .getByRole("button", { name: /add task/i })
@@ -75,8 +72,7 @@ test.describe("Local-First Architecture", () => {
     // 1. Rapid task creation via outbox works (optimistic updates)
     // 2. All tasks persist after page reload (via localStorage outbox restoration and flush)
 
-    await createTestBoard(page, "Rapid Creation Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Rapid Creation Test" });
 
     // Get the first column's add task button
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();

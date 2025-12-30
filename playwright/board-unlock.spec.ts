@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright";
+import { seedTestBoard, waitForBoardLoad } from "./utils/playwright";
 
 test.describe("Board Unlock", () => {
   test("should redirect to unlock page when accessing board without password", async ({
     page,
     context,
   }) => {
-    // Create a board first (this sets the password cookie)
-    const boardId = await createTestBoard(page, "Locked Board", "testpass123");
+    // Create a board first - seedTestBoard sets the password cookie
+    const { boardId } = await seedTestBoard(page.request, { title: "Locked Board" });
 
     // Clear cookies to simulate not having password
     await context.clearCookies();
@@ -24,7 +24,10 @@ test.describe("Board Unlock", () => {
   });
 
   test("should unlock board with correct password", async ({ page, context }) => {
-    const boardId = await createTestBoard(page, "Unlock Test Board", "correctpass123");
+    const { boardId } = await seedTestBoard(page.request, {
+      title: "Unlock Test Board",
+      password: "correctpass123",
+    });
 
     // Clear cookies
     await context.clearCookies();
@@ -46,7 +49,10 @@ test.describe("Board Unlock", () => {
   });
 
   test("should show error with incorrect password", async ({ page, context }) => {
-    const boardId = await createTestBoard(page, "Error Test Board", "rightpass123");
+    const { boardId } = await seedTestBoard(page.request, {
+      title: "Error Test Board",
+      password: "rightpass123",
+    });
 
     // Clear cookies
     await context.clearCookies();
@@ -71,7 +77,10 @@ test.describe("Board Unlock", () => {
     page,
     context,
   }) => {
-    const boardId = await createTestBoard(page, "Prefill Test", "prefillpass123");
+    const { boardId } = await seedTestBoard(page.request, {
+      title: "Prefill Test",
+      password: "prefillpass123",
+    });
 
     // Clear cookies
     await context.clearCookies();
@@ -89,7 +98,12 @@ test.describe("Board Unlock", () => {
   });
 
   test("should show share dialog with board URL and password", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Share Test Board", "sharepass123");
+    const { boardId } = await seedTestBoard(page.request, {
+      title: "Share Test Board",
+      password: "sharepass123",
+    });
+    await page.goto(`/boards/${boardId}`);
+    await waitForBoardLoad(page);
 
     // Click share button (should be in header - look for Share2 icon button)
     const shareButton = page
@@ -121,7 +135,12 @@ test.describe("Board Unlock", () => {
   });
 
   test("should change password from share dialog", async ({ page }) => {
-    await createTestBoard(page, "Change Password Test", "oldpass123");
+    const { boardId } = await seedTestBoard(page.request, {
+      title: "Change Password Test",
+      password: "oldpass123",
+    });
+    await page.goto(`/boards/${boardId}`);
+    await waitForBoardLoad(page);
 
     // Open share dialog
     const shareButton = page
@@ -167,7 +186,12 @@ test.describe("Board Unlock", () => {
   });
 
   test("should invalidate old password after change", async ({ page, context }) => {
-    const boardId = await createTestBoard(page, "Password Invalidation Test", "oldpass123");
+    const { boardId } = await seedTestBoard(page.request, {
+      title: "Password Invalidation Test",
+      password: "oldpass123",
+    });
+    await page.goto(`/boards/${boardId}`);
+    await waitForBoardLoad(page);
 
     // Change password via share dialog
     const shareButton = page

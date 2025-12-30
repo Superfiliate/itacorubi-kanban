@@ -1,12 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright";
+import { seedAndNavigateToBoard } from "./utils/playwright";
 
 test.describe("Contributors", () => {
   test("should create contributor via assignees dropdown and show badge on task card", async ({
     page,
   }) => {
-    const boardId = await createTestBoard(page, "Contributor Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Contributor Test Board" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -41,8 +40,7 @@ test.describe("Contributors", () => {
   });
 
   test("should assign existing contributor to task", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Assign Contributor Test", "testpass123");
-    await waitForBoardLoad(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Assign Contributor Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -80,8 +78,7 @@ test.describe("Contributors", () => {
   });
 
   test("should remove assignee from task", async ({ page }) => {
-    await createTestBoard(page, "Remove Assignee Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Remove Assignee Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -107,8 +104,7 @@ test.describe("Contributors", () => {
   });
 
   test("should open contributors dialog from header", async ({ page }) => {
-    await createTestBoard(page, "Dialog Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Dialog Test Board" });
 
     // Click contributors button (users icon) in header
     const contributorsButton = page.getByRole("button", { name: /manage contributors/i });

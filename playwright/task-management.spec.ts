@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
-  createTestBoard,
+  seedAndNavigateToBoard,
   waitForBoardLoad,
   waitForSidebarOpen,
   waitForSidebarClose,
@@ -8,8 +8,7 @@ import {
 
 test.describe("Task Management", () => {
   test("should create a task from column", async ({ page }) => {
-    await createTestBoard(page, "Task Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Task Test Board" });
 
     // Click "Add task" button in first column
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -23,8 +22,7 @@ test.describe("Task Management", () => {
   });
 
   test("should set and show task priority with icon and border styling", async ({ page }) => {
-    await createTestBoard(page, "Priority Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Priority Test Board" });
 
     // Create a task
     await page
@@ -78,8 +76,7 @@ test.describe("Task Management", () => {
   });
 
   test("should reflect contributor rename on task cards without refresh", async ({ page }) => {
-    await createTestBoard(page, "Contributor Sync Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Contributor Sync Test" });
 
     // Create a task
     await page
@@ -127,8 +124,7 @@ test.describe("Task Management", () => {
   });
 
   test("should edit task title", async ({ page }) => {
-    await createTestBoard(page, "Edit Task Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Edit Task Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -150,8 +146,7 @@ test.describe("Task Management", () => {
   });
 
   test("should move task via Status dropdown", async ({ page }) => {
-    await createTestBoard(page, "Move Task Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Move Task Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -204,8 +199,7 @@ test.describe("Task Management", () => {
   });
 
   test("should move task via drag and drop", async ({ page }) => {
-    await createTestBoard(page, "Drag Task Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Drag Task Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -244,8 +238,7 @@ test.describe("Task Management", () => {
   });
 
   test("should delete task with confirmation", async ({ page }) => {
-    await createTestBoard(page, "Delete Task Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Delete Task Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -279,8 +272,7 @@ test.describe("Task Management", () => {
   });
 
   test("should reorder tasks within column and between columns", async ({ page }) => {
-    await createTestBoard(page, "Reorder Tasks Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Reorder Tasks Test" });
 
     // Helper to get column container
     const getColumnContainer = (columnName: string) => {

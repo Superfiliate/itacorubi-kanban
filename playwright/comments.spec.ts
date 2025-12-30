@@ -1,7 +1,6 @@
 import { test, expect, Page } from "@playwright/test";
 import {
-  createTestBoard,
-  waitForBoardLoad,
+  seedAndNavigateToBoard,
   waitForSidebarOpen,
   waitForSidebarClose,
 } from "./utils/playwright";
@@ -11,8 +10,7 @@ import {
  * Returns the editor element ready for content input.
  */
 async function setupCommentEditor(page: Page, boardName: string) {
-  await createTestBoard(page, boardName, "testpass123");
-  await waitForBoardLoad(page);
+  await seedAndNavigateToBoard(page, { title: boardName });
 
   // Create a task
   const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -37,8 +35,7 @@ test.describe("Comments", () => {
 
   test("should remember author selection and update comment count", async ({ page }) => {
     // This test combines author memory and comment count verification
-    await createTestBoard(page, "Author Memory Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Author Memory Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -127,8 +124,7 @@ test.describe("Comments", () => {
   });
 
   test("should edit a comment", async ({ page }) => {
-    await createTestBoard(page, "Edit Comment Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Edit Comment Test" });
 
     // Create a task and add a comment
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -165,8 +161,7 @@ test.describe("Comments", () => {
   });
 
   test("should delete a comment with confirmation", async ({ page }) => {
-    await createTestBoard(page, "Delete Comment Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Delete Comment Test" });
 
     // Create a task and add a comment
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();

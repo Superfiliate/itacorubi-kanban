@@ -1,15 +1,9 @@
 import { test, expect } from "@playwright/test";
-import {
-  createTestBoard,
-  waitForBoardLoad,
-  waitForSidebarOpen,
-  waitForSidebarClose,
-} from "./utils/playwright";
+import { seedAndNavigateToBoard, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright";
 
 test.describe("Stakeholders", () => {
   test("should create stakeholder via stakeholders dropdown", async ({ page }) => {
-    await createTestBoard(page, "Stakeholder Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Stakeholder Test Board" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -32,8 +26,7 @@ test.describe("Stakeholders", () => {
   });
 
   test("should assign existing contributor as stakeholder", async ({ page }) => {
-    await createTestBoard(page, "Assign Stakeholder Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Assign Stakeholder Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -68,8 +61,7 @@ test.describe("Stakeholders", () => {
   });
 
   test("should remove stakeholder from task", async ({ page }) => {
-    await createTestBoard(page, "Remove Stakeholder Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Remove Stakeholder Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -96,8 +88,7 @@ test.describe("Stakeholders", () => {
   });
 
   test("should add stakeholder to comment", async ({ page }) => {
-    await createTestBoard(page, "Comment Stakeholder Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Comment Stakeholder Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -144,8 +135,7 @@ test.describe("Stakeholders", () => {
   });
 
   test("should edit comment stakeholder", async ({ page }) => {
-    await createTestBoard(page, "Edit Comment Stakeholder Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Edit Comment Stakeholder Test" });
 
     // Create a task and add a comment with stakeholder
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();

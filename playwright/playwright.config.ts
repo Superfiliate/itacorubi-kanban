@@ -55,6 +55,7 @@ export default defineConfig({
     // process.cwd() returns the directory where the command was run from (project root)
     cwd: process.cwd(),
     // Use a clean test DB (and let the package scripts run migrations/build/start).
+    // Note: Dev server was tested but is 40% slower and introduces flaky tests.
     command: "pnpm test:reset && pnpm build && pnpm start",
     url: "http://localhost:5800",
     reuseExistingServer: false,
@@ -64,6 +65,7 @@ export default defineConfig({
     env: {
       TURSO_DATABASE_URL: "file:test.db",
       NODE_ENV: "test",
+      PLAYWRIGHT_TEST: "true", // Custom flag since NODE_ENV is overridden by Next.js build
     },
   },
 });

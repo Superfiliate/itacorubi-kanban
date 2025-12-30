@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright";
+import { seedAndNavigateToBoard } from "./utils/playwright";
 import path from "path";
 
 const FIXTURES_DIR = path.join(__dirname, "fixtures");
@@ -8,8 +8,7 @@ const TEST_PDF_PATH = path.join(FIXTURES_DIR, "test-document.pdf");
 
 test.describe("File Uploads", () => {
   test("should upload image via toolbar button and display inline", async ({ page }) => {
-    await createTestBoard(page, "Image Upload Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Image Upload Test" });
 
     // Create a task and wait for sidebar to open
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -45,8 +44,7 @@ test.describe("File Uploads", () => {
   });
 
   test("should upload PDF and display as download link", async ({ page }) => {
-    await createTestBoard(page, "PDF Upload Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "PDF Upload Test" });
 
     // Create a task and wait for sidebar to open
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -79,8 +77,7 @@ test.describe("File Uploads", () => {
   });
 
   test("should show storage usage in theme toggle dropdown", async ({ page }) => {
-    await createTestBoard(page, "Storage Display Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Storage Display Test" });
 
     // Click theme toggle to open dropdown
     const themeToggle = page.getByRole("button", { name: /toggle theme/i });
@@ -93,8 +90,7 @@ test.describe("File Uploads", () => {
   });
 
   test("should update storage display after upload", async ({ page }) => {
-    await createTestBoard(page, "Storage Update Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Storage Update Test" });
 
     // Check initial storage (should be 0)
     const themeToggle = page.getByRole("button", { name: /toggle theme/i });

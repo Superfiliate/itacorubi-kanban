@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { createTestBoard, waitForBoardLoad } from "./utils/playwright";
+import { seedAndNavigateToBoard } from "./utils/playwright";
 
 test.describe("Columns", () => {
   test("should add a new column", async ({ page }) => {
-    await createTestBoard(page, "Column Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Column Test Board" });
 
     // Find the add column button (should be after the last column)
     const addColumnButton = page.locator('button[title="Add column"]').last();
@@ -19,8 +18,7 @@ test.describe("Columns", () => {
   });
 
   test("should rename a column", async ({ page }) => {
-    await createTestBoard(page, "Rename Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Rename Test" });
 
     // Find the editable text element with "Click to edit" title
     // This avoids the drag-and-drop listeners on the column header
@@ -42,8 +40,7 @@ test.describe("Columns", () => {
   });
 
   test("should collapse and expand a column", async ({ page }) => {
-    await createTestBoard(page, "Collapse Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Collapse Test" });
 
     // Find collapse button (Minimize2 icon)
     const collapseButton = page.locator('button[title="Collapse column"]').first();
@@ -62,8 +59,7 @@ test.describe("Columns", () => {
   });
 
   test("should delete empty column", async ({ page }) => {
-    await createTestBoard(page, "Delete Column Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Delete Column Test" });
 
     // Add a new column first
     const addColumnButton = page.locator('button[title="Add column"]').last();
@@ -89,8 +85,7 @@ test.describe("Columns", () => {
   });
 
   test("should not allow deleting column with tasks", async ({ page }) => {
-    await createTestBoard(page, "Delete Protected Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Delete Protected Test" });
 
     // Create a task in the first column
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -114,8 +109,7 @@ test.describe("Columns", () => {
   });
 
   test("should reorder columns via drag and drop", async ({ page }) => {
-    await createTestBoard(page, "Reorder Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Reorder Test" });
 
     // Add a new column
     const addColumnButton = page.locator('button[title="Add column"]').last();

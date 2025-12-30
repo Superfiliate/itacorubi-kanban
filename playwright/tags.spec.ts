@@ -1,15 +1,9 @@
 import { test, expect } from "@playwright/test";
-import {
-  createTestBoard,
-  waitForBoardLoad,
-  waitForSidebarOpen,
-  waitForSidebarClose,
-} from "./utils/playwright";
+import { seedAndNavigateToBoard, waitForSidebarOpen, waitForSidebarClose } from "./utils/playwright";
 
 test.describe("Tags", () => {
   test("should create tag via dropdown and show badge on task card", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Tag Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Tag Test Board" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -44,8 +38,7 @@ test.describe("Tags", () => {
   });
 
   test("should assign existing tag to task", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Assign Tag Test", "testpass123");
-    await waitForBoardLoad(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Assign Tag Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -84,8 +77,7 @@ test.describe("Tags", () => {
   });
 
   test("should remove tag from task", async ({ page }) => {
-    await createTestBoard(page, "Remove Tag Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Remove Tag Test" });
 
     // Create a task
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -111,8 +103,7 @@ test.describe("Tags", () => {
   });
 
   test("should open tags dialog from header", async ({ page }) => {
-    await createTestBoard(page, "Dialog Test Board", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Dialog Test Board" });
 
     // Click tags button (tag icon) in header
     const tagsButton = page.getByRole("button", { name: /manage tags/i });
@@ -125,8 +116,7 @@ test.describe("Tags", () => {
   });
 
   test("should edit tag name and color in dialog", async ({ page }) => {
-    const boardId = await createTestBoard(page, "Edit Tag Test", "testpass123");
-    await waitForBoardLoad(page);
+    const { boardId } = await seedAndNavigateToBoard(page, { title: "Edit Tag Test" });
 
     // Create a task and add a tag
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
@@ -187,8 +177,7 @@ test.describe("Tags", () => {
   });
 
   test("should delete tag when no tasks reference it", async ({ page }) => {
-    await createTestBoard(page, "Delete Tag Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Delete Tag Test" });
 
     // Create a tag via dialog
     const tagsButton = page.getByRole("button", { name: /manage tags/i });
@@ -214,8 +203,7 @@ test.describe("Tags", () => {
   });
 
   test("should not delete tag with task assignments", async ({ page }) => {
-    await createTestBoard(page, "Protected Tag Test", "testpass123");
-    await waitForBoardLoad(page);
+    await seedAndNavigateToBoard(page, { title: "Protected Tag Test" });
 
     // Create a task and add a tag
     const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
