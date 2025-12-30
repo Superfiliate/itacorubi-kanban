@@ -7,9 +7,14 @@
     "kill": "kill -9 $(lsof -ti :5800) || true",
     "build": "pnpm db:migrate && next build",
     "start": "next start -p 5800",
-    "lint": "oxlint",
-    "format": "oxfmt .",
-    "format:check": "oxfmt . --check",
+    "lint": "pnpm lint:types && pnpm lint:lint && pnpm lint:format && pnpm lint:unused",
+    "lint:fix": "pnpm lint:types && pnpm lint:lint:fix && pnpm lint:format:fix && pnpm lint:unused",
+    "lint:lint": "oxlint",
+    "lint:lint:fix": "oxlint --fix",
+    "lint:format": "oxfmt . --check",
+    "lint:format:fix": "oxfmt .",
+    "lint:unused": "knip",
+    "lint:types": "next typegen && tsc --noEmit",
     "prepare": "husky",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -21,8 +26,7 @@
     "test": "playwright test --config=playwright/playwright.config.ts",
     "test:ui": "playwright test --config=playwright/playwright.config.ts --ui",
     "test:debug": "playwright test --config=playwright/playwright.config.ts --debug",
-    "test:codegen": "playwright codegen http://localhost:5800",
-    "knip": "knip"
+    "test:codegen": "playwright codegen http://localhost:5800"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

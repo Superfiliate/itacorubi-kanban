@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: CI
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: ["**"]
 
 jobs:
-  test:
-    timeout-minutes: 10
+  lint:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +28,23 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Format check
-        run: pnpm format:check
+  test:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Check for dead code
-        run: pnpm knip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium
