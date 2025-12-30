@@ -61,7 +61,7 @@ test.describe("Board Unlock", () => {
     await page.getByRole("button", { name: /unlock board/i }).click();
 
     // Should show error message
-    await expect(page.getByText(/invalid password/i)).toBeVisible();
+    await expect(page.getByText(/invalid board or password/i)).toBeVisible();
 
     // Should still be on unlock page
     expect(page.url()).toContain("/unlock");
@@ -199,7 +199,7 @@ test.describe("Board Unlock", () => {
     await page.getByRole("button", { name: /unlock board/i }).click();
 
     // Verify "Invalid password" error
-    await expect(page.getByText(/invalid password/i)).toBeVisible();
+    await expect(page.getByText(/invalid board or password/i)).toBeVisible();
     expect(page.url()).toContain("/unlock");
 
     // Unlock with new password
