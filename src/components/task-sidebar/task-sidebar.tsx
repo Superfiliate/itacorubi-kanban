@@ -24,6 +24,7 @@ interface TaskSidebarProps {
     id: string;
     name: string;
     color: ContributorColor;
+    email?: string | null;
   }>;
   tags: Array<{
     id: string;
@@ -136,7 +137,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
       return board.contributorOrder
         .map((id) => board.contributorsById[id])
         .filter(Boolean)
-        .map((c) => ({ id: c.id, name: c.name, color: c.color }));
+        .map((c) => ({ id: c.id, name: c.name, color: c.color, email: c.email }));
     }
     return contributors;
   }, [board, contributors]);
@@ -245,7 +246,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
 interface TaskSidebarHostProps {
   boardId: string;
   columns: Array<{ id: string; name: string }>;
-  contributors: Array<{ id: string; name: string; color: ContributorColor }>;
+  contributors: Array<{ id: string; name: string; color: ContributorColor; email?: string | null }>;
   tags: Array<{ id: string; name: string; color: ContributorColor }>;
 }
 

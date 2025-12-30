@@ -190,3 +190,116 @@ export async function queuePriorityNotification(params: {
     metadata: { priority },
   });
 }
+
+/**
+ * Extract all mention IDs from Tiptap JSON content.
+ * Walks the content tree and collects IDs from mention nodes.
+ */
+export function extractMentionIds(content: string): string[] {
+  try {
+    const parsed = JSON.parse(content);
+    const mentionIds: string[] = [];
+
+    function walkNodes(nodes: unknown[] | undefined) {
+      if (!nodes || !Array.isArray(nodes)) return;
+
+      for (const node of nodes) {
+        if (typeof node !== "object" || node === null) continue;
+
+        const n = node as { type?: string; attrs?: { id?: string }; content?: unknown[] };
+
+        // Mention nodes have type "mention" and attrs.id
+        if (n.type === "mention" && n.attrs?.id) {
+          mentionIds.push(n.attrs.id);
+        }
+
+        // Recursively walk child nodes
+        if (n.content) {
+          walkNodes(n.content);
+        }
+      }
+    }
+
+    walkNodes(parsed.content);
+    return mentionIds;
+  } catch {
+    // If content is not valid JSON, return empty array
+    return [];
+  }
+}
+
+/**
+ * Extract comment preview text from Tiptap JSON content.
+ * Skips mention node labels to avoid duplication.
+ */
+function extractCommentPreview(content: string, maxLength = 100): string {
+  try {
+    const parsed = JSON.parse(content);
+
+    function extractText(nodes: unknown[]): string {
+      let text = "";
+      for (const node of nodes) {
+        if (typeof node !== "object" || node === null) continue;
+        const n = node as {
+          type?: string;
+          text?: string;
+          attrs?: { label?: string };
+          content?: unknown[];
+        };
+
+        // For mention nodes, include "@name" format
+        if (n.type === "mention" && n.attrs?.label) {
+          text += `@${n.attrs.label}`;
+          continue;
+        }
+
+        if (n.text) {
+          text += n.text;
+        }
+        if (n.content && Array.isArray(n.content)) {
+          text += extractText(n.content);
+        }
+      }
+      return text;
+    }
+
+    if (parsed.content) {
+      return extractText(parsed.content).slice(0, maxLength);
+    }
+    return "";
+  } catch {
+    return content.slice(0, maxLength);
+  }
+}
+
+/**
+ * Queue notifications for @mentioned contributors.
+ * Mentioned contributors receive notifications regardless of assignee/stakeholder status.
+ */
+export async function queueMentionNotifications(params: {
+  boardId: string;
+  taskId: string;
+  mentionedIds: string[];
+  authorId: string;
+  commentContent: string;
+}): Promise<void> {
+  const { boardId, taskId, mentionedIds, authorId, commentContent } = params;
+
+  // Deduplicate mention IDs (in case same person is mentioned multiple times)
+  const uniqueMentionIds = [...new Set(mentionedIds)];
+
+  if (uniqueMentionIds.length === 0) {
+    return;
+  }
+
+  const commentPreview = extractCommentPreview(commentContent);
+
+  await queueNotifications({
+    boardId,
+    taskId,
+    recipientIds: uniqueMentionIds,
+    type: "mention",
+    triggeredById: authorId,
+    metadata: { commentPreview },
+  });
+}

@@ -1,19 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Share2, Tag, Mail, Menu } from "lucide-react";
+import { Users, Share2, Tag, Mail, Menu, Sun, Moon, Monitor, Check } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { EditableText } from "@/components/editable-text";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SyncIndicator } from "@/components/sync-indicator";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   ContributorsDialog,
   type ContributorWithStats,
@@ -34,6 +29,7 @@ export function BoardHeader({ boardId, title, contributors, tags }: BoardHeaderP
   const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const updateTitleMutation = useUpdateBoardTitle(boardId);
 
@@ -162,9 +158,40 @@ export function BoardHeader({ boardId, title, contributors, tags }: BoardHeaderP
                 </Link>
               </Button>
               <div className="border-t my-2" />
-              <div className="flex items-center justify-between px-4 py-2">
+              <div className="px-4 py-2">
                 <span className="text-sm text-muted-foreground">Theme</span>
-                <ThemeToggle boardId={boardId} />
+                <div className="flex gap-1 mt-2">
+                  <Button
+                    variant={theme === "light" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="flex-1 gap-2"
+                    onClick={() => setTheme("light")}
+                  >
+                    <Sun className="h-4 w-4" />
+                    <span>Light</span>
+                    {theme === "light" && <Check className="h-3 w-3 ml-auto" />}
+                  </Button>
+                  <Button
+                    variant={theme === "dark" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="flex-1 gap-2"
+                    onClick={() => setTheme("dark")}
+                  >
+                    <Moon className="h-4 w-4" />
+                    <span>Dark</span>
+                    {theme === "dark" && <Check className="h-3 w-3 ml-auto" />}
+                  </Button>
+                  <Button
+                    variant={theme === "system" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="flex-1 gap-2"
+                    onClick={() => setTheme("system")}
+                  >
+                    <Monitor className="h-4 w-4" />
+                    <span>Auto</span>
+                    {theme === "system" && <Check className="h-3 w-3 ml-auto" />}
+                  </Button>
+                </div>
               </div>
             </nav>
           </SheetContent>

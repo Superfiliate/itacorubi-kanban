@@ -165,7 +165,7 @@ export const uploadedFiles = sqliteTable("uploaded_files", {
 });
 
 // Pending notifications - queue for batching email notifications
-export const NOTIFICATION_TYPES = ["comment", "move", "assign", "priority"] as const;
+export const NOTIFICATION_TYPES = ["comment", "move", "assign", "priority", "mention"] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const pendingNotifications = sqliteTable("pending_notifications", {

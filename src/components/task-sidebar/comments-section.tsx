@@ -34,6 +34,7 @@ interface CommentsSectionProps {
     id: string;
     name: string;
     color: ContributorColor;
+    email?: string | null;
   }>;
 }
 
@@ -178,6 +179,7 @@ export function CommentsSection({ taskId, boardId, comments, contributors }: Com
             commentId={pendingCommentId}
             onUploadStart={() => setUploadingCount((c) => c + 1)}
             onUploadEnd={() => setUploadingCount((c) => c - 1)}
+            contributors={contributors}
           />
         </div>
         <div className="flex justify-end items-center gap-3">

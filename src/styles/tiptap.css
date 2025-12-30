@@ -179,3 +179,10 @@
   min-height: auto;
   padding: 0;
 }
+
+/* Mention styles - base layout only, colors come from dynamic Tailwind classes */
+.ProseMirror .mention {
+  vertical-align: baseline;
+  white-space: nowrap;
+  text-decoration: none;
+}

@@ -6,7 +6,11 @@ import { eq, and, lt, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireBoardAccess } from "@/lib/secure-board";
 import { deleteFilesWithTolerance } from "@/lib/storage";
-import { queueCommentNotification } from "@/lib/notifications";
+import {
+  queueCommentNotification,
+  queueMentionNotifications,
+  extractMentionIds,
+} from "@/lib/notifications";
 import { requireTask, requireComment, requireContributor } from "@/lib/require-resource";
 
 /**
@@ -104,6 +108,18 @@ export async function createComment(
     commentContent: content,
   });
 
+  // Queue mention notifications for @mentioned contributors
+  const mentionedIds = extractMentionIds(content);
+  if (mentionedIds.length > 0) {
+    await queueMentionNotifications({
+      boardId,
+      taskId,
+      mentionedIds,
+      authorId,
+      commentContent: content,
+    });
+  }
+
   revalidatePath(`/boards/${boardId}`);
   return id;
 }
@@ -116,7 +132,7 @@ export async function updateComment(
   stakeholderId?: string | null,
 ) {
   await requireBoardAccess(boardId);
-  await requireComment(commentId, boardId);
+  const existingComment = await requireComment(commentId, boardId);
 
   // Validate author belongs to this board
   await requireContributor(authorId, boardId);
@@ -147,6 +163,11 @@ export async function updateComment(
     }
   }
 
+  // Track new mentions before updating
+  const oldMentionIds = new Set(extractMentionIds(existingComment.content));
+  const newMentionIds = extractMentionIds(content);
+  const addedMentionIds = newMentionIds.filter((id) => !oldMentionIds.has(id));
+
   await db
     .update(comments)
     .set({
@@ -155,6 +176,17 @@ export async function updateComment(
       stakeholderId: stakeholderId ?? null,
     })
     .where(eq(comments.id, commentId));
+
+  // Queue mention notifications only for newly added mentions
+  if (addedMentionIds.length > 0) {
+    await queueMentionNotifications({
+      boardId,
+      taskId: existingComment.taskId,
+      mentionedIds: addedMentionIds,
+      authorId,
+      commentContent: content,
+    });
+  }
 
   revalidatePath(`/boards/${boardId}`);
 }

@@ -48,6 +48,7 @@ interface CommentItemProps {
     id: string;
     name: string;
     color: ContributorColor;
+    email?: string | null;
   }>;
 }
 
@@ -143,6 +144,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
             content={editContent}
             onChange={setEditContent}
             placeholder="Write your comment..."
+            contributors={contributors}
           />
         </div>
         <div className="flex justify-end gap-2">
@@ -213,7 +215,7 @@ export function CommentItem({ comment, taskId, boardId, contributors }: CommentI
           </DropdownMenu>
         </div>
         <div className="mt-2 text-body">
-          <RichTextEditor content={comment.content} editable={false} />
+          <RichTextEditor content={comment.content} editable={false} contributors={contributors} />
         </div>
       </div>
 

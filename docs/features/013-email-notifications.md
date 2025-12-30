@@ -21,12 +21,15 @@ Contributors can optionally add their email address to receive notifications:
 
 Notifications are queued when these events occur:
 
-| Event            | Recipients                               | Details                  |
-| ---------------- | ---------------------------------------- | ------------------------ |
-| New comment      | Assignees + Stakeholders (except author) | Includes comment preview |
-| Task moved       | Assignees + Stakeholders                 | From/to column names     |
-| Assignee added   | The new assignee only                    | —                        |
-| Priority changed | Assignees + Stakeholders                 | New priority level       |
+| Event            | Recipients                                   | Details                  |
+| ---------------- | -------------------------------------------- | ------------------------ |
+| New comment      | Assignees + Stakeholders (except author)     | Includes comment preview |
+| @Mention         | Mentioned contributor (except author)        | Includes comment preview |
+| Task moved       | Assignees + Stakeholders                     | From/to column names     |
+| Assignee added   | The new assignee only                        | —                        |
+| Priority changed | Assignees + Stakeholders                     | New priority level       |
+
+**Note:** @Mentioned contributors receive notifications regardless of whether they are assignees or stakeholders. This allows notifying anyone on the board, even if they're not directly involved with the task.
 
 ### Batching
 

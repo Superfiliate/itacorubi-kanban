@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, useState } from "react";
+import React, { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { FileHandler } from "@tiptap/extension-file-handler";
@@ -13,6 +13,10 @@ import { FileAttachment } from "./tiptap-extensions/file-attachment";
 import { LoomEmbed } from "./tiptap-extensions/loom-embed";
 import { YouTubeEmbed } from "./tiptap-extensions/youtube-embed";
 import { UploadPlaceholder } from "./tiptap-extensions/upload-placeholder";
+import {
+  createMentionExtension,
+  type MentionContributor,
+} from "./tiptap-extensions/mention-extension";
 import {
   Bold,
   Italic,
@@ -46,6 +50,8 @@ interface RichTextEditorProps {
   commentId?: string;
   onUploadStart?: () => void;
   onUploadEnd?: () => void;
+  // Contributors for @mention suggestions
+  contributors?: MentionContributor[];
 }
 
 interface UploadedFileResult {
@@ -341,11 +347,24 @@ export function RichTextEditor({
   commentId,
   onUploadStart,
   onUploadEnd,
+  contributors = [],
 }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const canUpload = !!(boardId && commentId);
+
+  // Store contributors in a ref so the mention extension can access latest values
+  const contributorsRef = useRef<MentionContributor[]>(contributors);
+  useEffect(() => {
+    contributorsRef.current = contributors;
+  }, [contributors]);
+
+  // Create mention extension with ref to contributors (memoized to avoid recreation)
+  const mentionExtension = useMemo(
+    () => createMentionExtension(contributorsRef),
+    [], // Only create once - it reads from ref
+  );
 
   const handleFileUpload = useCallback(
     async (files: FileList | File[], pos?: number) => {
@@ -483,6 +502,7 @@ export function RichTextEditor({
       LoomEmbed,
       YouTubeEmbed,
       UploadPlaceholder,
+      mentionExtension,
       // FileHandler is always included, but callbacks check if upload is enabled
       // Note: Not using allowedMimeTypes to avoid filtering issues - we validate on the server
       FileHandler.configure({
@@ -632,12 +652,13 @@ export function isRichTextEmpty(content: string | undefined): boolean {
           attrs?: Record<string, unknown>;
         };
 
-        // Images, file attachments, and video embeds are meaningful content
+        // Images, file attachments, video embeds, and mentions are meaningful content
         if (
           n.type === "image" ||
           n.type === "fileAttachment" ||
           n.type === "loomEmbed" ||
-          n.type === "youtubeEmbed"
+          n.type === "youtubeEmbed" ||
+          n.type === "mention"
         ) {
           return true;
         }

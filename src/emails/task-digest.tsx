@@ -2,7 +2,7 @@ import * as React from "react";
 
 export type NotificationItem = {
   id: string;
-  type: "comment" | "move" | "assign" | "priority";
+  type: "comment" | "move" | "assign" | "priority" | "mention";
   taskId: string;
   taskTitle: string;
   triggeredByName?: string;
@@ -38,6 +38,8 @@ function formatNotification(notification: NotificationItem): string {
       return `${actor} assigned you to this task`;
     case "priority":
       return `${actor} changed priority to ${metadata?.priority || "unknown"}`;
+    case "mention":
+      return `${actor} mentioned you${metadata?.commentPreview ? `: "${metadata.commentPreview}"` : ""}`;
     default:
       return `${actor} updated the task`;
   }
@@ -143,7 +145,8 @@ export function TaskDigestEmail({
         }}
       >
         <p style={{ margin: "0 0 8px 0" }}>
-          You received this email because you are assigned to or a stakeholder on these tasks.
+          You received this email because you are assigned to, a stakeholder on, or were mentioned
+          in these tasks.
         </p>
         <p style={{ margin: 0 }}>
           To stop receiving notifications, remove your email from your contributor profile on the

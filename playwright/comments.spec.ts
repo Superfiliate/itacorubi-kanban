@@ -194,4 +194,127 @@ test.describe("Comments", () => {
     // Comment should be gone
     await expect(page.getByText(/comment to delete/i)).not.toBeVisible();
   });
+
+  test("should show @mention suggestions when typing @", async ({ page }) => {
+    await seedAndNavigateToBoard(page, { title: "Mention Suggestions Test" });
+
+    // Create a task
+    const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
+    await addTaskButton.click();
+    const sidebar = await waitForSidebarOpen(page);
+
+    // Create an author first
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i });
+    await authorSelect.click();
+    const authorInput = page.getByPlaceholder(/search or create/i);
+    await authorInput.fill("Author");
+    await page.getByRole("option", { name: /create.*author/i }).click();
+
+    // Create another contributor to mention using the author select dropdown
+    await authorSelect.click();
+    const mentionInput = page.getByPlaceholder(/search or create/i);
+    await mentionInput.fill("Mentionable Person");
+    await page.getByRole("option", { name: /create.*mentionable person/i }).click();
+
+    // Now the "Mentionable Person" should be available for mentions
+    // Type @ in the editor
+    const editor = sidebar.locator('[contenteditable="true"]').first();
+    await editor.click();
+    await editor.pressSequentially("Hello @Ment");
+
+    // Wait for the mention suggestions dropdown (the one that appears below the editor)
+    // The dropdown has a specific structure with a button containing the contributor name
+    const mentionDropdown = page
+      .locator('[class*="rounded-md border bg-popover"]')
+      .getByText("Mentionable Person");
+    await expect(mentionDropdown).toBeVisible({ timeout: 3000 });
+  });
+
+  test("should insert @mention and trigger notification", async ({ page }) => {
+    // Create board with a contributor that has an email
+    const { boardId } = await seedAndNavigateToBoard(page, {
+      title: "Mention Notification Test",
+      contributors: [{ name: "Recipient", email: "recipient@test.com" }],
+    });
+
+    // Create a task
+    const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
+    await addTaskButton.click();
+    const sidebar = await waitForSidebarOpen(page);
+
+    // Create an author
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i });
+    await authorSelect.click();
+    const authorInput = page.getByPlaceholder(/search or create/i);
+    await authorInput.fill("Comment Author");
+    await page.getByRole("option", { name: /create.*comment author/i }).click();
+
+    // Type a comment with @mention
+    const editor = sidebar.locator('[contenteditable="true"]').first();
+    await editor.click();
+    await editor.pressSequentially("Hey @Reci");
+
+    // Wait for mention dropdown to appear
+    const mentionOption = page
+      .locator('[class*="rounded-md border bg-popover"]')
+      .getByText("Recipient");
+    await expect(mentionOption).toBeVisible({ timeout: 3000 });
+
+    // Use keyboard to select the mention (Enter key)
+    await editor.press("Enter");
+
+    // Continue typing
+    await editor.pressSequentially(" check this out!");
+
+    // Submit comment
+    await page.getByRole("button", { name: /add comment/i }).click();
+    await expect(page.getByText(/comment added/i)).toBeVisible();
+
+    // Verify mention is displayed in the comment
+    await expect(sidebar.locator(".mention")).toContainText("Recipient");
+
+    // Process notifications
+    await page.request.post(`/api/boards/${boardId}/emails`);
+
+    // Check that mention notification was sent
+    const response = await page.request.get(`/api/boards/${boardId}/emails`);
+    const { emails } = await response.json();
+    expect(emails.length).toBeGreaterThan(0);
+
+    // Verify at least one email mentions the mention
+    const emailResponse = await page.request.get(`/api/boards/${boardId}/emails/${emails[0].id}`);
+    const { email } = await emailResponse.json();
+    expect(email.htmlContent).toContain("mentioned you");
+  });
+
+  test("should show no-email indicator for contributors without email", async ({ page }) => {
+    await seedAndNavigateToBoard(page, { title: "No Email Indicator Test" });
+
+    // Create a task
+    const addTaskButton = page.getByRole("button", { name: /add task/i }).first();
+    await addTaskButton.click();
+    const sidebar = await waitForSidebarOpen(page);
+
+    // Create an author (which also creates a contributor without email)
+    const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i });
+    await authorSelect.click();
+    const authorInput = page.getByPlaceholder(/search or create/i);
+    await authorInput.fill("NoEmail Person");
+    await page.getByRole("option", { name: /create.*noemail person/i }).click();
+
+    // Type @ in the editor
+    const editor = sidebar.locator('[contenteditable="true"]').first();
+    await editor.click();
+    await editor.pressSequentially("@NoEmail");
+
+    // Wait for the mention suggestions dropdown
+    const mentionPopup = page.locator('[class*="rounded-md border bg-popover"]');
+    const mentionDropdown = mentionPopup.getByText("NoEmail Person");
+    await expect(mentionDropdown).toBeVisible({ timeout: 3000 });
+
+    // Verify the no-email icon is visible (crossed-out mail icon)
+    // The icon is in the popover and has a title
+    const noEmailIndicator = mentionPopup.locator('[title*="No email configured"]');
+    await expect(noEmailIndicator).toBeVisible();
+  });
 });
