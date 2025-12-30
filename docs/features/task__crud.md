@@ -52,6 +52,14 @@ Tasks are the individual work items that live within columns. Each task can have
 - Confirmation dialog appears
 - Confirm to delete
 
+### Send to Linear
+
+- Open task sidebar
+- Click Linear icon in bottom right corner (next to delete button)
+- Opens `https://linear.new` in a new tab with pre-filled fields:
+  - **Title**: Task title
+  - **Description**: Status, priority, assignees, and a source link back to the task
+
 ## Notes
 
 - Tasks can be dropped into collapsed columns
@@ -61,4 +69,4 @@ Tasks are the individual work items that live within columns. Each task can have
 - Comment age indicator uses color coding (green → yellow → red)
 - Adding a comment moves the task to the top of its column
 - Initial task title (including emoji) is generated on the client and passed to the server to ensure consistency between optimistic UI and server response
-- See `006-comments.md` for full comment documentation
+- See `comment__crud.md` for full comment documentation

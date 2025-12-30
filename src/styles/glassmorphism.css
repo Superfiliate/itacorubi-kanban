@@ -1,4 +1,4 @@
-/* Glassmorphism Utilities - see docs/features/008-glassmorphism.md */
+/* Glassmorphism Utilities - see docs/features/theme__glassmorphism.md */
 @layer components {
   .glass {
     @apply backdrop-blur-xl border rounded-xl;

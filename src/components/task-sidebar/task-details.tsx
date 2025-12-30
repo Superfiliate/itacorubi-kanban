@@ -35,6 +35,9 @@ import {
 import type { ContributorColor, TaskPriority } from "@/db/schema";
 import { TASK_PRIORITY_OPTIONS, TASK_PRIORITY_META } from "@/lib/task-priority";
 import { cn } from "@/lib/utils";
+import { generateText } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+import { LinearIcon } from "@/components/icons/brand";
 
 interface TaskDetailsProps {
   task: {
@@ -63,6 +66,13 @@ interface TaskDetailsProps {
         id: string;
         name: string;
         color: ContributorColor;
+      };
+    }>;
+    comments?: Array<{
+      id: string;
+      content: string;
+      author: {
+        name: string;
       };
     }>;
   };
@@ -119,6 +129,46 @@ export function TaskDetails({ task, columns, contributors, tags, onClose }: Task
         toast.error("Failed to delete task");
       },
     });
+  };
+
+  const handleSendToLinear = () => {
+    const columnName = columns.find((c) => c.id === task.columnId)?.name;
+    const priorityLabel =
+      TASK_PRIORITY_OPTIONS.find((opt) => opt.value === task.priority)?.label ?? "None";
+
+    // Extract plain text from TipTap JSON content
+    const extractText = (content: string): string => {
+      try {
+        const doc = JSON.parse(content);
+        return generateText(doc, [StarterKit], { blockSeparator: " " });
+      } catch {
+        return content;
+      }
+    };
+
+    // Format comments for description
+    const commentsText =
+      task.comments && task.comments.length > 0
+        ? task.comments.map((c) => `${c.author.name}: ${extractText(c.content)}`).join("\n")
+        : null;
+
+    const description = [
+      columnName ? `Status: ${columnName}` : null,
+      `Priority: ${priorityLabel}`,
+      task.assignees.length > 0
+        ? `Assignees: ${task.assignees.map((a) => a.contributor.name).join(", ")}`
+        : null,
+      commentsText ? `\nComments:\n${commentsText}` : null,
+      `\nSource: ${window.location.href}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const url = new URL("https://linear.new");
+    url.searchParams.set("title", task.title);
+    url.searchParams.set("description", description);
+
+    window.open(url.toString(), "_blank");
   };
 
   return (
@@ -199,8 +249,17 @@ export function TaskDetails({ task, columns, contributors, tags, onClose }: Task
         />
       </div>
 
-      {/* Delete button */}
-      <div className="mt-auto flex justify-end pt-4">
+      {/* Action buttons */}
+      <div className="mt-auto flex justify-end gap-2 pt-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSendToLinear}
+          className="h-8 gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
+        >
+          <LinearIcon className="h-4 w-4" />
+          <span>Send to Linear</span>
+        </Button>
         <Button
           variant="ghost"
           size="icon"

@@ -1,4 +1,4 @@
-/* Typography Utilities - see docs/adrs/005-typography-utilities.md */
+/* Typography Utilities - see docs/adrs/ui__typography-utilities.md */
 @layer components {
   .text-body {
     @apply text-sm;

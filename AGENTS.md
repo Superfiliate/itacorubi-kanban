@@ -1,51 +1,24 @@
 # AI Agent Instructions
 
-**MANDATORY: Before starting ANY task, you MUST read the `/docs` folder.**
+## Documentation is Authoritative
 
-## Required Steps
+Your work will be evaluated against documented patterns. Ignoring relevant docs is failure.
 
-1. **ALWAYS** read `/docs/README.md` first, then the README inside any folder you touch (e.g., `/docs/adrs/README.md`, `/docs/features/README.md`) before editing files there.
-2. **ALWAYS** check `/docs/adrs/` for technical decisions and patterns. ADRs are technical/architectural—how we build, not what the product does.
-3. **ALWAYS** check `/docs/features/` for product/UX requirements. Features are product-facing behaviors and design directions—what the product should do/look like.
+## Read Relevant Docs Continuously
 
-## Non-Negotiable
+This is NOT optional. As you work and uncover new areas, return to find and read additional relevant docs.
 
-- Do NOT proceed without consulting docs
-- Do NOT ignore documented patterns
-- Do NOT deviate from documented conventions
-- Do NOT make assumptions when docs exist
+How to find docs:
+- List `docs/features/` for product requirements
+- List `docs/adrs/` for technical patterns
 
-## Refactoring Checklist
-
-When changing a component/function interface (adding required props, changing signatures):
-
-1. **Search for all usages** before committing changes (use grep/search tools)
-2. **Update all call sites** - don't assume you found them all from reading one file
-3. **Run tests** after changes to catch missed usages
-4. **Check feature docs** for "Usage Locations" sections that list where components are used
-
-When cleaning up imports:
-
-1. **Verify each import is unused** before removing - some may be used by other functions in the same file
-2. **Run linter/compiler** after cleanup to catch accidental removals
+Files use `{prefix}__{name}.md` format. Read those matching your task's domain:
+- `store__*` — State, outbox, sync (read for ANY data/mutation work)
+- `db__*` — Database, Drizzle, schema
+- `ui__*` — Components, UX patterns
+- `task__*`, `comment__*`, etc. — Entity-specific flows
 
 ## Keep Docs Updated
 
-**Documentation updates are part of your work, not an afterthought. Read the relevant README before adding or changing files in that area.**
-
-When planning any task, include documentation updates as explicit steps in your plan:
-
-- **New patterns or conventions?** → Plan to add to `/docs/adrs/`
-- **New features or user flows?** → Plan to add/update `/docs/features/`
-
-If you use Plan mode, your plan MUST include documentation tasks when the work introduces:
-
-- New user-facing features
-- New technical patterns or conventions
-- Changes to existing documented behavior
-
-Only document when truly relevant. Do NOT make minor tweaks or rephrase things that are already clear.
-
----
-
-**The `/docs` folder is your source of truth. Keep it that way.**
+Update relevant docs when you change documented behavior.
+Each folder has a README with formatting rules — read it before adding docs.

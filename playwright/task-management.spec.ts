@@ -1,10 +1,22 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator } from "@playwright/test";
 import {
   seedAndNavigateToBoard,
   waitForBoardLoad,
   waitForSidebarOpen,
   waitForSidebarClose,
 } from "./utils/playwright";
+
+// Helper to get task order in a column
+async function getTaskOrder(columnContainer: Locator) {
+  const headings = columnContainer.locator("h4");
+  const count = await headings.count();
+  const order = [];
+  for (let i = 0; i < count; i++) {
+    const text = await headings.nth(i).textContent();
+    if (text) order.push(text.trim());
+  }
+  return order;
+}
 
 test.describe("Task Management", () => {
   test("should create a task from column", async ({ page }) => {
@@ -283,18 +295,6 @@ test.describe("Task Management", () => {
         .locator("..") // header
         .locator("..") // expanded view
         .locator(".."); // column root
-    };
-
-    // Helper to get task order in a column
-    const getTaskOrder = async (columnContainer: any) => {
-      const headings = columnContainer.locator("h4");
-      const count = await headings.count();
-      const order = [];
-      for (let i = 0; i < count; i++) {
-        const text = await headings.nth(i).textContent();
-        if (text) order.push(text.trim());
-      }
-      return order;
     };
 
     // Helper to drag task to another task

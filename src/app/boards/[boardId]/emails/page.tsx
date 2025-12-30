@@ -22,6 +22,11 @@ interface PageProps {
   params: Promise<{ boardId: string }>;
 }
 
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleString();
+}
+
 export default function BoardEmailsPage({ params }: PageProps) {
   const { boardId } = use(params);
   const [emails, setEmails] = useState<SentEmail[]>([]);
@@ -63,11 +68,6 @@ export default function BoardEmailsPage({ params }: PageProps) {
     } finally {
       setProcessing(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
   };
 
   if (loading) {

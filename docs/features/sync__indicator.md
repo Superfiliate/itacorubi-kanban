@@ -59,5 +59,5 @@ Playwright tests use the centralized `waitForSync(page)` helper:
 ## Links
 
 - Component: `src/components/sync-indicator.tsx`
-- Architecture: `docs/adrs/010-local-first-architecture.md`
-- Testing: `docs/adrs/015-testing-setup.md`
+- Architecture: `docs/adrs/store__local-first-architecture.md`
+- Testing: `docs/adrs/testing__playwright-setup.md`

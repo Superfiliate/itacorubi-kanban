@@ -19,7 +19,14 @@
   },
   "rules": {
     "jsx-a11y/no-autofocus": "off",
-    "node/no-process-env": "error"
+    "node/no-process-env": "error",
+    "oxc/no-barrel-file": ["error", { "threshold": 2 }],
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
+    "eslint/eqeqeq": "error",
+    "react/self-closing-comp": "error",
+    "react/no-array-index-key": "error",
+    "unicorn/consistent-function-scoping": "error"
   },
   "overrides": [
     {

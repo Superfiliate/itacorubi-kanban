@@ -1,13 +1,27 @@
 # Architecture Decision Records
 
-This folder contains accepted architectural decisions for the project.
+Technical patterns and conventions (how we build).
+
+## File Naming
+
+Use format: `{prefix}__{name}.md`
+
+| Prefix | Technology Area |
+| ------ | --------------- |
+| `store__` | Zustand, outbox, sync, polling |
+| `db__` | Database, Drizzle, Turso |
+| `ui__` | Components, UX patterns |
+| `security__` | Auth, passwords, headers |
+| `testing__` | Playwright, linting, code quality |
+| `files__` | File uploads, storage |
+| `global__` | Cross-cutting concerns |
 
 ## Format
 
 ADRs should follow this structure:
 
 ```markdown
-# ADR 001: Short Title
+# ADR: Short Title
 
 One-liner stating the decision clearly.
 
@@ -20,14 +34,9 @@ One-liner stating the decision clearly.
 Code snippets when helpful.
 ```
 
-## Scope
-
-ADRs are for technical/architectural decisions and patterns (how we build). Product behavior/UX belongs in `/docs/features/`.
-
 ## Guidelines
 
 - Be succinct and decision-oriented
-- Add small examples/cheatsheets when they clarify the pattern; avoid long dumps
-- Place examples under a `## Examples` section when present
+- Add small examples/cheatsheets when they clarify the pattern
 - Prioritize the most important points
 - All ADRs in this folder are accepted (no status needed)

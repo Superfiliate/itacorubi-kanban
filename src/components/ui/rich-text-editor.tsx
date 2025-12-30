@@ -634,49 +634,48 @@ export function RichTextEditor({
   );
 }
 
+// Recursively check if nodes contain any meaningful content
+function hasRichTextContent(nodes: unknown[]): boolean {
+  for (const node of nodes) {
+    if (typeof node !== "object" || node === null) continue;
+    const n = node as {
+      type?: string;
+      content?: unknown[];
+      text?: string;
+      attrs?: Record<string, unknown>;
+    };
+
+    // Images, file attachments, video embeds, and mentions are meaningful content
+    if (
+      n.type === "image" ||
+      n.type === "fileAttachment" ||
+      n.type === "loomEmbed" ||
+      n.type === "youtubeEmbed" ||
+      n.type === "mention"
+    ) {
+      return true;
+    }
+
+    // Text nodes with actual text
+    if (n.text && n.text.trim().length > 0) {
+      return true;
+    }
+
+    // Recursively check children
+    if (n.content && hasRichTextContent(n.content)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Helper to check if content is empty
 export function isRichTextEmpty(content: string | undefined): boolean {
   if (!content) return true;
   try {
     const json = JSON.parse(content);
     if (!json.content || json.content.length === 0) return true;
-
-    // Recursively check if there's any meaningful content
-    function hasContent(nodes: unknown[]): boolean {
-      for (const node of nodes) {
-        if (typeof node !== "object" || node === null) continue;
-        const n = node as {
-          type?: string;
-          content?: unknown[];
-          text?: string;
-          attrs?: Record<string, unknown>;
-        };
-
-        // Images, file attachments, video embeds, and mentions are meaningful content
-        if (
-          n.type === "image" ||
-          n.type === "fileAttachment" ||
-          n.type === "loomEmbed" ||
-          n.type === "youtubeEmbed" ||
-          n.type === "mention"
-        ) {
-          return true;
-        }
-
-        // Text nodes with actual text
-        if (n.text && n.text.trim().length > 0) {
-          return true;
-        }
-
-        // Recursively check children
-        if (n.content && hasContent(n.content)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    return !hasContent(json.content);
+    return !hasRichTextContent(json.content);
   } catch {
     return true;
   }

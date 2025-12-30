@@ -1,28 +1,20 @@
-# Features Documentation
+# Feature Documentation
 
-This folder contains user flows and feature documentation organized **by model/entity**.
+Product requirements and user flows (what we build).
 
-## Organization
+> **Start with [../vision.md](../vision.md)** for overall product context before diving into specific features.
 
-Each feature file focuses on a single model and its interactions:
+## File Naming
 
-| File                         | Model        | Scope                                               |
-| ---------------------------- | ------------ | --------------------------------------------------- |
-| `000-overview.md`            | —            | App overview, data model, visual design, tech notes |
-| `001-homepage.md`            | —            | Landing page, entry points                          |
-| `002-boards.md`              | Board        | Create, access, rename, delete                      |
-| `003-columns.md`             | Column       | Add, rename, reorder, collapse/expand, delete       |
-| `004-tasks.md`               | Task         | Create, view/edit, move, delete                     |
-| `005-contributors.md`        | Contributor  | Assign, create, remove, colors                      |
-| `006-comments.md`            | Comment      | Add, edit, delete, author memory, age indicators    |
-| `007-dark-mode.md`           | —            | Theme toggle and persistence                        |
-| `008-glassmorphism.md`       | —            | Visual styling direction                            |
-| `009-sync-status.md`         | —            | Sync indicator behavior                             |
-| `010-user-feedback.md`       | —            | Toasts, confirmations, empty states                 |
-| `011-tags.md`                | Tag          | Create, assign, remove, colors                      |
-| `012-file-uploads.md`        | UploadedFile | Upload, display, delete, storage limits             |
-| `013-email-notifications.md` | —            | Email notifications, triggers, batching             |
-| `014-mentions.md`            | —            | @mention contributors in comments                   |
+Use format: `{prefix}__{name}.md`
+
+| Prefix | Domain |
+| ------ | ------ |
+| `board__`, `task__`, `column__` | Core entities |
+| `comment__`, `contributor__`, `tag__` | Task-related entities |
+| `theme__`, `sync__`, `ux__` | Cross-cutting UX |
+| `email__`, `file__` | Integrations |
+| `global__` | App-wide |
 
 ## File Structure
 
@@ -55,13 +47,3 @@ Any model-specific technical notes or edge cases.
 2. **Be specific** — Include button names, URLs, field names
 3. **Be complete** — Cover happy path and important edge cases
 4. **Be consistent** — Follow the same format across all files
-
-## Example User Flow
-
-```markdown
-### Create Task
-- Click "Add task" button at top of column
-- Task created with "{emoji} New task" title
-- Sidebar automatically opens for editing
-- URL updates to `/boards/{boardId}/tasks/{taskId}`
-```

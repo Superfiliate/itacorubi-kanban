@@ -2,7 +2,7 @@ import React from "react";
 import type { LucideIcon } from "lucide-react";
 import { CircleDashed, Flame, SignalHigh } from "lucide-react";
 import type { TaskPriority } from "@/db/schema";
-import { SignalLowWithBackground, SignalMediumWithBackground } from "@/components/priority-icons";
+import { SignalLowWithBackground, SignalMediumWithBackground } from "@/components/icons/priority";
 
 export type TaskPriorityMeta = {
   value: TaskPriority;

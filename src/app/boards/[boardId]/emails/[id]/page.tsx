@@ -24,6 +24,11 @@ interface PageProps {
   params: Promise<{ boardId: string; id: string }>;
 }
 
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleString();
+}
+
 export default function BoardEmailViewerPage({ params }: PageProps) {
   const { boardId, id } = use(params);
   const [email, setEmail] = useState<SentEmail | null>(null);
@@ -57,11 +62,6 @@ export default function BoardEmailViewerPage({ params }: PageProps) {
 
     fetchEmail();
   }, [boardId, id]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
 
   if (loading) {
     return (

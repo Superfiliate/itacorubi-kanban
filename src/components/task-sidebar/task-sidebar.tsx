@@ -219,6 +219,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
                   assignees: taskForUI.assignees,
                   stakeholders: taskForUI.stakeholders,
                   tags: taskForUI.tags,
+                  comments: taskForUI.comments,
                 }}
                 columns={columns}
                 contributors={currentContributors}

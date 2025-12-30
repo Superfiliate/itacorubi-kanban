@@ -212,6 +212,36 @@ export function extractMentionIds(content: string): string[] {
 }
 
 /**
+ * Extract text from Tiptap JSON nodes, handling mentions specially.
+ */
+function extractTextFromNodes(nodes: unknown[]): string {
+  let text = "";
+  for (const node of nodes) {
+    if (typeof node !== "object" || node === null) continue;
+    const n = node as {
+      type?: string;
+      text?: string;
+      attrs?: { label?: string };
+      content?: unknown[];
+    };
+
+    // For mention nodes, include "@name" format
+    if (n.type === "mention" && n.attrs?.label) {
+      text += `@${n.attrs.label}`;
+      continue;
+    }
+
+    if (n.text) {
+      text += n.text;
+    }
+    if (n.content && Array.isArray(n.content)) {
+      text += extractTextFromNodes(n.content);
+    }
+  }
+  return text;
+}
+
+/**
  * Extract comment preview text from Tiptap JSON content.
  * Skips mention node labels to avoid duplication.
  */
@@ -219,35 +249,8 @@ function extractCommentPreview(content: string, maxLength = 100): string {
   try {
     const parsed = JSON.parse(content);
 
-    function extractText(nodes: unknown[]): string {
-      let text = "";
-      for (const node of nodes) {
-        if (typeof node !== "object" || node === null) continue;
-        const n = node as {
-          type?: string;
-          text?: string;
-          attrs?: { label?: string };
-          content?: unknown[];
-        };
-
-        // For mention nodes, include "@name" format
-        if (n.type === "mention" && n.attrs?.label) {
-          text += `@${n.attrs.label}`;
-          continue;
-        }
-
-        if (n.text) {
-          text += n.text;
-        }
-        if (n.content && Array.isArray(n.content)) {
-          text += extractText(n.content);
-        }
-      }
-      return text;
-    }
-
     if (parsed.content) {
-      return extractText(parsed.content).slice(0, maxLength);
+      return extractTextFromNodes(parsed.content).slice(0, maxLength);
     }
     return "";
   } catch {
