@@ -4,6 +4,7 @@ import {
   waitForBoardLoad,
   waitForSidebarOpen,
   waitForSidebarClose,
+  waitForSync,
 } from "./utils/playwright";
 
 test.describe("Local-First Architecture", () => {
@@ -102,7 +103,7 @@ test.describe("Local-First Architecture", () => {
     await waitForBoardLoad(page);
 
     // Wait for sync to complete (restored outbox items are flushed on page load)
-    await expect(page.locator("header").getByText(/saving/i)).not.toBeVisible({ timeout: 15000 });
+    await waitForSync(page);
 
     // Verify all tasks persisted
     await expect(todoColumn.getByText(/3/)).toBeVisible();

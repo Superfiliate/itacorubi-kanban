@@ -1642,3 +1642,10 @@ export function selectOutboxStatus(boardId: string) {
     };
   };
 }
+
+export function selectOutboxItems(boardId: string) {
+  return (s: BoardStoreState): OutboxItem[] => {
+    const board = s.boardsById[boardId];
+    return board?.outbox ?? [];
+  };
+}

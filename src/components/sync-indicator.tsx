@@ -3,14 +3,67 @@
 import { useState, useEffect, useRef } from "react";
 import { Check, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useBoardStore, selectOutboxStatus } from "@/stores/board-store";
+import {
+  useBoardStore,
+  selectOutboxStatus,
+  selectOutboxItems,
+  type OutboxItem,
+} from "@/stores/board-store";
 import { useShallow } from "zustand/react/shallow";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getOperationLabel } from "@/lib/outbox-labels";
 
 type SyncStatus = "synced" | "syncing" | "pending" | "error";
 
 // Minimum time each status should be displayed (in ms)
 const MIN_DISPLAY_TIME = 1000;
 const SAVED_DISPLAY_TIME = 2000;
+
+interface SyncStatusPopoverContentProps {
+  status: SyncStatus;
+  pendingCount: number;
+  outboxItems: OutboxItem[];
+  hasPendingOps: boolean;
+}
+
+function SyncStatusPopoverContent({
+  status,
+  pendingCount,
+  outboxItems,
+  hasPendingOps,
+}: SyncStatusPopoverContentProps) {
+  return (
+    <div className="space-y-3">
+      <div aria-live="polite">
+        <h3 className="font-semibold text-sm mb-2">Sync Status</h3>
+        <div className="flex items-center gap-2 text-sm" role="status">
+          <StatusIcon status={status} />
+          <span>{getStatusLabel(status)}</span>
+        </div>
+        {hasPendingOps && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {pendingCount} pending {pendingCount === 1 ? "operation" : "operations"}
+          </p>
+        )}
+      </div>
+
+      {hasPendingOps && outboxItems.length > 0 && (
+        <div>
+          <h4 className="font-medium text-xs mb-2 text-muted-foreground">Pending:</h4>
+          <ul className="space-y-1" aria-label="Pending sync operations">
+            {outboxItems.map((item) => (
+              <li key={item.id} className="text-xs text-muted-foreground">
+                • {getOperationLabel(item)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!hasPendingOps && <p className="text-xs text-muted-foreground">All changes saved</p>}
+    </div>
+  );
+}
 
 interface SyncIndicatorProps {
   boardId: string;
@@ -19,6 +72,7 @@ interface SyncIndicatorProps {
 
 export function SyncIndicator({ boardId, className }: SyncIndicatorProps) {
   const outboxStatus = useBoardStore(useShallow(selectOutboxStatus(boardId)));
+  const outboxItems = useBoardStore(useShallow(selectOutboxItems(boardId)));
 
   // The status we're actually displaying (with debouncing)
   const [displayStatus, setDisplayStatus] = useState<SyncStatus | null>(null);
@@ -105,17 +159,38 @@ export function SyncIndicator({ boardId, className }: SyncIndicatorProps) {
     return null;
   }
 
+  const pendingCount = outboxItems.length;
+  const hasPendingOps = pendingCount > 0 || outboxStatus.isFlushing;
+
   return (
-    <div
-      className={cn(
-        "flex items-center gap-1.5 text-xs text-muted-foreground transition-opacity duration-200",
-        className,
-      )}
-      title={getStatusTitle(displayStatus)}
-    >
-      <StatusIcon status={displayStatus} />
-      <span className="hidden sm:inline">{getStatusLabel(displayStatus)}</span>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          data-testid="sync-indicator"
+          className={cn(
+            "flex items-center gap-1.5 text-xs text-muted-foreground transition-opacity duration-200 hover:text-foreground cursor-pointer",
+            className,
+          )}
+          title={getStatusTitle(displayStatus)}
+          aria-label="Sync status"
+        >
+          <StatusIcon status={displayStatus} />
+          <span className="hidden sm:inline">{getStatusLabel(displayStatus)}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="w-80 max-h-96 overflow-y-auto"
+        data-testid="sync-indicator-popover"
+      >
+        <SyncStatusPopoverContent
+          status={displayStatus}
+          pendingCount={pendingCount}
+          outboxItems={outboxItems}
+          hasPendingOps={hasPendingOps}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 

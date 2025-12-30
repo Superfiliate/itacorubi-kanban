@@ -4,6 +4,7 @@ import {
   waitForBoardLoad,
   waitForSidebarOpen,
   waitForSidebarClose,
+  waitForSync,
 } from "./utils/playwright";
 
 /**
@@ -45,7 +46,7 @@ async function createContributorWithEmail(page: Page, email: string): Promise<vo
   await expect(dialog).not.toBeVisible();
 
   // Wait for the outbox to flush
-  await page.waitForTimeout(1000);
+  await waitForSync(page);
 }
 
 /**

@@ -116,3 +116,90 @@ export function getTestContext(): { databaseUrl: string } {
     databaseUrl: "file:test.db",
   };
 }
+
+const SYNC_TIMEOUT = 5000; // 5s - if sync takes longer, it's a UX bug
+
+/**
+ * Helper to gather pending operations from the sync indicator popover
+ * Returns a comma-separated string of operation labels, or null if popover can't be read
+ */
+async function gatherPendingOperations(page: Page): Promise<string | null> {
+  try {
+    const syncIndicator = page.getByTestId("sync-indicator");
+    const isVisible = await syncIndicator.isVisible().catch(() => false);
+    if (!isVisible) {
+      return null;
+    }
+
+    // Click to open popover
+    await syncIndicator.click();
+
+    // Wait for popover to appear
+    const popover = page.getByTestId("sync-indicator-popover");
+    const isPopoverVisible = await popover.isVisible({ timeout: 1000 }).catch(() => false);
+    if (!isPopoverVisible) {
+      return null;
+    }
+
+    // Try to read pending operations list
+    const pendingList = popover.locator("ul");
+    const listExists = await pendingList.isVisible().catch(() => false);
+    if (!listExists) {
+      return null;
+    }
+
+    const items = pendingList.locator("li");
+    const count = await items.count();
+    const operations: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const text = await items.nth(i).textContent();
+      if (text) {
+        // Remove the bullet point prefix
+        operations.push(text.replace(/^•\s*/, "").trim());
+      }
+    }
+
+    // Close popover by clicking outside
+    await page.keyboard.press("Escape");
+
+    return operations.length > 0 ? operations.join(", ") : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Waits for all pending sync operations to complete.
+ *
+ * Timeout is intentionally NOT configurable per-call. Per ADR 015:
+ * - Flaky tests are bugs - if sync is slow in tests, it's slow for users
+ * - If 5s isn't enough, FIX THE APP, don't increase the timeout
+ *
+ * Fails with a descriptive error showing pending operations.
+ */
+export async function waitForSync(page: Page): Promise<void> {
+  const syncIndicator = page.getByTestId("sync-indicator");
+
+  // Check if indicator exists at all (it's hidden when idle)
+  const isVisible = await syncIndicator.isVisible().catch(() => false);
+  if (!isVisible) {
+    // No indicator means nothing is syncing - we're done
+    return;
+  }
+
+  try {
+    // Wait for "Saving..." to disappear (indicator goes to "Saved" then hides)
+    await expect(syncIndicator.getByText(/saving/i)).not.toBeVisible({
+      timeout: SYNC_TIMEOUT,
+    });
+  } catch {
+    // On failure, gather pending operations from popover for better error message
+    const pendingOps = await gatherPendingOperations(page);
+    throw new Error(
+      `Sync did not complete within ${SYNC_TIMEOUT}ms.\n` +
+        `Pending operations: ${pendingOps || "unknown (could not read from UI)"}\n` +
+        `This is likely an app bug - real users would experience the same delay.`,
+    );
+  }
+}
