@@ -24,8 +24,9 @@ export function MentionNodeView({ node, extension }: NodeViewProps) {
   const { id, label } = node.attrs as { id: string; label: string };
 
   // Get contributors from extension storage (set by the extension configuration)
-  const contributorsRef = extension.storage
-    .contributorsRef as React.MutableRefObject<MentionContributorData[]> | null;
+  const contributorsRef = extension.storage.contributorsRef as React.MutableRefObject<
+    MentionContributorData[]
+  > | null;
 
   // Look up the contributor by ID to get their current name and color
   const contributor = contributorsRef?.current.find((c) => c.id === id);

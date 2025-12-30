@@ -40,9 +40,7 @@ export function createMentionExtension(
       allowSpaces: false,
       items: ({ query }) => {
         return contributorsRef.current
-          .filter((contributor) =>
-            contributor.name.toLowerCase().startsWith(query.toLowerCase()),
-          )
+          .filter((contributor) => contributor.name.toLowerCase().startsWith(query.toLowerCase()))
           .slice(0, 10);
       },
       render: () => {
