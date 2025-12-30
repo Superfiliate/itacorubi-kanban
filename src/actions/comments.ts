@@ -100,16 +100,20 @@ export async function createComment(
     await db.update(tasks).set({ position: 0 }).where(eq(tasks.id, taskId));
   }
 
+  // Extract mentioned IDs first (needed for both notifications)
+  const mentionedIds = extractMentionIds(content);
+
   // Queue notification for assignees and stakeholders (except the comment author)
+  // Exclude mentioned users - they get the more specific "mention" notification instead
   await queueCommentNotification({
     boardId,
     taskId,
     authorId,
     commentContent: content,
+    excludeIds: mentionedIds,
   });
 
   // Queue mention notifications for @mentioned contributors
-  const mentionedIds = extractMentionIds(content);
   if (mentionedIds.length > 0) {
     await queueMentionNotifications({
       boardId,

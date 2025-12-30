@@ -75,43 +75,26 @@ export async function queueNotifications(params: {
 
 /**
  * Queue a notification when a new comment is added.
+ * Optionally exclude certain user IDs (e.g., mentioned users who get their own notification).
  */
 export async function queueCommentNotification(params: {
   boardId: string;
   taskId: string;
   authorId: string;
   commentContent: string;
+  excludeIds?: string[];
 }): Promise<void> {
-  const { boardId, taskId, authorId, commentContent } = params;
+  const { boardId, taskId, authorId, commentContent, excludeIds = [] } = params;
 
-  const recipientIds = await getTaskRecipients(taskId);
+  let recipientIds = await getTaskRecipients(taskId);
 
-  // Extract first 100 chars as preview
-  let commentPreview = "";
-  try {
-    const parsed = JSON.parse(commentContent);
-    // Extract text from Tiptap JSON content
-    const extractText = (nodes: unknown[]): string => {
-      let text = "";
-      for (const node of nodes) {
-        if (typeof node !== "object" || node === null) continue;
-        const n = node as { type?: string; text?: string; content?: unknown[] };
-        if (n.text) {
-          text += n.text;
-        }
-        if (n.content && Array.isArray(n.content)) {
-          text += extractText(n.content);
-        }
-      }
-      return text;
-    };
-    if (parsed.content) {
-      commentPreview = extractText(parsed.content).slice(0, 100);
-    }
-  } catch {
-    // If not JSON, use as-is
-    commentPreview = commentContent.slice(0, 100);
+  // Exclude mentioned users (they get a more specific "mention" notification)
+  if (excludeIds.length > 0) {
+    const excludeSet = new Set(excludeIds);
+    recipientIds = recipientIds.filter((id) => !excludeSet.has(id));
   }
+
+  const commentPreview = extractCommentPreview(commentContent);
 
   await queueNotifications({
     boardId,

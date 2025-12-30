@@ -242,12 +242,20 @@ test.describe("Comments", () => {
     await addTaskButton.click();
     const sidebar = await waitForSidebarOpen(page);
 
-    // Create an author
+    // Create an author first (so we can use them to write the comment)
     const authorSelect = sidebar.getByRole("combobox", { name: /who are you/i });
     await authorSelect.click();
     const authorInput = page.getByPlaceholder(/search or create/i);
     await authorInput.fill("Comment Author");
     await page.getByRole("option", { name: /create.*comment author/i }).click();
+
+    // Also assign Recipient to the task (to test deduplication: mentioned + assigned = 1 notification)
+    const assigneesSelect = sidebar.getByRole("combobox", { name: /assignees/i });
+    await assigneesSelect.click();
+    await page.getByRole("option", { name: /recipient/i }).first().click();
+    await expect(sidebar.locator("span").filter({ hasText: "Recipient" }).first()).toBeVisible();
+    // Close assignees dropdown
+    await page.keyboard.press("Escape");
 
     // Type a comment with @mention
     const editor = sidebar.locator('[contenteditable="true"]').first();
@@ -279,12 +287,27 @@ test.describe("Comments", () => {
     // Check that mention notification was sent
     const response = await page.request.get(`/api/boards/${boardId}/emails`);
     const { emails } = await response.json();
-    expect(emails.length).toBeGreaterThan(0);
 
-    // Verify at least one email mentions the mention
-    const emailResponse = await page.request.get(`/api/boards/${boardId}/emails/${emails[0].id}`);
+    // Recipient is both assigned AND mentioned, should only get ONE email (not two)
+    const recipientEmails = emails.filter(
+      (e: { recipientEmail: string }) => e.recipientEmail === "recipient@test.com",
+    );
+    expect(recipientEmails.length).toBe(1);
+
+    // Verify email content
+    const emailResponse = await page.request.get(
+      `/api/boards/${boardId}/emails/${recipientEmails[0].id}`,
+    );
     const { email } = await emailResponse.json();
+
+    // Should contain "mentioned you" (the more specific notification)
     expect(email.htmlContent).toContain("mentioned you");
+
+    // Should contain "@Recipient" in the preview (the @mention name should be visible)
+    expect(email.htmlContent).toContain("@Recipient");
+
+    // Should NOT contain a separate "commented:" line (deduplication worked)
+    expect(email.htmlContent).not.toMatch(/commented.*:.*&quot;/);
   });
 
   test("should show no-email indicator for contributors without email", async ({ page }) => {
