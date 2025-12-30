@@ -11,16 +11,17 @@ A collaborative Kanban board for small teams. Simple, fast, no sign-up required.
 
 ## Data Model
 
-| Entity | Key Fields |
-| ------ | ---------- |
-| Board | UUID, title, password hash |
-| Column | Name, position, collapsed state |
-| Task | Title, priority, position, timestamps |
-| Contributor | Name, color, optional email |
-| Comment | Author, content (rich text), timestamps |
-| Tag | Name (with #), color |
+| Entity      | Key Fields                              |
+| ----------- | --------------------------------------- |
+| Board       | UUID, title, password hash              |
+| Column      | Name, position, collapsed state         |
+| Task        | Title, priority, position, timestamps   |
+| Contributor | Name, color, optional email             |
+| Comment     | Author, content (rich text), timestamps |
+| Tag         | Name (with #), color                    |
 
 **Relationships:**
+
 - Tasks have assignees and stakeholders (both are contributors)
 - Comments have an author and optional stakeholder mention
 - Contributors can be @mentioned in comments
@@ -28,31 +29,34 @@ A collaborative Kanban board for small teams. Simple, fast, no sign-up required.
 ## Visual Design
 
 ### Aesthetic
+
 - **Glassmorphism** — Soft blur, translucent surfaces, subtle borders (see `features/theme__glassmorphism.md`)
 - **Light/dark themes** — System-aware with manual toggle
 - **Random emojis** — New boards, columns, tasks get a random emoji prefix
 - **17-color palette** — For contributors and tags
 
 ### Icons
+
 Lucide React throughout: `Plus`, `Trash2`, `Minimize2`/`Maximize2`, etc.
 
 ### Feedback Patterns
+
 - Toast notifications for confirmations
 - Confirmation dialogs for destructive actions
 - Empty states with helpful prompts
 
 ## Tech Stack
 
-| Layer | Technology |
-| ----- | ---------- |
-| Framework | Next.js (App Router) |
-| Database | Turso (SQLite) + Drizzle ORM |
-| State | Zustand (local-first store) |
-| UI | shadcn/ui + Tailwind CSS |
-| Editor | Tiptap (rich text) |
-| Drag & Drop | @dnd-kit |
-| Email | Resend |
-| Testing | Playwright |
+| Layer       | Technology                   |
+| ----------- | ---------------------------- |
+| Framework   | Next.js (App Router)         |
+| Database    | Turso (SQLite) + Drizzle ORM |
+| State       | Zustand (local-first store)  |
+| UI          | shadcn/ui + Tailwind CSS     |
+| Editor      | Tiptap (rich text)           |
+| Drag & Drop | @dnd-kit                     |
+| Email       | Resend                       |
+| Testing     | Playwright                   |
 
 ## Key ADRs
 

@@ -6,15 +6,15 @@ Technical patterns and conventions (how we build).
 
 Use format: `{prefix}__{name}.md`
 
-| Prefix | Technology Area |
-| ------ | --------------- |
-| `store__` | Zustand, outbox, sync, polling |
-| `db__` | Database, Drizzle, Turso |
-| `ui__` | Components, UX patterns |
-| `security__` | Auth, passwords, headers |
-| `testing__` | Playwright, linting, code quality |
-| `files__` | File uploads, storage |
-| `global__` | Cross-cutting concerns |
+| Prefix       | Technology Area                   |
+| ------------ | --------------------------------- |
+| `store__`    | Zustand, outbox, sync, polling    |
+| `db__`       | Database, Drizzle, Turso          |
+| `ui__`       | Components, UX patterns           |
+| `security__` | Auth, passwords, headers          |
+| `testing__`  | Playwright, linting, code quality |
+| `files__`    | File uploads, storage             |
+| `global__`   | Cross-cutting concerns            |
 
 ## Format
 

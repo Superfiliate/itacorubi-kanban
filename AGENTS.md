@@ -9,10 +9,12 @@ Your work will be evaluated against documented patterns. Ignoring relevant docs 
 This is NOT optional. As you work and uncover new areas, return to find and read additional relevant docs.
 
 How to find docs:
+
 - List `docs/features/` for product requirements
 - List `docs/adrs/` for technical patterns
 
 Files use `{prefix}__{name}.md` format. Read those matching your task's domain:
+
 - `store__*` — State, outbox, sync (read for ANY data/mutation work)
 - `db__*` — Database, Drizzle, schema
 - `ui__*` — Components, UX patterns

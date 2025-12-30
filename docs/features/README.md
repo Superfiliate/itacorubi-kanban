@@ -8,13 +8,13 @@ Product requirements and user flows (what we build).
 
 Use format: `{prefix}__{name}.md`
 
-| Prefix | Domain |
-| ------ | ------ |
-| `board__`, `task__`, `column__` | Core entities |
+| Prefix                                | Domain                |
+| ------------------------------------- | --------------------- |
+| `board__`, `task__`, `column__`       | Core entities         |
 | `comment__`, `contributor__`, `tag__` | Task-related entities |
-| `theme__`, `sync__`, `ux__` | Cross-cutting UX |
-| `email__`, `file__` | Integrations |
-| `global__` | App-wide |
+| `theme__`, `sync__`, `ux__`           | Cross-cutting UX      |
+| `email__`, `file__`                   | Integrations          |
+| `global__`                            | App-wide              |
 
 ## File Structure
 
