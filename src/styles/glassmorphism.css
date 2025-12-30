@@ -23,248 +23,29 @@
     overflow: hidden;
   }
 
-  /* Base layer - color splotches and pools with sharper edges */
+  /* Base layer - holographic SVG background */
   .gradient-holographic::before {
     content: "";
     position: absolute;
-    inset: -30%;
-    z-index: -2;
-    background:
-      /* === DIAGONAL RIVERS - flowing across the canvas === */
-      /* Cyan river - diagonal sweep, broken into parts for organic feel */
-      radial-gradient(
-        ellipse 70% 30% at 15% 28%,
-        oklch(0.82 0.24 198) 0%,
-        oklch(0.85 0.2 195 / 75%) 42%,
-        transparent 55%
-      ),
-      radial-gradient(
-        ellipse 55% 35% at 45% 38%,
-        oklch(0.8 0.22 200) 0%,
-        oklch(0.84 0.18 197 / 65%) 40%,
-        transparent 52%
-      ),
-      radial-gradient(
-        ellipse 45% 28% at 70% 32%,
-        oklch(0.83 0.2 195) 0%,
-        oklch(0.86 0.16 192 / 55%) 38%,
-        transparent 50%
-      ),
-      /* Magenta river - diagonal from bottom-left to top-right */
-        radial-gradient(
-          ellipse 90% 22% at 70% 75%,
-          oklch(0.78 0.24 340) 0%,
-          oklch(0.82 0.2 335 / 65%) 38%,
-          transparent 50%
-        ),
-      /* Green river - horizontal sweep across middle-left */
-        radial-gradient(
-          ellipse 80% 20% at 25% 55%,
-          oklch(0.84 0.22 150) 0%,
-          oklch(0.86 0.18 148 / 60%) 42%,
-          transparent 52%
-        ),
-      /* === MAIN SPLOTCHES - distinct color pools === */ /* Large cyan pool - top left */
-        radial-gradient(
-          ellipse 50% 42% at 8% 18%,
-          oklch(0.8 0.28 195) 0%,
-          oklch(0.83 0.26 192) 30%,
-          oklch(0.86 0.16 190 / 55%) 46%,
-          transparent 54%
-        ),
-      /* Yellow/gold - center, not too far right */
-        radial-gradient(
-          ellipse 55% 60% at 55% 38%,
-          oklch(0.94 0.24 80) 0%,
-          oklch(0.92 0.22 76) 32%,
-          oklch(0.9 0.14 72 / 50%) 48%,
-          transparent 56%
-        ),
-      /* Magenta/pink - bottom center-right */
-        radial-gradient(
-          ellipse 38% 28% at 65% 78%,
-          oklch(0.78 0.28 338) 0%,
-          oklch(0.8 0.26 334) 28%,
-          oklch(0.84 0.14 330 / 45%) 44%,
-          transparent 52%
-        ),
-      /* Red/coral - bottom left, complementing the magenta */
-        radial-gradient(
-          ellipse 40% 35% at 28% 85%,
-          oklch(0.72 0.26 25) 0%,
-          oklch(0.75 0.24 22) 30%,
-          oklch(0.78 0.14 20 / 50%) 46%,
-          transparent 55%
-        ),
-      /* Yellow-green bridge - blending red/coral with green */
-        radial-gradient(
-          ellipse 35% 30% at 22% 66%,
-          oklch(0.85 0.2 95) 0%,
-          oklch(0.87 0.18 90) 32%,
-          oklch(0.88 0.12 85 / 55%) 48%,
-          transparent 58%
-        ),
-      /* Cyan splash - RIGHT SIDE - breaking up yellow, organic shape */
-        radial-gradient(
-          ellipse 32% 40% at 90% 52%,
-          oklch(0.8 0.26 200) 0%,
-          oklch(0.83 0.22 198) 32%,
-          oklch(0.86 0.12 195 / 50%) 48%,
-          transparent 56%
-        ),
-      radial-gradient(
-        ellipse 22% 28% at 82% 62%,
-        oklch(0.78 0.24 205) 0%,
-        oklch(0.82 0.2 202 / 65%) 38%,
-        transparent 52%
-      ),
-      radial-gradient(
-        ellipse 18% 22% at 95% 48%,
-        oklch(0.82 0.22 195) 0%,
-        oklch(0.85 0.18 192 / 55%) 40%,
-        transparent 55%
-      ),
-      /* Green pool - mid-left */
-        radial-gradient(
-          ellipse 32% 42% at 18% 58%,
-          oklch(0.83 0.26 150) 0%,
-          oklch(0.85 0.24 146) 32%,
-          oklch(0.88 0.12 142 / 48%) 48%,
-          transparent 56%
-        ),
-      /* Purple - RIGHT SIDE top - adding variety */
-        radial-gradient(
-          ellipse 50% 48% at 92% 22%,
-          oklch(0.76 0.22 290) 0%,
-          oklch(0.78 0.2 285) 30%,
-          oklch(0.82 0.1 280 / 45%) 46%,
-          transparent 54%
-        ),
-      /* Secondary cyan - bottom left corner */
-        radial-gradient(
-          ellipse 35% 32% at 5% 82%,
-          oklch(0.78 0.26 205) 0%,
-          oklch(0.81 0.24 200) 30%,
-          oklch(0.85 0.12 195 / 40%) 46%,
-          transparent 54%
-        ),
-      /* Orange/warm - top center-right */
-        radial-gradient(
-          ellipse 40% 45% at 72% 12%,
-          oklch(0.92 0.24 55) 0%,
-          oklch(0.9 0.22 52) 35%,
-          oklch(0.88 0.1 48 / 45%) 50%,
-          transparent 58%
-        ),
-      /* Orange/warm accent - mid-right */
-        radial-gradient(
-          ellipse 28% 32% at 82% 48%,
-          oklch(0.9 0.22 50) 0%,
-          oklch(0.88 0.2 48) 32%,
-          oklch(0.86 0.1 45 / 50%) 48%,
-          transparent 56%
-        ),
-      /* Purple tint - center-left */
-        radial-gradient(
-          ellipse 40% 30% at 38% 42%,
-          oklch(0.76 0.22 295) 0%,
-          oklch(0.78 0.2 290) 30%,
-          oklch(0.82 0.08 285 / 30%) 46%,
-          transparent 55%
-        ),
-      /* Yellow highlight - top left-center */
-        radial-gradient(
-          ellipse 38% 42% at 35% 10%,
-          oklch(0.95 0.22 72) 0%,
-          oklch(0.93 0.18 68 / 55%) 40%,
-          transparent 50%
-        ),
-      /* Green accent - bottom right - MORE VARIETY */
-        radial-gradient(
-          ellipse 30% 35% at 85% 78%,
-          oklch(0.82 0.22 155) 0%,
-          oklch(0.84 0.18 150 / 55%) 38%,
-          transparent 50%
-        ),
-      /* Large lavender - bottom right */
-        radial-gradient(
-          ellipse 75% 65% at 85% 82%,
-          oklch(0.78 0.26 285) 0%,
-          oklch(0.8 0.24 280) 32%,
-          oklch(0.83 0.18 275 / 65%) 50%,
-          transparent 62%
-        ),
-      /* === GAP FILLERS - soft colors to prevent white spots === */ /* Soft cyan fill - top area */
-        radial-gradient(
-          ellipse 80% 50% at 50% 10%,
-          oklch(0.92 0.1 185) 0%,
-          oklch(0.94 0.08 180 / 80%) 50%,
-          transparent 75%
-        ),
-      /* Soft yellow fill - center-right */
-        radial-gradient(
-          ellipse 60% 70% at 70% 50%,
-          oklch(0.94 0.1 85) 0%,
-          oklch(0.95 0.08 80 / 70%) 55%,
-          transparent 80%
-        ),
-      /* Soft green fill - left side */
-        radial-gradient(
-          ellipse 50% 80% at 20% 70%,
-          oklch(0.92 0.1 155) 0%,
-          oklch(0.94 0.08 150 / 75%) 50%,
-          transparent 78%
-        ),
-      /* Soft magenta fill - bottom */
-        radial-gradient(
-          ellipse 90% 45% at 50% 95%,
-          oklch(0.9 0.1 340) 0%,
-          oklch(0.92 0.08 335 / 70%) 50%,
-          transparent 75%
-        ),
-      /* Rich colorful base - no white allowed */
-        linear-gradient(
-          135deg,
-          oklch(0.9 0.12 195) 0%,
-          oklch(0.92 0.1 150) 20%,
-          oklch(0.94 0.1 85) 40%,
-          oklch(0.92 0.08 55) 60%,
-          oklch(0.9 0.1 340) 80%,
-          oklch(0.88 0.12 290) 100%
-        );
-    animation: holographic-drift 20s ease-in-out infinite alternate;
+    inset: 0%;
+    background: url("/holoro.png") center / cover no-repeat;
+    animation: holographic-drift 30s ease-in-out infinite;
+    opacity: 0.3;
+  }
+
+  .dark .gradient-holographic::before {
+    opacity: 0.1;
   }
 }
 
 @keyframes holographic-drift {
   0% {
-    transform: scale(1) rotate(0deg) translate(0%, 0%);
-  }
-  25% {
-    transform: scale(1.12) rotate(2deg) translate(5%, -3%);
+    filter: hue-rotate(1deg) blur(2px);
   }
   50% {
-    transform: scale(1.08) rotate(-1deg) translate(-3%, 5%);
-  }
-  75% {
-    transform: scale(1.15) rotate(1.5deg) translate(4%, 2%);
+    filter: hue-rotate(180deg) blur(2px);
   }
   100% {
-    transform: scale(1.1) rotate(-2deg) translate(-2%, -4%);
-  }
-}
-
-/* Light/dark mode filters and muted variant */
-@layer components {
-  .gradient-holographic::before {
-    filter: brightness(0.9) saturate(0.6) contrast(2);
-  }
-
-  .dark .gradient-holographic::before {
-    filter: hue-rotate(90deg) opacity(0.2);
-  }
-
-  .gradient-holographic--muted::before {
-    opacity: 0.5;
+    filter: hue-rotate(359deg) blur(2px);
   }
 }
