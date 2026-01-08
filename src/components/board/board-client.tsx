@@ -65,7 +65,7 @@ export function BoardClient({ boardId }: BoardClientProps) {
             assignees,
             tags,
             commentCount: meta.count,
-            lastCommentCreatedAt: meta.lastCreatedAt,
+            createdAt: task.createdAt,
           };
         })
         .filter((x): x is NonNullable<typeof x> => x !== null);

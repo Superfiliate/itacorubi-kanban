@@ -1575,7 +1575,7 @@ export type TaskCardVM = {
   priority: TaskPriority;
   assignees: Array<{ id: string; name: string; color: ContributorColor }>;
   commentCount: number;
-  lastCommentCreatedAt: Date | null;
+  createdAt: Date | null;
 };
 
 export type ColumnVM = {
@@ -1614,7 +1614,7 @@ export function selectColumnsVM(boardId: string) {
             priority: task.priority,
             assignees,
             commentCount: meta.count,
-            lastCommentCreatedAt: meta.lastCreatedAt,
+            createdAt: task.createdAt,
           };
         })
         .filter((x): x is TaskCardVM => x !== null);

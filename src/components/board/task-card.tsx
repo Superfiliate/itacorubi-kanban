@@ -28,56 +28,56 @@ interface TaskCardProps {
     color: ContributorColor;
   }>;
   commentCount: number;
-  lastCommentCreatedAt: Date | null;
+  createdAt: Date | null;
 }
 
-function getCommentAgeColor(daysSinceLastComment: number): string {
+function getTaskAgeColor(daysSinceCreated: number): string {
   // Smooth transition: green → yellow (0-10 days) → red (10-20 days)
   // Using more granular steps for smoother visual transition
 
-  if (daysSinceLastComment <= 0) {
+  if (daysSinceCreated <= 0) {
     return "text-emerald-600";
   }
-  if (daysSinceLastComment <= 2) {
+  if (daysSinceCreated <= 2) {
     return "text-emerald-500";
   }
-  if (daysSinceLastComment <= 4) {
+  if (daysSinceCreated <= 4) {
     return "text-green-500";
   }
-  if (daysSinceLastComment <= 6) {
+  if (daysSinceCreated <= 6) {
     return "text-lime-500";
   }
-  if (daysSinceLastComment <= 8) {
+  if (daysSinceCreated <= 8) {
     return "text-yellow-500";
   }
-  if (daysSinceLastComment <= 10) {
+  if (daysSinceCreated <= 10) {
     return "text-yellow-600";
   }
-  if (daysSinceLastComment <= 12) {
+  if (daysSinceCreated <= 12) {
     return "text-amber-500";
   }
-  if (daysSinceLastComment <= 14) {
+  if (daysSinceCreated <= 14) {
     return "text-amber-600";
   }
-  if (daysSinceLastComment <= 16) {
+  if (daysSinceCreated <= 16) {
     return "text-orange-500";
   }
-  if (daysSinceLastComment <= 18) {
+  if (daysSinceCreated <= 18) {
     return "text-orange-600";
   }
-  if (daysSinceLastComment <= 20) {
+  if (daysSinceCreated <= 20) {
     return "text-red-500";
   }
   // >20 days: deep red
   return "text-red-600";
 }
 
-function getDaysSinceLastComment(lastCommentCreatedAt: Date | null): number | null {
-  if (!lastCommentCreatedAt) return null;
+function getDaysSinceCreated(createdAt: Date | null): number | null {
+  if (!createdAt) return null;
 
   const now = new Date();
-  const lastCommentDate = new Date(lastCommentCreatedAt);
-  const diffTime = now.getTime() - lastCommentDate.getTime();
+  const createdDate = new Date(createdAt);
+  const diffTime = now.getTime() - createdDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
   return diffDays;
@@ -91,7 +91,7 @@ export function TaskCard({
   assignees,
   tags,
   commentCount,
-  lastCommentCreatedAt,
+  createdAt,
 }: TaskCardProps) {
   const router = useRouter();
   const displayTags = tags ?? [];
@@ -124,19 +124,17 @@ export function TaskCard({
     transition,
   };
 
-  const daysSinceLastComment = getDaysSinceLastComment(lastCommentCreatedAt);
-  const commentAgeColor =
-    daysSinceLastComment !== null
-      ? getCommentAgeColor(daysSinceLastComment)
-      : "text-muted-foreground";
+  const daysSinceCreated = getDaysSinceCreated(createdAt);
+  const taskAgeColor =
+    daysSinceCreated !== null ? getTaskAgeColor(daysSinceCreated) : "text-muted-foreground";
 
-  const commentAgeText =
-    daysSinceLastComment !== null
-      ? daysSinceLastComment === 0
+  const taskAgeText =
+    daysSinceCreated !== null
+      ? daysSinceCreated === 0
         ? "today"
-        : daysSinceLastComment === 1
+        : daysSinceCreated === 1
           ? "1 day ago"
-          : `${daysSinceLastComment} days ago`
+          : `${daysSinceCreated} days ago`
       : null;
 
   const { cardClassName, Icon: PriorityIcon, iconClassName } = TASK_PRIORITY_META[priority];
@@ -161,21 +159,17 @@ export function TaskCard({
       />
       <h4 className="text-heading-sm text-foreground leading-snug">{title}</h4>
 
-      {/* Priority + comments meta row */}
+      {/* Priority + comments + age meta row */}
       <div className="mt-1.5 flex items-center gap-2">
         <PriorityIcon className={cn("h-3 w-3 shrink-0", iconClassName)} />
 
-        {commentCount > 0 ? (
-          <div className={cn("flex min-w-0 items-center gap-1 text-xs", commentAgeColor)}>
-            <MessageSquare className="h-3 w-3 shrink-0" />
-            <span className="shrink-0">{commentCount}</span>
-            {commentAgeText && <span className="truncate opacity-80">· {commentAgeText}</span>}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <MessageSquare className="h-3 w-3 shrink-0" />
-            <span>0</span>
-          </div>
+        <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+          <MessageSquare className="h-3 w-3 shrink-0" />
+          <span className="shrink-0">{commentCount}</span>
+        </div>
+
+        {taskAgeText && (
+          <span className={cn("truncate text-xs", taskAgeColor)}>· {taskAgeText}</span>
         )}
       </div>
 

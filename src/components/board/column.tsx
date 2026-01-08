@@ -299,7 +299,7 @@ export function Column({ id, boardId, name, isCollapsed, tasks }: ColumnProps) {
                   assignees={task.assignees}
                   tags={task.tags}
                   commentCount={task.commentCount}
-                  lastCommentCreatedAt={task.lastCommentCreatedAt}
+                  createdAt={task.createdAt}
                 />
               ))}
             </SortableContext>
