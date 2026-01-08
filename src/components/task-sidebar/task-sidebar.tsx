@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -38,6 +38,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(true);
+  const refetchAttemptsRef = useRef(0);
 
   const board = useBoardStore(selectBoard(boardId));
   const localTaskEntity = board?.tasksById[taskId];
@@ -76,23 +77,26 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     return metaLast > detailsLast;
   }, [hydratedTaskDetails, commentMeta]);
 
-  // Fetch server task details when:
-  // - We don't have hydrated task details (which includes comments), AND
-  // - There's no pending create for this task (local-first creates don't need server fetch)
-  const needsServerFetch = (!hydratedTaskDetails || isHydratedTaskDetailsStale) && !pendingCreate;
-  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(
-    needsServerFetch ? taskId : null,
-    {
-      refetchOnMount: "always",
-    },
-  );
+  // Be liberal: always revalidate full task details on sidebar open (unless this is a local-first
+  // task create that is not yet on the server).
+  const shouldFetchTaskDetails = !pendingCreate;
+  const needsServerFetch =
+    shouldFetchTaskDetails && (!hydratedTaskDetails || isHydratedTaskDetailsStale);
 
-  // Belt-and-suspenders: if we detected staleness, explicitly invalidate to force a network refetch
-  // even when the cached task detail query is still within the default 30s staleTime window.
+  const {
+    data: serverTask,
+    isLoading: isServerLoading,
+    isFetching: isServerFetching,
+    refetch: refetchTask,
+  } = useTaskQuery(shouldFetchTaskDetails ? taskId : null, { refetchOnMount: "always" });
+
+  // Always invalidate+refetch on mount/open to avoid relying on staleness heuristics.
   useEffect(() => {
-    if (!needsServerFetch) return;
+    if (!shouldFetchTaskDetails) return;
+    refetchAttemptsRef.current = 0;
     void queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
-  }, [needsServerFetch, queryClient, taskId]);
+    void queryClient.refetchQueries({ queryKey: taskKeys.detail(taskId) });
+  }, [shouldFetchTaskDetails, queryClient, taskId]);
 
   const taskForUI = useMemo(() => {
     // Start with hydrated task details or server task as base
@@ -193,6 +197,36 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     return baseTask;
   }, [hydratedTaskDetails, localTaskEntity, board, taskId, boardId, columns, serverTask]);
 
+  const expectedCommentCount = commentMeta?.count ?? 0;
+  const shownCommentCount = taskForUI?.comments?.length ?? 0;
+  const shouldShowCommentsLoading =
+    expectedCommentCount > 0 && shownCommentCount === 0 && needsServerFetch;
+
+  // Retry refetch a few times when meta says comments exist but details still show none.
+  // This is intentionally conservative (bounded) and helps with rare inconsistencies
+  // (e.g. replication lag / transient reads).
+  useEffect(() => {
+    if (!shouldFetchTaskDetails) return;
+    if (expectedCommentCount <= 0) return;
+    if (shownCommentCount >= expectedCommentCount) return;
+    if (isServerFetching) return;
+
+    if (refetchAttemptsRef.current >= 3) return;
+    refetchAttemptsRef.current += 1;
+
+    const delayMs = 250 * refetchAttemptsRef.current;
+    const t = window.setTimeout(() => {
+      void refetchTask();
+    }, delayMs);
+    return () => window.clearTimeout(t);
+  }, [
+    shouldFetchTaskDetails,
+    expectedCommentCount,
+    shownCommentCount,
+    isServerFetching,
+    refetchTask,
+  ]);
+
   const currentContributors = useMemo(() => {
     if (board) {
       return board.contributorOrder
@@ -291,12 +325,18 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
 
             {/* Comments - Second on mobile/tablet (stacked), left side on desktop */}
             <div className="order-2 lg:order-1 flex-1 lg:flex-[7] min-h-0 lg:overflow-y-auto">
-              <CommentsSection
-                taskId={taskForUI.id}
-                boardId={boardId}
-                comments={taskForUI.comments}
-                contributors={currentContributors}
-              />
+              {shouldShowCommentsLoading ? (
+                <div className="flex h-full min-h-[240px] items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <CommentsSection
+                  taskId={taskForUI.id}
+                  boardId={boardId}
+                  comments={taskForUI.comments}
+                  contributors={currentContributors}
+                />
+              )}
             </div>
           </div>
         )}

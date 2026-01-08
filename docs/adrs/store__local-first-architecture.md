@@ -38,8 +38,10 @@ Relationships:
 
 **Cache invalidation rule (sidebar open):**
 
-- When opening the sidebar, compare `commentMetaByTaskId` (count + lastCreatedAt) to the cached `taskDetailsById[taskId].comments`
-- If stale, force a server refetch of the full task details (`getTask`) and hydrate if the store is clean
+- When opening the sidebar, always revalidate the full task details (`getTask`) so the comment list is not dependent on the sidebar cache
+- Also compare `commentMetaByTaskId` (count + lastCreatedAt) to the cached `taskDetailsById[taskId].comments` to detect staleness
+- If stale (or if meta indicates comments exist but details are empty), retry a small number of refetches to tolerate rare inconsistent reads (e.g. replication lag)
+- Hydrate the store from the server only if the store is clean
 - If the store is dirty (outbox pending / flushing), do **not overwrite** local state; instead the UI merges server + local comments by `id` and sorts ASC (oldest → newest)
 
 ### Deriving vs. Denormalizing
