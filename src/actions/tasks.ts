@@ -13,7 +13,11 @@ function toDateFromDbValue(v: unknown): Date | null {
   if (v === null || v === undefined) return null;
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isFinite(n)) return null;
-  return new Date(n);
+  // libSQL (and Drizzle `mode: "timestamp"`) stores timestamps as unix seconds.
+  // Guard for mixed data: treat "small" numbers as seconds; otherwise assume ms.
+  const ms = n < 10_000_000_000 ? n * 1000 : n;
+  const d = new Date(ms);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 export async function createTask(

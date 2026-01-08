@@ -52,8 +52,23 @@ interface RouteParams {
 function coerceDate(value: unknown): Date | undefined {
   if (!value) return undefined;
   if (value instanceof Date) return value;
-  if (typeof value === "string" || typeof value === "number") {
-    const d = new Date(value);
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return undefined;
+    const ms = value < 10_000_000_000 ? value * 1000 : value;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    // If it's a numeric string, treat small values as seconds (compat with older payloads).
+    if (/^\d+$/.test(trimmed)) {
+      const n = Number(trimmed);
+      if (!Number.isFinite(n)) return undefined;
+      const ms = n < 10_000_000_000 ? n * 1000 : n;
+      const d = new Date(ms);
+      return Number.isNaN(d.getTime()) ? undefined : d;
+    }
+    const d = new Date(trimmed);
     return Number.isNaN(d.getTime()) ? undefined : d;
   }
   return undefined;
