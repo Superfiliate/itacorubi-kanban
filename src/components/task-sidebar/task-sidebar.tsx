@@ -34,11 +34,14 @@ interface TaskSidebarProps {
   }>;
 }
 
+const MAX_COMMENT_REFETCH_ATTEMPTS = 3;
+
 export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: TaskSidebarProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(true);
-  const refetchAttemptsRef = useRef(0);
+  const [commentRefetchAttempts, setCommentRefetchAttempts] = useState(0);
+  const pendingRefetchTimerRef = useRef<number | null>(null);
 
   const board = useBoardStore(selectBoard(boardId));
   const localTaskEntity = board?.tasksById[taskId];
@@ -93,7 +96,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   // Always invalidate+refetch on mount/open to avoid relying on staleness heuristics.
   useEffect(() => {
     if (!shouldFetchTaskDetails) return;
-    refetchAttemptsRef.current = 0;
+    setCommentRefetchAttempts(0);
     void queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
     void queryClient.refetchQueries({ queryKey: taskKeys.detail(taskId) });
   }, [shouldFetchTaskDetails, queryClient, taskId]);
@@ -199,8 +202,16 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
 
   const expectedCommentCount = commentMeta?.count ?? 0;
   const shownCommentCount = taskForUI?.comments?.length ?? 0;
+  const isWaitingForComments =
+    expectedCommentCount > 0 && shownCommentCount === 0 && shouldFetchTaskDetails;
   const shouldShowCommentsLoading =
-    expectedCommentCount > 0 && shownCommentCount === 0 && needsServerFetch;
+    isWaitingForComments &&
+    (isServerLoading || isServerFetching || commentRefetchAttempts < MAX_COMMENT_REFETCH_ATTEMPTS);
+  const shouldShowCommentsRetry =
+    isWaitingForComments &&
+    !isServerLoading &&
+    !isServerFetching &&
+    commentRefetchAttempts >= MAX_COMMENT_REFETCH_ATTEMPTS;
 
   // Retry refetch a few times when meta says comments exist but details still show none.
   // This is intentionally conservative (bounded) and helps with rare inconsistencies
@@ -211,20 +222,30 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     if (shownCommentCount >= expectedCommentCount) return;
     if (isServerFetching) return;
 
-    if (refetchAttemptsRef.current >= 3) return;
-    refetchAttemptsRef.current += 1;
+    if (commentRefetchAttempts >= MAX_COMMENT_REFETCH_ATTEMPTS) return;
+    if (pendingRefetchTimerRef.current) return;
 
-    const delayMs = 250 * refetchAttemptsRef.current;
-    const t = window.setTimeout(() => {
+    const nextAttempt = commentRefetchAttempts + 1;
+    const delayMs = 250 * nextAttempt;
+    pendingRefetchTimerRef.current = window.setTimeout(() => {
+      pendingRefetchTimerRef.current = null;
+      setCommentRefetchAttempts(nextAttempt);
       void refetchTask();
     }, delayMs);
-    return () => window.clearTimeout(t);
+
+    return () => {
+      if (pendingRefetchTimerRef.current) {
+        window.clearTimeout(pendingRefetchTimerRef.current);
+        pendingRefetchTimerRef.current = null;
+      }
+    };
   }, [
     shouldFetchTaskDetails,
     expectedCommentCount,
     shownCommentCount,
     isServerFetching,
     refetchTask,
+    commentRefetchAttempts,
   ]);
 
   const currentContributors = useMemo(() => {
@@ -330,12 +351,44 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <CommentsSection
-                  taskId={taskForUI.id}
-                  boardId={boardId}
-                  comments={taskForUI.comments}
-                  contributors={currentContributors}
-                />
+                <>
+                  {shouldShowCommentsRetry && (
+                    <div className="px-6 pt-6">
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/30 px-4 py-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium">Comments didn’t load</div>
+                          <div className="text-xs text-muted-foreground">
+                            We expected {expectedCommentCount} comment
+                            {expectedCommentCount === 1 ? "" : "s"}, but none loaded. Try again.
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setCommentRefetchAttempts(0);
+                            if (pendingRefetchTimerRef.current) {
+                              window.clearTimeout(pendingRefetchTimerRef.current);
+                              pendingRefetchTimerRef.current = null;
+                            }
+                            void queryClient.invalidateQueries({
+                              queryKey: taskKeys.detail(taskId),
+                            });
+                            void refetchTask();
+                          }}
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <CommentsSection
+                    taskId={taskForUI.id}
+                    boardId={boardId}
+                    comments={taskForUI.comments}
+                    contributors={currentContributors}
+                  />
+                </>
               )}
             </div>
           </div>
