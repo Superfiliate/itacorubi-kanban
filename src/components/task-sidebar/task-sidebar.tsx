@@ -43,6 +43,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   const [commentRefetchAttempts, setCommentRefetchAttempts] = useState(0);
   const [hasCommentLoadStalled, setHasCommentLoadStalled] = useState(false);
   const pendingRefetchTimerRef = useRef<number | null>(null);
+  const hasAutoRetriedRef = useRef(false);
 
   const board = useBoardStore(selectBoard(boardId));
   const localTaskEntity = board?.tasksById[taskId];
@@ -212,18 +213,44 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     !isServerFetching &&
     commentRefetchAttempts >= MAX_COMMENT_REFETCH_ATTEMPTS;
 
+  const triggerCommentsRetry = useCallback(() => {
+    setCommentRefetchAttempts(0);
+    setHasCommentLoadStalled(false);
+
+    if (pendingRefetchTimerRef.current) {
+      window.clearTimeout(pendingRefetchTimerRef.current);
+      pendingRefetchTimerRef.current = null;
+    }
+
+    void queryClient.invalidateQueries({
+      queryKey: taskKeys.detail(taskId),
+    });
+    void refetchTask();
+  }, [queryClient, refetchTask, taskId]);
+
   // If we appear to be "stuck fetching" for too long, stop showing an infinite spinner and surface Retry.
   useEffect(() => {
     if (!isWaitingForComments) {
       setHasCommentLoadStalled(false);
+      hasAutoRetriedRef.current = false;
       return;
     }
 
     // Reset stall flag when a new wait cycle begins.
     setHasCommentLoadStalled(false);
+    hasAutoRetriedRef.current = false;
     const t = window.setTimeout(() => setHasCommentLoadStalled(true), 5_000);
     return () => window.clearTimeout(t);
   }, [isWaitingForComments, taskId]);
+
+  // Auto-retry once when we detect a stall, using the exact same logic as the Retry button.
+  useEffect(() => {
+    if (!hasCommentLoadStalled) return;
+    if (!isWaitingForComments) return;
+    if (hasAutoRetriedRef.current) return;
+    hasAutoRetriedRef.current = true;
+    triggerCommentsRetry();
+  }, [hasCommentLoadStalled, isWaitingForComments, triggerCommentsRetry]);
 
   // Retry refetch a few times when meta says comments exist but details still show none.
   // This is intentionally conservative (bounded) and helps with rare inconsistencies
@@ -374,22 +401,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
                             {expectedCommentCount === 1 ? "" : "s"}, but none loaded. Try again.
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setCommentRefetchAttempts(0);
-                            setHasCommentLoadStalled(false);
-                            if (pendingRefetchTimerRef.current) {
-                              window.clearTimeout(pendingRefetchTimerRef.current);
-                              pendingRefetchTimerRef.current = null;
-                            }
-                            void queryClient.invalidateQueries({
-                              queryKey: taskKeys.detail(taskId),
-                            });
-                            void refetchTask();
-                          }}
-                        >
+                        <Button size="sm" variant="secondary" onClick={triggerCommentsRetry}>
                           Retry
                         </Button>
                       </div>
