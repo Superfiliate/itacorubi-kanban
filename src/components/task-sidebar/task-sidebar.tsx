@@ -265,7 +265,8 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     if (pendingRefetchTimerRef.current) return;
 
     const nextAttempt = commentRefetchAttempts + 1;
-    const delayMs = 250 * nextAttempt;
+    // Keep retries snappy: 100ms, 200ms, 300ms
+    const delayMs = 100 * nextAttempt;
     pendingRefetchTimerRef.current = window.setTimeout(() => {
       pendingRefetchTimerRef.current = null;
       setCommentRefetchAttempts(nextAttempt);

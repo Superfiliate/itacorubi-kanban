@@ -68,7 +68,8 @@ export const taskKeys = {
   detail: (id: string) => ["tasks", id] as const,
 };
 
-const TASK_DETAIL_QUERY_TIMEOUT_MS = 12_000;
+// Keep sidebar responsive; retries will handle transient failures.
+const TASK_DETAIL_QUERY_TIMEOUT_MS = 6_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
