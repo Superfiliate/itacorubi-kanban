@@ -28,6 +28,20 @@ Relationships:
   taskDetailsById[taskId] - sidebar-only details (comments, etc)
 ```
 
+### Sidebar Details Cache (`taskDetailsById`)
+
+`taskDetailsById` is treated as a **cache** for sidebar-only detail payloads (not the primary realtime sync layer).
+
+- Board polling keeps **card-level comment meta** (`commentMetaByTaskId`) fresh
+- Polling intentionally **preserves** `taskDetailsById` to avoid wiping sidebar caches on every snapshot
+- Result: `taskDetailsById` can become **stale** relative to `commentMetaByTaskId` (e.g. card shows 1 comment but sidebar cache still has 0)
+
+**Cache invalidation rule (sidebar open):**
+
+- When opening the sidebar, compare `commentMetaByTaskId` (count + lastCreatedAt) to the cached `taskDetailsById[taskId].comments`
+- If stale, force a server refetch of the full task details (`getTask`) and hydrate if the store is clean
+- If the store is dirty (outbox pending / flushing), do **not overwrite** local state; instead the UI merges server + local comments by `id` and sorts ASC (oldest → newest)
+
 ### Deriving vs. Denormalizing
 
 **Always derive** nested entity data from normalized stores at render time:

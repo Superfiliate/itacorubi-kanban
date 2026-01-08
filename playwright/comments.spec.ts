@@ -1,5 +1,6 @@
 import { test, expect, Page } from "@playwright/test";
 import {
+  seedTestBoard,
   seedAndNavigateToBoard,
   waitForSidebarOpen,
   waitForSidebarClose,
@@ -32,6 +33,51 @@ async function setupCommentEditor(page: Page, boardName: string) {
 
 test.describe("Comments", () => {
   // Note: Basic "add comment" is covered by the polling persistence test below
+
+  test("should revalidate sidebar comments when card count updates", async ({ page, context }) => {
+    const taskTitle = "Stale Cache Task";
+    const { boardId, taskIds } = await seedTestBoard(page.request, {
+      title: "Sidebar Revalidate Test",
+      tasks: [{ title: taskTitle }],
+    });
+    const taskId = taskIds[0];
+
+    // Page A: open sidebar via SSR taskData hydration so taskDetailsById is cached with 0 comments.
+    await page.goto(`/boards/${boardId}?task=${taskId}`);
+    const sidebarA1 = await waitForSidebarOpen(page);
+    await expect(sidebarA1.getByText(/no comments yet/i)).toBeVisible();
+    await sidebarA1.getByRole("button", { name: /back/i }).click();
+    await waitForSidebarClose(page);
+
+    // Page B: add a comment on the same task.
+    const pageB = await context.newPage();
+    await pageB.goto(`/boards/${boardId}?task=${taskId}`);
+    const sidebarB = await waitForSidebarOpen(pageB);
+
+    const authorSelect = sidebarB.getByRole("combobox", { name: /who are you/i });
+    await authorSelect.click();
+    const authorInput = pageB.getByPlaceholder(/search or create/i);
+    await authorInput.fill("Remote Author");
+    await pageB.getByRole("option", { name: /create.*remote author/i }).click();
+
+    const editor = sidebarB.locator('[contenteditable="true"]').first();
+    await editor.click();
+    await editor.fill("Hello from page B");
+    await pageB.getByRole("button", { name: /add comment/i }).click();
+    await expect(pageB.getByText(/comment added/i)).toBeVisible();
+
+    await sidebarB.getByRole("button", { name: /back/i }).click();
+    await waitForSidebarClose(pageB);
+
+    // Page A: wait for polling to update the task card comment count (meta) to 1.
+    const taskCard = page.getByRole("link", { name: `Open task ${taskTitle}` }).locator("..");
+    await expect(taskCard.getByText("1", { exact: true })).toBeVisible();
+
+    // Reopen sidebar on Page A: it should revalidate and show the comment.
+    await page.getByRole("link", { name: `Open task ${taskTitle}` }).click();
+    const sidebarA2 = await waitForSidebarOpen(page);
+    await expect(sidebarA2.getByText("Hello from page B")).toBeVisible();
+  });
 
   test("should remember author selection and update comment count", async ({ page }) => {
     // This test combines author memory and comment count verification

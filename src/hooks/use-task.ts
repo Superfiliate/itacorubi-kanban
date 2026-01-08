@@ -69,12 +69,22 @@ export const taskKeys = {
 };
 
 // Hook to get full task details (for sidebar)
-export function useTaskQuery(taskId: string | null) {
+export function useTaskQuery(
+  taskId: string | null,
+  options?: {
+    /**
+     * Sidebar needs to revalidate even when the cached task detail query is still "fresh"
+     * (default staleTime is 30s). Use "always" for open-on-demand details.
+     */
+    refetchOnMount?: boolean | "always";
+  },
+) {
   return useQuery({
     queryKey: taskKeys.detail(taskId ?? ""),
     queryFn: () =>
       taskId ? (getTask(taskId) as Promise<TaskWithComments | undefined>) : undefined,
     enabled: !!taskId,
+    refetchOnMount: options?.refetchOnMount,
     refetchOnWindowFocus: false,
   });
 }

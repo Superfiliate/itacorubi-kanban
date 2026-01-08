@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CommentsSection } from "./comments-section";
 import { TaskDetails } from "./task-details";
-import { useTaskQuery } from "@/hooks/use-task";
+import { taskKeys, useTaskQuery } from "@/hooks/use-task";
 import { SyncIndicator } from "@/components/sync-indicator";
 import { Button } from "@/components/ui/button";
 import type { ContributorColor } from "@/db/schema";
@@ -35,6 +36,7 @@ interface TaskSidebarProps {
 
 export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: TaskSidebarProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(true);
 
   const board = useBoardStore(selectBoard(boardId));
@@ -46,17 +48,70 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   // Task details from local store (includes comments if previously fetched/created)
   const hydratedTaskDetails = useBoardStore(selectTaskDetails(boardId, taskId));
 
+  // Board polling keeps comment meta (count + latest timestamp) fresh, but does not refresh
+  // taskDetailsById (sidebar details cache). This lets us detect when cached sidebar details are stale.
+  const commentMeta = board?.commentMetaByTaskId[taskId];
+  const isHydratedTaskDetailsStale = useMemo(() => {
+    if (!hydratedTaskDetails || !commentMeta) return false;
+
+    // Fast path: count mismatch
+    if (commentMeta.count !== hydratedTaskDetails.comments.length) return true;
+
+    // Timestamp check: if meta says there's a newer comment than what details have, details are stale.
+    const metaLast = commentMeta.lastCreatedAt ? new Date(commentMeta.lastCreatedAt).getTime() : null;
+    if (metaLast === null) return false;
+
+    let detailsLast: number | null = null;
+    for (const c of hydratedTaskDetails.comments) {
+      if (!c.createdAt) continue;
+      const t = new Date(c.createdAt).getTime();
+      if (detailsLast === null || t > detailsLast) detailsLast = t;
+    }
+
+    // Meta has a timestamp but details have none => stale
+    if (detailsLast === null) return true;
+
+    return metaLast > detailsLast;
+  }, [hydratedTaskDetails, commentMeta]);
+
   // Fetch server task details when:
   // - We don't have hydrated task details (which includes comments), AND
   // - There's no pending create for this task (local-first creates don't need server fetch)
-  const needsServerFetch = !hydratedTaskDetails && !pendingCreate;
-  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(
-    needsServerFetch ? taskId : null,
-  );
+  const needsServerFetch = (!hydratedTaskDetails || isHydratedTaskDetailsStale) && !pendingCreate;
+  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(needsServerFetch ? taskId : null, {
+    refetchOnMount: "always",
+  });
+
+  // Belt-and-suspenders: if we detected staleness, explicitly invalidate to force a network refetch
+  // even when the cached task detail query is still within the default 30s staleTime window.
+  useEffect(() => {
+    if (!needsServerFetch) return;
+    void queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
+  }, [needsServerFetch, queryClient, taskId]);
 
   const taskForUI = useMemo(() => {
     // Start with hydrated task details or server task as base
     const baseTask = hydratedTaskDetails ?? serverTask;
+
+    // Merge comments safely for UI:
+    // - Prefer local (store) versions when IDs collide (keeps optimistic/local edits)
+    // - Include server comments even when store is dirty (hydrateTaskFromServer will refuse to overwrite)
+    // - Keep sidebar order ASC (oldest -> newest)
+    const mergedComments = (() => {
+      const byId = new Map<string, NonNullable<typeof baseTask>["comments"][number]>();
+      for (const c of serverTask?.comments ?? []) byId.set(c.id, c);
+      for (const c of hydratedTaskDetails?.comments ?? []) byId.set(c.id, c);
+      const list = Array.from(byId.values());
+      list.sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : null;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : null;
+        if (ta === null && tb === null) return 0;
+        if (ta === null) return 1;
+        if (tb === null) return -1;
+        return ta - tb;
+      });
+      return list;
+    })();
 
     // If we have a local task entity and board, derive assignees and stakeholders from normalized store
     // This ensures contributor updates (name, color) are immediately reflected
@@ -93,7 +148,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
         assignees,
         stakeholders,
         tags,
-        comments: baseTask?.comments ?? [],
+        comments: mergedComments,
       };
     }
 
@@ -126,6 +181,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
         assignees,
         stakeholders,
         tags,
+        comments: mergedComments,
       };
     }
 
@@ -166,10 +222,10 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
 
   // Hydrate server task into local store when it arrives
   useEffect(() => {
-    if (serverTask && !hydratedTaskDetails) {
+    if (serverTask && (!hydratedTaskDetails || isHydratedTaskDetailsStale)) {
       useBoardStore.getState().hydrateTaskFromServer(boardId, serverTask);
     }
-  }, [serverTask, hydratedTaskDetails, boardId]);
+  }, [serverTask, hydratedTaskDetails, isHydratedTaskDetailsStale, boardId]);
 
   useEffect(() => {
     // If the task is truly missing (deep-link to invalid id), close gracefully.
