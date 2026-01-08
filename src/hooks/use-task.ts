@@ -68,6 +68,22 @@ export const taskKeys = {
   detail: (id: string) => ["tasks", id] as const,
 };
 
+const TASK_DETAIL_QUERY_TIMEOUT_MS = 12_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<T>((_resolve, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`Task detail fetch timed out after ${ms}ms`)),
+      ms,
+    );
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
+}
+
 // Hook to get full task details (for sidebar)
 export function useTaskQuery(
   taskId: string | null,
@@ -82,8 +98,15 @@ export function useTaskQuery(
   return useQuery({
     queryKey: taskKeys.detail(taskId ?? ""),
     queryFn: () =>
-      taskId ? (getTask(taskId) as Promise<TaskWithComments | undefined>) : undefined,
+      taskId
+        ? withTimeout(
+            getTask(taskId) as Promise<TaskWithComments | undefined>,
+            TASK_DETAIL_QUERY_TIMEOUT_MS,
+          )
+        : undefined,
     enabled: !!taskId,
+    // We manage retries explicitly in the sidebar to avoid long/spinning states.
+    retry: 0,
     refetchOnMount: options?.refetchOnMount,
     refetchOnWindowFocus: false,
   });

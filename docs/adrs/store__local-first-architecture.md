@@ -44,6 +44,10 @@ Relationships:
 - Hydrate the store from the server only if the store is clean
 - If the store is dirty (outbox pending / flushing), do **not overwrite** local state; instead the UI merges server + local comments by `id` and sorts ASC (oldest → newest)
 
+**Primary-read note (Turso):**
+
+For task details, `getTask` performs the read using a libSQL `"write"` batch so the query is forwarded to the Turso primary. This reduces rare “meta says comment exists, details read returns none” inconsistencies that can happen with replica lag on distributed reads.
+
 ### Deriving vs. Denormalizing
 
 **Always derive** nested entity data from normalized stores at render time:

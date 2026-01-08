@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/db";
+import { db, rawClient } from "@/db";
 import { columns, tasks, taskAssignees, taskTags, comments } from "@/db/schema";
 import { eq, and, gt, gte, lt, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -8,6 +8,13 @@ import { getBoardPasswordOptional, requireBoardAccess } from "@/lib/secure-board
 import { TASK_PRIORITIES, type TaskPriority } from "@/db/schema";
 import { queueMoveNotification, queuePriorityNotification } from "@/lib/notifications";
 import { requireColumn, requireTask } from "@/lib/require-resource";
+
+function toDateFromDbValue(v: unknown): Date | null {
+  if (v === null || v === undefined) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n)) return null;
+  return new Date(n);
+}
 
 export async function createTask(
   boardId: string,
@@ -41,45 +48,145 @@ export async function createTask(
 }
 
 export async function getTask(id: string) {
-  const task = await db.query.tasks.findFirst({
-    where: eq(tasks.id, id),
-    with: {
-      column: true,
-      assignees: {
-        with: {
-          contributor: true,
-        },
+  // NOTE: Turso may serve stale reads from replicas for complex relation queries.
+  // To improve "read after write" consistency for the sidebar, run the read in a
+  // "write" batch so it is forwarded to the primary.
+  const results = await rawClient.batch(
+    [
+      {
+        sql: `
+          SELECT
+            t.id,
+            t.title,
+            t.priority,
+            t.column_id AS columnId,
+            t.board_id AS boardId,
+            t.created_at AS createdAt,
+            c.name AS columnName
+          FROM tasks t
+          JOIN columns c ON c.id = t.column_id
+          WHERE t.id = ?
+          LIMIT 1
+        `,
+        args: [id],
       },
-      stakeholders: {
-        with: {
-          contributor: true,
-        },
+      {
+        sql: `
+          SELECT
+            c.id,
+            c.name,
+            c.color
+          FROM task_assignees ta
+          JOIN contributors c ON c.id = ta.contributor_id
+          WHERE ta.task_id = ?
+        `,
+        args: [id],
       },
-      tags: {
-        with: {
-          tag: true,
-        },
+      {
+        sql: `
+          SELECT
+            c.id,
+            c.name,
+            c.color
+          FROM task_stakeholders ts
+          JOIN contributors c ON c.id = ts.contributor_id
+          WHERE ts.task_id = ?
+        `,
+        args: [id],
       },
-      comments: {
-        orderBy: (comments, { asc }) => [asc(comments.createdAt)],
-        with: {
-          author: true,
-          stakeholder: true,
-        },
+      {
+        sql: `
+          SELECT
+            t.id,
+            t.name,
+            t.color
+          FROM task_tags tt
+          JOIN tags t ON t.id = tt.tag_id
+          WHERE tt.task_id = ?
+        `,
+        args: [id],
       },
+      {
+        sql: `
+          SELECT
+            cm.id,
+            cm.content,
+            cm.created_at AS createdAt,
+            a.id AS authorId,
+            a.name AS authorName,
+            a.color AS authorColor,
+            s.id AS stakeholderId,
+            s.name AS stakeholderName,
+            s.color AS stakeholderColor
+          FROM comments cm
+          JOIN contributors a ON a.id = cm.author_id
+          LEFT JOIN contributors s ON s.id = cm.stakeholder_id
+          WHERE cm.task_id = ?
+          ORDER BY cm.created_at ASC
+        `,
+        args: [id],
+      },
+    ],
+    "write",
+  );
+
+  const [taskRes, assigneesRes, stakeholdersRes, tagsRes, commentsRes] = results as any[];
+  const taskRow = taskRes?.rows?.[0] as any;
+  if (!taskRow) return null;
+
+  const passwordOk = await getBoardPasswordOptional(taskRow.boardId as string);
+  if (!passwordOk) return null;
+
+  return {
+    id: String(taskRow.id),
+    title: String(taskRow.title),
+    priority: String(taskRow.priority) as any,
+    columnId: String(taskRow.columnId),
+    boardId: String(taskRow.boardId),
+    createdAt: toDateFromDbValue(taskRow.createdAt),
+    column: {
+      id: String(taskRow.columnId),
+      name: String(taskRow.columnName ?? ""),
     },
-  });
-
-  if (!task) {
-    return null;
-  }
-
-  const passwordOk = await getBoardPasswordOptional(task.boardId);
-  if (!passwordOk) {
-    return null;
-  }
-
-  return task;
+    assignees: (assigneesRes?.rows ?? []).map((r: any) => ({
+      contributor: {
+        id: String(r.id),
+        name: String(r.name),
+        color: String(r.color) as any,
+      },
+    })),
+    stakeholders: (stakeholdersRes?.rows ?? []).map((r: any) => ({
+      contributor: {
+        id: String(r.id),
+        name: String(r.name),
+        color: String(r.color) as any,
+      },
+    })),
+    tags: (tagsRes?.rows ?? []).map((r: any) => ({
+      tag: {
+        id: String(r.id),
+        name: String(r.name),
+        color: String(r.color) as any,
+      },
+    })),
+    comments: (commentsRes?.rows ?? []).map((r: any) => ({
+      id: String(r.id),
+      content: String(r.content),
+      createdAt: toDateFromDbValue(r.createdAt),
+      author: {
+        id: String(r.authorId),
+        name: String(r.authorName),
+        color: String(r.authorColor) as any,
+      },
+      stakeholder: r.stakeholderId
+        ? {
+            id: String(r.stakeholderId),
+            name: String(r.stakeholderName),
+            color: String(r.stakeholderColor) as any,
+          }
+        : null,
+    })),
+  };
 }
 
 export async function updateTaskTitle(id: string, title: string, boardId: string) {

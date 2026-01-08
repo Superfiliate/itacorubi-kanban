@@ -41,6 +41,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(true);
   const [commentRefetchAttempts, setCommentRefetchAttempts] = useState(0);
+  const [hasCommentLoadStalled, setHasCommentLoadStalled] = useState(false);
   const pendingRefetchTimerRef = useRef<number | null>(null);
 
   const board = useBoardStore(selectBoard(boardId));
@@ -83,8 +84,6 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   // Be liberal: always revalidate full task details on sidebar open (unless this is a local-first
   // task create that is not yet on the server).
   const shouldFetchTaskDetails = !pendingCreate;
-  const needsServerFetch =
-    shouldFetchTaskDetails && (!hydratedTaskDetails || isHydratedTaskDetailsStale);
 
   const {
     data: serverTask,
@@ -212,6 +211,19 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     !isServerLoading &&
     !isServerFetching &&
     commentRefetchAttempts >= MAX_COMMENT_REFETCH_ATTEMPTS;
+
+  // If we appear to be "stuck fetching" for too long, stop showing an infinite spinner and surface Retry.
+  useEffect(() => {
+    if (!isWaitingForComments) {
+      setHasCommentLoadStalled(false);
+      return;
+    }
+
+    // Reset stall flag when a new wait cycle begins.
+    setHasCommentLoadStalled(false);
+    const t = window.setTimeout(() => setHasCommentLoadStalled(true), 5_000);
+    return () => window.clearTimeout(t);
+  }, [isWaitingForComments, taskId]);
 
   // Retry refetch a few times when meta says comments exist but details still show none.
   // This is intentionally conservative (bounded) and helps with rare inconsistencies
@@ -346,13 +358,13 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
 
             {/* Comments - Second on mobile/tablet (stacked), left side on desktop */}
             <div className="order-2 lg:order-1 flex-1 lg:flex-[7] min-h-0 lg:overflow-y-auto">
-              {shouldShowCommentsLoading ? (
+              {shouldShowCommentsLoading && !hasCommentLoadStalled ? (
                 <div className="flex h-full min-h-[240px] items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <>
-                  {shouldShowCommentsRetry && (
+                  {(shouldShowCommentsRetry || hasCommentLoadStalled) && (
                     <div className="px-6 pt-6">
                       <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/30 px-4 py-3">
                         <div className="min-w-0">
@@ -367,6 +379,7 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
                           variant="secondary"
                           onClick={() => {
                             setCommentRefetchAttempts(0);
+                            setHasCommentLoadStalled(false);
                             if (pendingRefetchTimerRef.current) {
                               window.clearTimeout(pendingRefetchTimerRef.current);
                               pendingRefetchTimerRef.current = null;
