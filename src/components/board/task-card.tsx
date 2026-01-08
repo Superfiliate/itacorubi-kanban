@@ -31,45 +31,45 @@ interface TaskCardProps {
   createdAt: Date | null;
 }
 
-function getTaskAgeColor(daysSinceCreated: number): string {
+function getTaskAgeStyles(daysSinceCreated: number): { color: string; weight: string } {
   // Smooth transition: green → yellow (0-10 days) → red (10-20 days)
-  // Using more granular steps for smoother visual transition
+  // Font weight increases gradually after 10 days
 
   if (daysSinceCreated <= 0) {
-    return "text-emerald-600";
+    return { color: "text-emerald-600", weight: "font-normal" };
   }
   if (daysSinceCreated <= 2) {
-    return "text-emerald-500";
+    return { color: "text-emerald-500", weight: "font-normal" };
   }
   if (daysSinceCreated <= 4) {
-    return "text-green-500";
+    return { color: "text-green-500", weight: "font-normal" };
   }
   if (daysSinceCreated <= 6) {
-    return "text-lime-500";
+    return { color: "text-lime-500", weight: "font-normal" };
   }
   if (daysSinceCreated <= 8) {
-    return "text-yellow-500";
+    return { color: "text-yellow-500", weight: "font-normal" };
   }
   if (daysSinceCreated <= 10) {
-    return "text-yellow-600";
+    return { color: "text-yellow-600", weight: "font-normal" };
   }
   if (daysSinceCreated <= 12) {
-    return "text-amber-500";
+    return { color: "text-amber-500", weight: "font-medium" };
   }
   if (daysSinceCreated <= 14) {
-    return "text-amber-600";
+    return { color: "text-amber-600", weight: "font-medium" };
   }
   if (daysSinceCreated <= 16) {
-    return "text-orange-500";
+    return { color: "text-orange-500", weight: "font-semibold" };
   }
   if (daysSinceCreated <= 18) {
-    return "text-orange-600";
+    return { color: "text-orange-600", weight: "font-semibold" };
   }
   if (daysSinceCreated <= 20) {
-    return "text-red-500";
+    return { color: "text-red-500", weight: "font-bold" };
   }
-  // >20 days: deep red
-  return "text-red-600";
+  // >20 days: deep red + bold
+  return { color: "text-red-600", weight: "font-bold" };
 }
 
 function getDaysSinceCreated(createdAt: Date | null): number | null {
@@ -125,8 +125,10 @@ export function TaskCard({
   };
 
   const daysSinceCreated = getDaysSinceCreated(createdAt);
-  const taskAgeColor =
-    daysSinceCreated !== null ? getTaskAgeColor(daysSinceCreated) : "text-muted-foreground";
+  const taskAgeStyles =
+    daysSinceCreated !== null
+      ? getTaskAgeStyles(daysSinceCreated)
+      : { color: "text-muted-foreground", weight: "font-normal" };
 
   const taskAgeText =
     daysSinceCreated !== null
@@ -169,7 +171,9 @@ export function TaskCard({
         </div>
 
         {taskAgeText && (
-          <span className={cn("truncate text-xs", taskAgeColor)}>· {taskAgeText}</span>
+          <span className={cn("truncate text-xs", taskAgeStyles.color, taskAgeStyles.weight)}>
+            · {taskAgeText}
+          </span>
         )}
       </div>
 
