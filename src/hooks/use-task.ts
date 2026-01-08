@@ -69,7 +69,7 @@ export const taskKeys = {
 };
 
 // Keep sidebar responsive; retries will handle transient failures.
-const TASK_DETAIL_QUERY_TIMEOUT_MS = 6_000;
+const TASK_DETAIL_QUERY_TIMEOUT_MS = 3_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
