@@ -49,7 +49,7 @@ interface ColumnProps {
       color: ContributorColor;
     }>;
     commentCount: number;
-    lastCommentCreatedAt: Date | null;
+    createdAt: Date | null;
   }>;
 }
 
