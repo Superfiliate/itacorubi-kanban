@@ -58,7 +58,9 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
     if (commentMeta.count !== hydratedTaskDetails.comments.length) return true;
 
     // Timestamp check: if meta says there's a newer comment than what details have, details are stale.
-    const metaLast = commentMeta.lastCreatedAt ? new Date(commentMeta.lastCreatedAt).getTime() : null;
+    const metaLast = commentMeta.lastCreatedAt
+      ? new Date(commentMeta.lastCreatedAt).getTime()
+      : null;
     if (metaLast === null) return false;
 
     let detailsLast: number | null = null;
@@ -78,9 +80,12 @@ export function TaskSidebar({ taskId, boardId, columns, contributors, tags }: Ta
   // - We don't have hydrated task details (which includes comments), AND
   // - There's no pending create for this task (local-first creates don't need server fetch)
   const needsServerFetch = (!hydratedTaskDetails || isHydratedTaskDetailsStale) && !pendingCreate;
-  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(needsServerFetch ? taskId : null, {
-    refetchOnMount: "always",
-  });
+  const { data: serverTask, isLoading: isServerLoading } = useTaskQuery(
+    needsServerFetch ? taskId : null,
+    {
+      refetchOnMount: "always",
+    },
+  );
 
   // Belt-and-suspenders: if we detected staleness, explicitly invalidate to force a network refetch
   // even when the cached task detail query is still within the default 30s staleTime window.
