@@ -66,6 +66,8 @@ export function getOperationLabel(item: OutboxItem): string {
       return "Deleting column";
     case "reorderColumns":
       return "Reordering columns";
+    case "reorderTasks":
+      return "Reordering tasks";
     default: {
       const _exhaustive: never = item;
       return `Unknown operation: ${(_exhaustive as { type: string }).type}`;

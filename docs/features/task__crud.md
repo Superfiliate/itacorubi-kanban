@@ -45,6 +45,19 @@ Tasks are the individual work items that live within columns. Each task can have
 - Use Status dropdown to select target column
 - Task moves immediately
 
+### Reorder Tasks (Board Header)
+
+- Click **Reorder** button in board header
+- Select ordering option:
+  - **Created (oldest first)** - Sort by task creation date, oldest first
+  - **Created (newest first)** - Sort by task creation date, newest first
+  - **Last comment (newest first)** - Sort by most recent comment timestamp, newest first
+  - **Last comment (oldest first)** - Sort by most recent comment timestamp, oldest first
+- Confirmation dialog appears (since this affects everyone on the board)
+- Tasks are reordered within each column separately (no cross-column moves)
+- For tasks with no comments, task creation date is used as the activity timestamp
+- Order persists for all users and survives page refresh
+
 ### Delete Task
 
 - Open task sidebar
@@ -69,4 +82,7 @@ Tasks are the individual work items that live within columns. Each task can have
 - Comment age indicator uses color coding (green → yellow → red)
 - Adding a comment moves the task to the top of its column
 - Initial task title (including emoji) is generated on the client and passed to the server to ensure consistency between optimistic UI and server response
+- **Reorder tasks** feature applies ordering within each column separately (all columns are reordered)
+- When reordering by "last comment", tasks with zero comments use their creation date as the activity timestamp
+- Reorder uses stable tie-breakers (createdAt, then taskId) to avoid jitter
 - See `comment__crud.md` for full comment documentation

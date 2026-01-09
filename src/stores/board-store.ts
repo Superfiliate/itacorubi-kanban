@@ -40,6 +40,8 @@ export type CommentMeta = {
   lastCreatedAt: Date | null;
 };
 
+export type TaskReorderMode = "createdAsc" | "createdDesc" | "lastCommentDesc" | "lastCommentAsc";
+
 export type OutboxItem =
   | {
       id: string;
@@ -191,6 +193,13 @@ export type OutboxItem =
       type: "updateTaskColumn";
       boardId: string;
       payload: { taskId: string; columnId: string; position?: number };
+      createdAt: number;
+    }
+  | {
+      id: string;
+      type: "reorderTasks";
+      boardId: string;
+      payload: { mode: TaskReorderMode };
       createdAt: number;
     }
   | {
@@ -370,6 +379,7 @@ type BoardStoreState = {
     toColumnId: string;
     toIndex: number;
   }) => void;
+  reorderTasksLocal: (args: { boardId: string; mode: TaskReorderMode }) => void;
   deleteTaskLocal: (args: { boardId: string; taskId: string }) => void;
 
   // Local-first mutations - Contributor
@@ -1177,6 +1187,78 @@ export const useBoardStore = create<BoardStoreState>((set, get) => ({
           [boardId]: {
             ...board,
             tasksById: { ...board.tasksById, [taskId]: updatedTask },
+            tasksByColumnId,
+            lastLocalActivityAt: Date.now(),
+          },
+        },
+      };
+    });
+  },
+
+  reorderTasksLocal: ({ boardId, mode }) => {
+    set((s) => {
+      const board = s.boardsById[boardId] ?? makeEmptyBoard(boardId);
+      const tasksByColumnId = { ...board.tasksByColumnId };
+
+      // For each column, reorder its tasks
+      for (const columnId of board.columnOrder) {
+        const taskIds = [...(tasksByColumnId[columnId] ?? [])];
+        if (taskIds.length === 0) continue;
+
+        // Sort tasks based on mode
+        taskIds.sort((a, b) => {
+          const taskA = board.tasksById[a];
+          const taskB = board.tasksById[b];
+          if (!taskA || !taskB) return 0;
+
+          let compareValue = 0;
+
+          if (mode === "createdAsc" || mode === "createdDesc") {
+            // Sort by createdAt
+            const dateA = taskA.createdAt ? new Date(taskA.createdAt).getTime() : 0;
+            const dateB = taskB.createdAt ? new Date(taskB.createdAt).getTime() : 0;
+            compareValue = dateA - dateB;
+            if (mode === "createdDesc") compareValue = -compareValue;
+          } else {
+            // Sort by lastCommentAt (fallback to createdAt if no comments)
+            const metaA = board.commentMetaByTaskId[a] ?? { lastCreatedAt: null };
+            const metaB = board.commentMetaByTaskId[b] ?? { lastCreatedAt: null };
+            const dateA = metaA.lastCreatedAt
+              ? new Date(metaA.lastCreatedAt).getTime()
+              : taskA.createdAt
+                ? new Date(taskA.createdAt).getTime()
+                : 0;
+            const dateB = metaB.lastCreatedAt
+              ? new Date(metaB.lastCreatedAt).getTime()
+              : taskB.createdAt
+                ? new Date(taskB.createdAt).getTime()
+                : 0;
+            compareValue = dateA - dateB;
+            if (mode === "lastCommentDesc") compareValue = -compareValue;
+          }
+
+          // Stable tie-breakers: createdAt, then taskId
+          if (compareValue === 0) {
+            const createdAtA = taskA.createdAt ? new Date(taskA.createdAt).getTime() : 0;
+            const createdAtB = taskB.createdAt ? new Date(taskB.createdAt).getTime() : 0;
+            if (createdAtA !== createdAtB) {
+              compareValue = createdAtA - createdAtB;
+            } else {
+              compareValue = a.localeCompare(b);
+            }
+          }
+
+          return compareValue;
+        });
+
+        tasksByColumnId[columnId] = taskIds;
+      }
+
+      return {
+        boardsById: {
+          ...s.boardsById,
+          [boardId]: {
+            ...board,
             tasksByColumnId,
             lastLocalActivityAt: Date.now(),
           },

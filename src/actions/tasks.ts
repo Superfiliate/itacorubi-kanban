@@ -356,3 +356,85 @@ export async function deleteTask(id: string, boardId: string) {
 
   revalidatePath(`/boards/${boardId}`);
 }
+
+export type TaskReorderMode = "createdAsc" | "createdDesc" | "lastCommentDesc" | "lastCommentAsc";
+
+export async function reorderTasks(boardId: string, mode: TaskReorderMode) {
+  await requireBoardAccess(boardId);
+
+  // Fetch all tasks for this board with their comment timestamps
+  const allTasks = await db
+    .select({
+      id: tasks.id,
+      columnId: tasks.columnId,
+      createdAt: tasks.createdAt,
+      lastCommentAt: sql<number | null>`MAX(${comments.createdAt})`,
+    })
+    .from(tasks)
+    .leftJoin(comments, eq(comments.taskId, tasks.id))
+    .where(eq(tasks.boardId, boardId))
+    .groupBy(tasks.id, tasks.columnId, tasks.createdAt);
+
+  // Group tasks by column
+  const tasksByColumn = new Map<string, typeof allTasks>();
+  for (const task of allTasks) {
+    const columnTasks = tasksByColumn.get(task.columnId) ?? [];
+    columnTasks.push(task);
+    tasksByColumn.set(task.columnId, columnTasks);
+  }
+
+  // Sort and update positions for each column
+  for (const [_columnId, columnTasks] of tasksByColumn.entries()) {
+    // Sort tasks based on mode
+    columnTasks.sort((a, b) => {
+      let compareValue = 0;
+
+      if (mode === "createdAsc" || mode === "createdDesc") {
+        // Sort by createdAt
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        compareValue = dateA - dateB;
+        if (mode === "createdDesc") compareValue = -compareValue;
+      } else {
+        // Sort by lastCommentAt (fallback to createdAt if no comments)
+        // lastCommentAt is stored as unix seconds, convert to ms for comparison
+        const dateA = a.lastCommentAt
+          ? a.lastCommentAt < 10_000_000_000
+            ? a.lastCommentAt * 1000
+            : a.lastCommentAt
+          : a.createdAt
+            ? new Date(a.createdAt).getTime()
+            : 0;
+        const dateB = b.lastCommentAt
+          ? b.lastCommentAt < 10_000_000_000
+            ? b.lastCommentAt * 1000
+            : b.lastCommentAt
+          : b.createdAt
+            ? new Date(b.createdAt).getTime()
+            : 0;
+        compareValue = dateA - dateB;
+        if (mode === "lastCommentDesc") compareValue = -compareValue;
+      }
+
+      // Stable tie-breakers: createdAt, then taskId
+      if (compareValue === 0) {
+        const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (createdAtA !== createdAtB) {
+          compareValue = createdAtA - createdAtB;
+        } else {
+          compareValue = a.id.localeCompare(b.id);
+        }
+      }
+
+      return compareValue;
+    });
+
+    // Update positions to 0..n-1
+    for (let i = 0; i < columnTasks.length; i++) {
+      await db.update(tasks).set({ position: i }).where(eq(tasks.id, columnTasks[i]!.id));
+    }
+  }
+
+  revalidatePath(`/boards/${boardId}`);
+}

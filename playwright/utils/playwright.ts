@@ -11,6 +11,8 @@ interface SeedBoardOptions {
     title: string;
     columnIndex?: number;
     assignees?: string[];
+    /** Offset from base time in seconds (for deterministic ordering in tests) */
+    createdAtOffset?: number;
   }>;
   contributors?: Array<{
     name: string;
@@ -33,7 +35,8 @@ export async function seedTestBoard(
   request: APIRequestContext,
   options: SeedBoardOptions = {},
 ): Promise<SeedBoardResult> {
-  const response = await request.post("/api/test/seed", {
+  const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:5800";
+  const response = await request.post(`${baseURL}/api/test/seed`, {
     data: {
       title: options.title ?? "Test Board",
       password: options.password ?? "testpass123",

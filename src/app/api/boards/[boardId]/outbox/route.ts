@@ -15,7 +15,9 @@ import {
   updateTaskPriority,
   updateTaskCreatedAt,
   updateTaskColumn,
+  reorderTasks,
   deleteTask,
+  type TaskReorderMode,
 } from "@/actions/tasks";
 import {
   createContributor,
@@ -111,6 +113,11 @@ async function execute(item: AnyOutboxItem): Promise<void> {
         position?: number;
       };
       await updateTaskColumn(taskId, columnId, item.boardId, position);
+      return;
+    }
+    case "reorderTasks": {
+      const { mode } = item.payload as { mode: TaskReorderMode };
+      await reorderTasks(item.boardId, mode);
       return;
     }
     case "deleteTask": {

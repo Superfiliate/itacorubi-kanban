@@ -17,6 +17,8 @@ interface SeedBoardRequest {
     title: string;
     columnIndex?: number; // 0=To Do, 1=Doing, 2=Done, 3=Archive
     assignees?: string[]; // contributor names to create and assign
+    /** Optional: offset from base time in seconds (for deterministic ordering) */
+    createdAtOffset?: number;
   }>;
   /** Optional: pre-create contributors */
   contributors?: Array<{
@@ -99,11 +101,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // Create tasks if requested
   const taskIds: string[] = [];
+  const baseTime = new Date();
   if (body.tasks) {
-    for (const taskDef of body.tasks) {
+    for (let taskIndex = 0; taskIndex < body.tasks.length; taskIndex++) {
+      const taskDef = body.tasks[taskIndex];
       const columnIndex = taskDef.columnIndex ?? 0;
       const taskId = crypto.randomUUID();
       taskIds.push(taskId);
+
+      // Use explicit offset, or default to spreading tasks 1 second apart
+      const offsetSeconds = taskDef.createdAtOffset ?? taskIndex;
+      const createdAt = new Date(baseTime.getTime() + offsetSeconds * 1000);
 
       await db.insert(tasks).values({
         id: taskId,
@@ -112,7 +120,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         title: taskDef.title,
         position: taskIds.length - 1,
         priority: "none",
-        createdAt: new Date(),
+        createdAt,
       });
 
       // Create and assign contributors for this task

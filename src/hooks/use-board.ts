@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getBoard } from "@/actions/boards";
 import { deleteColumn } from "@/actions/columns";
 import { getRandomEmoji } from "@/lib/emojis";
-import { useBoardStore } from "@/stores/board-store";
+import { useBoardStore, type TaskReorderMode } from "@/stores/board-store";
 import { flushBoardOutbox } from "@/lib/outbox/flush";
 import type { ContributorColor, TaskPriority } from "@/db/schema";
 
@@ -320,4 +320,50 @@ export function useOptimisticColumnsUpdate(boardId: string) {
       });
     },
   };
+}
+
+// Hook to reorder tasks (local-first + outbox)
+export function useReorderTasks(boardId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ mode }: { mode: TaskReorderMode }) => {
+      // 1) Update local store
+      useBoardStore.getState().reorderTasksLocal({ boardId, mode });
+
+      // 2) Update TanStack cache to match the new order
+      queryClient.setQueryData<BoardData>(boardKeys.detail(boardId), (old) => {
+        if (!old) return old;
+
+        const board = useBoardStore.getState().boardsById[boardId];
+        if (!board) return old;
+
+        // Rebuild columns with tasks in the new order from store
+        return {
+          ...old,
+          columns: old.columns.map((col) => {
+            const taskIds = board.tasksByColumnId[col.id] ?? [];
+            const tasksMap = new Map(col.tasks.map((t) => [t.id, t]));
+            const reorderedTasks = taskIds
+              .map((id) => tasksMap.get(id))
+              .filter((t): t is BoardTask => t !== undefined);
+
+            return {
+              ...col,
+              tasks: reorderedTasks.map((t, i) => ({ ...t, position: i })),
+            };
+          }),
+        };
+      });
+
+      // 3) Enqueue for background sync
+      useBoardStore.getState().enqueue({
+        type: "reorderTasks",
+        boardId,
+        payload: { mode },
+      });
+      // Await flush to ensure server action is called
+      await flushBoardOutbox(boardId);
+    },
+  });
 }
